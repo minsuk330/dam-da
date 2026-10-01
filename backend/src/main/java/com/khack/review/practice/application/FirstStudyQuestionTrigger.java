@@ -40,7 +40,8 @@ class FirstStudyQuestionTrigger {
                 .toList();
         QuestionGenerationService.FirstStudyOutcome outcome;
         try {
-            outcome = questions.generateFirstStudy(event.sessionId(), specs);
+            // 목표를 다시 고르면(계획 회차가 바뀌면) 이 생성은 다음 요청 전에 멈추고 결과를 남기지 않는다.
+            outcome = questions.generateFirstStudy(event.sessionId(), specs, () -> isCurrent(event));
         } catch (RuntimeException e) {
             log.warn("학습 세션 {} 첫 학습 문제 생성 실패", event.sessionId(), e);
             finish(event, p -> p.failGeneration(event.generation(), "문제 생성 중 오류가 났습니다. 학습 목표를 다시 고르면 다시 만듭니다."));
@@ -49,6 +50,10 @@ class FirstStudyQuestionTrigger {
         if (!outcome.skipped()) {
             finish(event, p -> p.finishGeneration(event.generation(), outcome.approved(), outcome.failure()));
         }
+    }
+
+    private boolean isCurrent(LearningGoalSet event) {
+        return plans.findById(event.planId()).map(p -> p.getGeneration() == event.generation()).orElse(false);
     }
 
     /** 생성 상태를 남긴다. 그 사이 목표를 다시 골랐으면 새 계획을 건드리지 않는다. */

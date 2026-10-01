@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Schemas } from '@/api/client';
-import { useLearningSession } from '@/api/learning-sessions';
+import { useFirstStudy, useLearningSession } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { colors, spacing } from '@/theme';
@@ -39,8 +39,12 @@ export function SessionConfirm({ id }: { id: number }) {
   const scroll = useRef<ScrollView>(null);
   const { data, isPending, isError, refetch } = useLearningSession(id);
   const [chosenStep, setChosenStep] = useState<Step | null>(null);
+  // 확인을 마친 세션은 목표를 이미 골라 문제를 만드는 중일 수 있다. 다시 들어와도(새로고침 포함) 목표 단계로 돌아가 다시 고르지 않게
+  // 생성 상태를 보고 준비 단계로 보낸다. 다시 고르면 생성이 처음부터 다시 돈다.
+  const confirmed = data?.status === 'CONFIRMED';
+  const plan = useFirstStudy(id, confirmed && chosenStep === null);
 
-  if (isPending) {
+  if (isPending || (confirmed && chosenStep === null && plan.isPending)) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
@@ -56,7 +60,8 @@ export function SessionConfirm({ id }: { id: number }) {
     );
   }
 
-  const step = chosenStep ?? stepOf(data.status);
+  const resumePrepare = confirmed && (plan.data?.generating || plan.data?.failed);
+  const step = chosenStep ?? (resumePrepare ? 'prepare' : stepOf(data.status));
   if (step === null) {
     return (
       <View style={styles.center}>

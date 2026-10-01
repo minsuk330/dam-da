@@ -15,6 +15,7 @@ import com.khack.review.question.domain.QuestionRepository;
 import com.khack.review.question.domain.QuestionSpec;
 import com.khack.review.question.domain.QuestionStatus;
 import com.khack.review.question.domain.QuestionType;
+import jakarta.annotation.PreDestroy;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,12 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -37,11 +45,15 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 문제 생성·품질 검사·변형 (스펙 §6.1, §6.2, 규칙 3·7·12). 문제는 복습 단위별로 한 번에 생성하고(포트 계약),
  * 떨어진 대상만 모아 다시 생성한다. 생성(LLM)과 검사(Jev)는 오래 걸리므로 트랜잭션 밖에서 하고, 저장과 상태 변경만
  * 짧은 트랜잭션으로 묶는다. 한 대상은 {@code max-generations}번까지 생성하고, 모두 떨어지면 그 항목 출제를 보류한다.
+ *
+ * <p>첫 학습 문제는 복습 단위들을 동시에 만든다(단위끼리는 기억 항목이 겹치지 않아 중복 검사가 서로 얽히지 않는다). 한 단위 안은
+ * 지금처럼 차례로 검사한다. 목표를 다시 골라 계획이 바뀌면 이전 생성은 다음 요청 전에 멈추고 문제를 승인하지 않는다.
  */
 @Service
 public class QuestionGenerationService {
 
     private static final Logger log = LoggerFactory.getLogger(QuestionGenerationService.class);
+    private static final String SUPERSEDED = "학습 목표를 다시 골라 지난 계획의 문제를 쓰지 않음";
 
     private final ObjectProvider<QuestionGenerator> generator;
     private final QuestionQualityJudge judge;
@@ -51,10 +63,12 @@ public class QuestionGenerationService {
     private final SessionProgressService progress;
     private final Clock clock;
     private final TransactionTemplate transaction;
+    private final ExecutorService units;
 
     public QuestionGenerationService(ObjectProvider<QuestionGenerator> generator, QuestionQualityJudge judge,
             QuestionQualityPolicy policy, QuestionRepository questions, LearningSessionQueryService sessions,
-            SessionProgressService progress, Clock clock, TransactionTemplate transaction) {
+            SessionProgressService progress, Clock clock, TransactionTemplate transaction,
+            @Value("${review.question.parallel-units:4}") int parallelUnits) {
         this.generator = generator;
         this.judge = judge;
         this.policy = policy;
@@ -63,6 +77,17 @@ public class QuestionGenerationService {
         this.progress = progress;
         this.clock = clock;
         this.transaction = transaction;
+        AtomicInteger thread = new AtomicInteger();
+        this.units = Executors.newFixedThreadPool(Math.max(1, parallelUnits), task -> {
+            Thread t = new Thread(task, "qgen-" + thread.incrementAndGet());
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
+    @PreDestroy
+    void shutdown() {
+        units.shutdownNow();
     }
 
     /**
@@ -72,26 +97,46 @@ public class QuestionGenerationService {
     public record FirstStudyOutcome(boolean skipped, int planned, int approved, @Nullable String failure) {
     }
 
+    public FirstStudyOutcome generateFirstStudy(Long sessionId, List<QuestionSpec> specs) {
+        return generateFirstStudy(sessionId, specs, () -> true);
+    }
+
     /**
      * 첫 학습 계획의 문제를 만든다. 확인 완료 상태의 세션만 하며(규칙 12), 승인된 문제가 하나라도 있으면 세션을 문제 준비로 넘긴다.
      * 승인되지 못한 자리는 출제를 보류한다(그 항목은 신규로 남는다). 하나도 승인되지 않으면 세션을 확인 완료에 두어
      * 목표를 다시 고를 수 있게 한다.
+     *
+     * @param current 이 생성이 아직 현재 계획의 것인가. 목표를 다시 골라 거짓이 되면 다음 생성 요청 전에 멈추고, 문제를 승인하지 않으며,
+     *                세션을 문제 준비로 넘기지 않는다(새 계획의 생성이 넘긴다)
      */
-    public FirstStudyOutcome generateFirstStudy(Long sessionId, List<QuestionSpec> specs) {
+    public FirstStudyOutcome generateFirstStudy(Long sessionId, List<QuestionSpec> specs, BooleanSupplier current) {
         LearningSessionDetail detail = sessions.detailForProcessing(sessionId);
-        if (detail.status() != LearningSessionStatus.CONFIRMED) {
-            log.info("학습 세션 {}: {} 상태라 첫 학습 문제를 만들지 않음", sessionId, detail.status());
+        if (detail.status() != LearningSessionStatus.CONFIRMED || !current.getAsBoolean()) {
+            log.info("학습 세션 {}: {} 상태이거나 지난 계획이라 첫 학습 문제를 만들지 않음", sessionId, detail.status());
             return new FirstStudyOutcome(true, specs.size(), 0, null);
         }
+        releasePreviousPlan(sessionId);
         Context context = Context.of(detail, sessions.ownerOf(sessionId));
         Map<Long, List<Slot>> byUnit = new LinkedHashMap<>();
         for (QuestionSpec spec : specs) {
             byUnit.computeIfAbsent(context.item(spec.memoryItemId()).unitId(), unit -> new ArrayList<>())
                     .add(new Slot("p" + spec.position(), spec, null));
         }
+        List<CompletableFuture<Integer>> work = byUnit.entrySet().stream()
+                .map(unit -> CompletableFuture.supplyAsync(() -> (int) generate(context, unit.getKey(), unit.getValue(), current)
+                        .values().stream().filter(Optional::isPresent).count(), units))
+                .toList();
         int approved = 0;
-        for (Map.Entry<Long, List<Slot>> unit : byUnit.entrySet()) {
-            approved += (int) generate(context, unit.getKey(), unit.getValue()).values().stream().filter(Optional::isPresent).count();
+        for (CompletableFuture<Integer> unit : work) {
+            try {
+                approved += unit.join();
+            } catch (CompletionException e) {
+                log.warn("학습 세션 {} 단위 문제 생성 실패", sessionId, e.getCause());
+            }
+        }
+        if (!current.getAsBoolean()) {
+            log.info("학습 세션 {}: 생성 중에 학습 목표를 다시 골라 이 생성 결과를 쓰지 않음", sessionId);
+            return new FirstStudyOutcome(true, specs.size(), 0, null);
         }
         log.info("학습 세션 {} 첫 학습 문제: 계획 {}, 승인 {}, 보류 {}", sessionId, specs.size(), approved, specs.size() - approved);
         if (approved == 0) {
@@ -110,7 +155,7 @@ public class QuestionGenerationService {
         Context context = context(original.getSessionId());
         Slot slot = new Slot("v" + original.getId(), new QuestionSpec(-1, original.getMemoryItemId(), null, original.getType(), null),
                 original.getId());
-        return generate(context, context.item(original.getMemoryItemId()).unitId(), List.of(slot)).get(slot.targetId());
+        return generate(context, context.item(original.getMemoryItemId()).unitId(), List.of(slot), () -> true).get(slot.targetId());
     }
 
     /**
@@ -122,7 +167,7 @@ public class QuestionGenerationService {
         Long variantOf = questions.findByMemoryItemIdAndStatusOrderByIdAsc(memoryItemId, QuestionStatus.APPROVED).stream()
                 .map(Question::getId).findFirst().orElse(null);
         Slot slot = new Slot("d" + memoryItemId, new QuestionSpec(-1, memoryItemId, null, type, null), variantOf);
-        return generate(context, context.item(memoryItemId).unitId(), List.of(slot)).get(slot.targetId());
+        return generate(context, context.item(memoryItemId).unitId(), List.of(slot), () -> true).get(slot.targetId());
     }
 
     /**
@@ -150,7 +195,7 @@ public class QuestionGenerationService {
     }
 
     /** 한 복습 단위의 대상들을 생성 → 검사하고, 떨어진 대상만 모아 다시 생성한다. 대상마다 승인된 문제 또는 빈 값. */
-    private Map<String, Optional<Question>> generate(Context context, Long unitId, List<Slot> slots) {
+    private Map<String, Optional<Question>> generate(Context context, Long unitId, List<Slot> slots, BooleanSupplier current) {
         Map<String, Optional<Question>> outcome = new LinkedHashMap<>();
         slots.forEach(slot -> outcome.put(slot.targetId(), Optional.empty()));
         QuestionGenerator available = generator.getIfAvailable();
@@ -161,7 +206,7 @@ public class QuestionGenerationService {
         Map<String, List<String>> tried = new HashMap<>();
         slots.forEach(slot -> tried.put(slot.targetId(), new ArrayList<>(stemsOf(slot.spec().memoryItemId()))));
         List<Slot> pending = new ArrayList<>(slots);
-        for (int round = 1; round <= policy.maxGenerations() && !pending.isEmpty(); round++) {
+        for (int round = 1; round <= policy.maxGenerations() && !pending.isEmpty() && current.getAsBoolean(); round++) {
             Map<String, UnitQuestionResult.TargetResult> results = request(available, context, unitId, pending, tried, round);
             List<Slot> next = new ArrayList<>();
             for (Slot slot : pending) {
@@ -172,7 +217,7 @@ public class QuestionGenerationService {
                     next.add(slot);
                     continue;
                 }
-                Question decided = saveAndJudge(context, slot, result.question(), round);
+                Question decided = saveAndJudge(context, slot, result.question(), round, current);
                 if (decided.getStatus() == QuestionStatus.APPROVED) {
                     outcome.put(slot.targetId(), Optional.of(decided));
                 } else {
@@ -198,7 +243,7 @@ public class QuestionGenerationService {
         }
     }
 
-    private Question saveAndJudge(Context context, Slot slot, GeneratedQuestion generated, int round) {
+    private Question saveAndJudge(Context context, Slot slot, GeneratedQuestion generated, int round, BooleanSupplier current) {
         QuestionSpec spec = slot.spec();
         Question.Content content = new Question.Content(spec.type(), generated.stem(), generated.choices(),
                 generated.correctChoice(), generated.answerCriteria(), generated.modelAnswer(), generated.hint(),
@@ -209,7 +254,10 @@ public class QuestionGenerationService {
         QualityOutcome outcome = judge.judge(state(context, spec.memoryItemId(), content, approvedStems(spec.memoryItemId(), candidateId)));
         return transaction.execute(tx -> {
             Question candidate = questions.findById(candidateId).orElseThrow();
-            if (outcome.approved()) {
+            if (!current.getAsBoolean()) {
+                // 검사하는 동안 목표를 다시 골랐다. 지난 계획의 문제는 승인하지 않는다.
+                candidate.reject(SUPERSEDED);
+            } else if (outcome.approved()) {
                 candidate.approve(outcome.note());
             } else {
                 candidate.reject(outcome.note());
@@ -217,6 +265,16 @@ public class QuestionGenerationService {
             }
             return candidate;
         });
+    }
+
+    /**
+     * 새 계획으로 다시 만들기 전에, 지난 계획에서 승인된 첫 학습 문제를 쓰지 않게 한다. 남겨 두면 새 계획의 같은 자리와 섞이고,
+     * 새 문제가 그 문제와 중복으로 떨어진다. 이미 승인된 문제는 아직 풀이에 나오지 않았다(목표는 문제 준비 전에만 고른다).
+     */
+    private void releasePreviousPlan(Long sessionId) {
+        transaction.executeWithoutResult(tx -> questions.findBySessionIdOrderByIdAsc(sessionId).stream()
+                .filter(q -> q.getStatus() == QuestionStatus.APPROVED && q.getPlanPosition() != null)
+                .forEach(q -> q.reject(SUPERSEDED)));
     }
 
     private List<String> stemsOf(Long memoryItemId) {
