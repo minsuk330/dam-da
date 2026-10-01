@@ -407,6 +407,107 @@
         "tags" : [ "notification-controller" ]
       }
     },
+    "/api/practice/presentations/{presentationId}/aids" : {
+      "post" : {
+        "operationId" : "recordAid",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "presentationId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AidRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AidView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "practice-controller" ]
+      }
+    },
+    "/api/practice/presentations/{presentationId}/attempts" : {
+      "post" : {
+        "operationId" : "submit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "presentationId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Submission"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AttemptView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "practice-controller" ]
+      }
+    },
+    "/api/practice/{practiceId}/next" : {
+      "get" : {
+        "operationId" : "next",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "practiceId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Next"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "practice-controller" ]
+      }
+    },
     "/api/sessions/{sessionId}/first-study" : {
       "get" : {
         "operationId" : "firstStudy",
@@ -432,6 +533,33 @@
           }
         },
         "tags" : [ "first-study-controller" ]
+      }
+    },
+    "/api/sessions/{sessionId}/first-study/practice" : {
+      "post" : {
+        "operationId" : "startFirstStudy",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PracticeView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "practice-controller" ]
       }
     },
     "/api/sessions/{sessionId}/learning-goals" : {
@@ -554,6 +682,69 @@
   },
   "components" : {
     "schemas" : {
+      "AidRequest" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "enum" : [ "INTERPRETATION", "HINT", "EXPLANATION" ]
+          }
+        },
+        "required" : [ "type" ]
+      },
+      "AidView" : {
+        "type" : "object",
+        "properties" : {
+          "aidId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "exposedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "INTERPRETATION", "HINT", "EXPLANATION" ]
+          }
+        },
+        "required" : [ "aidId", "exposedAt", "type" ]
+      },
+      "AttemptView" : {
+        "type" : "object",
+        "properties" : {
+          "attemptId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "correct" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "evaluated" : {
+            "type" : "boolean"
+          },
+          "holdReason" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "LOW_CONFIDENCE", "UNABLE_TO_JUDGE", "MISREAD", "GUESS_UNCONFIRMED" ]
+          },
+          "judgment" : {
+            "$ref" : "#/components/schemas/JudgmentView"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FIRST_UNASSISTED", "ASSISTED_RETRY", "DELAYED_RECHECK" ]
+          },
+          "rating" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "AGAIN", "HARD", "GOOD", "EASY" ]
+          },
+          "responseTimeMs" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "attemptId", "correct", "evaluated", "holdReason", "judgment", "kind", "rating", "responseTimeMs" ]
+      },
       "ChooseRequest" : {
         "type" : "object",
         "properties" : {
@@ -835,6 +1026,26 @@
         },
         "required" : [ "content", "id", "kind", "sourceTurns", "status" ]
       },
+      "JudgmentView" : {
+        "type" : "object",
+        "properties" : {
+          "judged" : {
+            "type" : "boolean"
+          },
+          "misconceptionRecurred" : {
+            "type" : "boolean"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "CONTRADICTION", "OMISSION", "MISREAD" ]
+          },
+          "verdict" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "MET", "NOT_MET", "UNABLE_TO_JUDGE" ]
+          }
+        },
+        "required" : [ "judged", "misconceptionRecurred", "reason", "verdict" ]
+      },
       "KeyPointResponse" : {
         "type" : "object",
         "properties" : {
@@ -969,6 +1180,19 @@
           }
         },
         "required" : [ "afterIndex", "aiVerdict", "correction", "intent", "sourceOf", "text" ]
+      },
+      "Next" : {
+        "type" : "object",
+        "properties" : {
+          "done" : {
+            "type" : "boolean"
+          },
+          "presentation" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/PresentationView"
+          }
+        },
+        "required" : [ "done", "presentation" ]
       },
       "NotificationView" : {
         "type" : "object",
@@ -1129,6 +1353,69 @@
         },
         "required" : [ "goal", "memoryItemId", "relatedItemId", "type" ]
       },
+      "PracticeView" : {
+        "type" : "object",
+        "properties" : {
+          "completed" : {
+            "type" : "boolean"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FIRST_STUDY", "DAILY" ]
+          },
+          "learningSessionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "practiceId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "completed", "kind", "learningSessionId", "practiceId", "total" ]
+      },
+      "PresentationView" : {
+        "type" : "object",
+        "properties" : {
+          "choices" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "presentationId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "questionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sameDayRecheck" : {
+            "type" : "boolean"
+          },
+          "stem" : {
+            "type" : "string"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          }
+        },
+        "required" : [ "choices", "position", "presentationId", "questionId", "sameDayRecheck", "stem", "total", "type" ]
+      },
       "QuestionView" : {
         "type" : "object",
         "properties" : {
@@ -1199,6 +1486,31 @@
           }
         },
         "required" : [ "url" ]
+      },
+      "Submission" : {
+        "type" : "object",
+        "properties" : {
+          "answer" : {
+            "type" : [ "string", "null" ]
+          },
+          "choiceIndex" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "firstInputMs" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "responseTimeMs" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "selfAssessment" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "RECALLED_EASILY", "RECALLED_WITH_EFFORT", "GUESSED" ]
+          }
+        },
+        "required" : [ "answer", "choiceIndex", "firstInputMs", "responseTimeMs", "selfAssessment" ]
       },
       "Turn" : {
         "type" : "object",

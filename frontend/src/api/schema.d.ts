@@ -228,6 +228,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/practice/presentations/{presentationId}/aids": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordAid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice/presentations/{presentationId}/attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice/{practiceId}/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["next"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions/{sessionId}/first-study": {
         parameters: {
             query?: never;
@@ -238,6 +286,22 @@ export interface paths {
         get: operations["firstStudy"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{sessionId}/first-study/practice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startFirstStudy"];
         delete?: never;
         options?: never;
         head?: never;
@@ -280,6 +344,33 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AidRequest: {
+            /** @enum {string} */
+            type: "INTERPRETATION" | "HINT" | "EXPLANATION";
+        };
+        AidView: {
+            /** Format: int64 */
+            aidId: number;
+            /** Format: date-time */
+            exposedAt: string;
+            /** @enum {string} */
+            type: "INTERPRETATION" | "HINT" | "EXPLANATION";
+        };
+        AttemptView: {
+            /** Format: int64 */
+            attemptId: number;
+            correct: boolean | null;
+            evaluated: boolean;
+            /** @enum {string|null} */
+            holdReason: "LOW_CONFIDENCE" | "UNABLE_TO_JUDGE" | "MISREAD" | "GUESS_UNCONFIRMED" | null;
+            judgment: components["schemas"]["JudgmentView"];
+            /** @enum {string} */
+            kind: "FIRST_UNASSISTED" | "ASSISTED_RETRY" | "DELAYED_RECHECK";
+            /** @enum {string|null} */
+            rating: "AGAIN" | "HARD" | "GOOD" | "EASY" | null;
+            /** Format: int64 */
+            responseTimeMs: number;
+        };
         ChooseRequest: {
             /** @enum {string} */
             strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
@@ -381,6 +472,14 @@ export interface components {
             /** @enum {string} */
             status: "NEW" | "ACTIVE" | "EXCLUDED";
         };
+        JudgmentView: {
+            judged: boolean;
+            misconceptionRecurred: boolean;
+            /** @enum {string|null} */
+            reason: "CONTRADICTION" | "OMISSION" | "MISREAD" | null;
+            /** @enum {string|null} */
+            verdict: "MET" | "NOT_MET" | "UNABLE_TO_JUDGE" | null;
+        };
         KeyPointResponse: {
             /** @enum {string} */
             kind: "fact" | "warning" | "practice";
@@ -428,6 +527,10 @@ export interface components {
             intent: "info_request" | "rephrase_request" | "understanding_check" | "restatement" | "challenge" | "meta";
             sourceOf: number[] | null;
             text: string;
+        };
+        Next: {
+            done: boolean;
+            presentation: components["schemas"]["PresentationView"];
         };
         NotificationView: {
             body: string;
@@ -489,6 +592,32 @@ export interface components {
             /** @enum {string} */
             type: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
         };
+        PracticeView: {
+            completed: boolean;
+            /** @enum {string} */
+            kind: "FIRST_STUDY" | "DAILY";
+            /** Format: int64 */
+            learningSessionId: number | null;
+            /** Format: int64 */
+            practiceId: number;
+            /** Format: int32 */
+            total: number;
+        };
+        PresentationView: {
+            choices: string[];
+            /** Format: int32 */
+            position: number;
+            /** Format: int64 */
+            presentationId: number;
+            /** Format: int64 */
+            questionId: number;
+            sameDayRecheck: boolean;
+            stem: string;
+            /** Format: int32 */
+            total: number;
+            /** @enum {string} */
+            type: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
+        };
         QuestionView: {
             choices: string[];
             learningGoal: string;
@@ -510,6 +639,17 @@ export interface components {
         };
         ShareLinkRequest: {
             url: string;
+        };
+        Submission: {
+            answer: string | null;
+            /** Format: int32 */
+            choiceIndex: number | null;
+            /** Format: int64 */
+            firstInputMs: number | null;
+            /** Format: int64 */
+            responseTimeMs: number | null;
+            /** @enum {string|null} */
+            selfAssessment: "RECALLED_EASILY" | "RECALLED_WITH_EFFORT" | "GUESSED" | null;
         };
         Turn: {
             /** @enum {string|null} */
@@ -880,6 +1020,80 @@ export interface operations {
             };
         };
     };
+    recordAid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                presentationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AidRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AidView"];
+                };
+            };
+        };
+    };
+    submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                presentationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Submission"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttemptView"];
+                };
+            };
+        };
+    };
+    next: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                practiceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Next"];
+                };
+            };
+        };
+    };
     firstStudy: {
         parameters: {
             query?: never;
@@ -898,6 +1112,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FirstStudy"];
+                };
+            };
+        };
+    };
+    startFirstStudy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeView"];
                 };
             };
         };
