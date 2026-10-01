@@ -212,6 +212,22 @@ export interface paths {
         patch: operations["unit"];
         trace?: never;
     };
+    "/api/memory/model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["model"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -528,6 +544,12 @@ export interface components {
             /** Format: int32 */
             warningCount: number;
         };
+        CurvePoint: {
+            /** Format: int32 */
+            day: number;
+            /** Format: double */
+            retrievability: number;
+        };
         DailyItemView: {
             /** Format: int64 */
             estimatedSeconds: number;
@@ -711,6 +733,23 @@ export interface components {
             /** Format: int32 */
             unitCount: number;
         };
+        MemoryModel: {
+            curve: components["schemas"]["CurvePoint"][];
+            defaultCurve: components["schemas"]["CurvePoint"][] | null;
+            /** Format: double */
+            firstRecallDays: number;
+            /** Format: int32 */
+            parametersVersion: number;
+            /** Format: double */
+            predictionImprovement: number | null;
+            progress: components["schemas"]["Progress"];
+            /** Format: int32 */
+            reviewedItems: number;
+            /** @enum {string} */
+            status: "DEFAULT" | "PERSONALIZED";
+            /** Format: double */
+            typicalStabilityDays: number | null;
+        };
         NewTurnRequest: {
             /** Format: int32 */
             afterIndex: number;
@@ -815,6 +854,12 @@ export interface components {
             total: number;
             /** @enum {string} */
             type: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
+        };
+        Progress: {
+            /** Format: int64 */
+            gradedReviews: number;
+            /** Format: int32 */
+            requiredReviews: number;
         };
         QuestionView: {
             choices: string[];
@@ -1272,6 +1317,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LearningSessionDetail"];
+                };
+            };
+        };
+    };
+    model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryModel"];
                 };
             };
         };

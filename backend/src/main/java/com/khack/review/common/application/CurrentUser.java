@@ -36,11 +36,40 @@ public class CurrentUser implements ApplicationRunner {
     public Long id() {
         Long cached = id;
         if (cached == null) {
-            cached = users.findByName(demoUserName)
-                    .orElseGet(() -> users.save(new AppUser(demoUserName, clock.instant())))
-                    .getId();
+            cached = findOrCreate(demoUserName).getId();
             id = cached;
         }
         return cached;
+    }
+
+    /** 지금 사용자가 기본 데모 사용자인가. */
+    public boolean isDemoUser() {
+        return id().equals(findOrCreate(demoUserName).getId());
+    }
+
+    /**
+     * 개발 도구 전용: 현재 사용자를 이름으로 바꾼다(없으면 만든다). 합성 기록 사용자로 개인화 화면을 시연할 때 쓴다.
+     * 인증을 붙이면 없앤다.
+     */
+    @Transactional
+    public AppUser switchTo(String name) {
+        AppUser user = findOrCreate(name);
+        id = user.getId();
+        return user;
+    }
+
+    /** 개발 도구 전용: 기본 데모 사용자로 돌아간다. */
+    @Transactional
+    public AppUser reset() {
+        return switchTo(demoUserName);
+    }
+
+    @Transactional(readOnly = true)
+    public AppUser current() {
+        return users.findById(id()).orElseThrow();
+    }
+
+    private AppUser findOrCreate(String name) {
+        return users.findByName(name).orElseGet(() -> users.save(new AppUser(name, clock.instant())));
     }
 }

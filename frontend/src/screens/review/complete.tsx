@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Schemas } from '@/api/client';
+import { useStreak } from '@/api/daily';
 import { useFirstStudySummary, useTargetRetention } from '@/api/memory';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
@@ -29,7 +30,8 @@ export const pathLabel: Record<Path, string> = {
   held: '판정 보류',
 };
 
-export type ItemResult = { questionId: number; stem: string; path: Path };
+/** `explained`는 이 문제에서 개념 설명을 봤는지다. 다시 물은 문제를 맞혔을 때 경로를 정하는 데 쓴다. */
+export type ItemResult = { questionId: number; stem: string; path: Path; explained: boolean };
 
 /**
  * 학습 완료: 풀이 경로 집계와, 세션이 있으면 첫 학습 요약(확인한 항목·도움이 필요했던 항목·다음 복습 일정·단위 게이지).
@@ -68,7 +70,14 @@ export function ReviewComplete({ results, sessionId }: { results: ItemResult[]; 
         </View>
       )}
 
-      {sessionId !== null ? <SessionSummary sessionId={sessionId} /> : <HelpedQuestions results={results} />}
+      {sessionId !== null ? (
+        <SessionSummary sessionId={sessionId} />
+      ) : (
+        <>
+          <StreakCard />
+          <HelpedQuestions results={results} />
+        </>
+      )}
 
       <Button title="홈으로" onPress={() => router.navigate('/')} />
     </ScrollView>
@@ -161,7 +170,26 @@ function ItemList({ title, items, target }: { title: string; items: SummaryItem[
   );
 }
 
-/** 세션이 없는 풀이(매일 학습 연결 전)는 문제 단위로 도움이 필요했던 문제만 보여준다. */
+/** 매일 학습을 끝내면 연속 학습 일수가 하루 는다(스펙 §7.7). 불러오지 못하면 보여주지 않는다. */
+function StreakCard() {
+  const { data } = useStreak();
+  if (!data || data.current === 0) return null;
+  return (
+    <Card variant="lavender" style={styles.next}>
+      <ThemedText variant="caption" tone="inkSecondary">
+        연속 학습
+      </ThemedText>
+      <ThemedText variant="title">{data.current}일째 이어가고 있어요</ThemedText>
+      {data.best > data.current && (
+        <ThemedText variant="caption" tone="inkSecondary">
+          최고 기록 {data.best}일
+        </ThemedText>
+      )}
+    </Card>
+  );
+}
+
+/** 매일 학습은 세션 요약이 없으므로 문제 단위로 도움이 필요했던 문제를 보여준다. */
 function HelpedQuestions({ results }: { results: ItemResult[] }) {
   const helped = results.filter((r) => r.path !== 'independent');
   if (helped.length === 0) return null;
