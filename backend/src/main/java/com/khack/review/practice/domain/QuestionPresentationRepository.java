@@ -9,4 +9,6 @@ public interface QuestionPresentationRepository extends JpaRepository<QuestionPr
     List<QuestionPresentation> findByUserIdAndMemoryItemId(Long userId, Long memoryItemId);
 
     Optional<QuestionPresentation> findTopByPracticeSessionIdOrderByPositionDesc(Long practiceSessionId);
+
+    List<QuestionPresentation> findByPracticeSessionIdOrderByPositionAsc(Long practiceSessionId);
 }
