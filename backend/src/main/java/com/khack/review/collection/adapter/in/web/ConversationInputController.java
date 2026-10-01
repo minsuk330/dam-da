@@ -1,11 +1,13 @@
 package com.khack.review.collection.adapter.in.web;
 
+import com.khack.review.analysis.application.LearningSessionQueryService;
 import com.khack.review.collection.application.SessionRejectedException;
 import com.khack.review.collection.application.ShareLinkUnavailableException;
 import com.khack.review.collection.application.TranscriptIntakeService;
 import com.khack.review.collection.application.port.out.ConversationExtractionException;
 import com.khack.review.collection.domain.SavedSession;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,9 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 class ConversationInputController {
 
     private final TranscriptIntakeService intake;
+    private final LearningSessionQueryService sessions;
 
-    ConversationInputController(TranscriptIntakeService intake) {
+    ConversationInputController(TranscriptIntakeService intake, LearningSessionQueryService sessions) {
         this.intake = intake;
+        this.sessions = sessions;
     }
 
     record ShareLinkRequest(String url) {
@@ -32,11 +36,14 @@ class ConversationInputController {
     record PasteRequest(String text) {
     }
 
-    record IntakeResponse(String conversationId, String inputPath, int userTurnCount, int reviewUnitCount, List<String> warnings) {
+    /** {@code learningSessionId}는 저장하면서 만든 학습 세션이다. 만들지 못했으면 null이다. */
+    record IntakeResponse(String conversationId, @Nullable Long learningSessionId, String inputPath, int userTurnCount,
+            int reviewUnitCount, List<String> warnings) {
+    }
 
-        static IntakeResponse of(SavedSession saved) {
-            return new IntakeResponse(saved.id(), saved.source(), saved.userTurns().size(), saved.reviewUnits().size(), saved.warnings());
-        }
+    private IntakeResponse response(SavedSession saved) {
+        return new IntakeResponse(saved.id(), sessions.sessionIdOf(saved.id()).orElse(null), saved.source(), saved.userTurns().size(),
+                saved.reviewUnits().size(), saved.warnings());
     }
 
     record ErrorResponse(String code, String message, List<String> errors, String fallback) {
@@ -44,12 +51,12 @@ class ConversationInputController {
 
     @PostMapping("/api/conversations/share-link")
     ResponseEntity<IntakeResponse> shareLink(@RequestBody ShareLinkRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(IntakeResponse.of(intake.fromShareLink(request.url())));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response(intake.fromShareLink(request.url())));
     }
 
     @PostMapping("/api/conversations/paste")
     ResponseEntity<IntakeResponse> paste(@RequestBody PasteRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(IntakeResponse.of(intake.fromPaste(request.text())));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response(intake.fromPaste(request.text())));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

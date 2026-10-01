@@ -15,11 +15,12 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 수신 대화 1건. {@code fidelity}가 {@code model_transcribed}이면 발화는 원문이 아니다(규칙 13).
+ * 수신 대화 1건. {@code learningSessionId}는 이 대화로 만든 학습 세션이고, 아직 없으면 null이다. {@code fidelity}가 {@code model_transcribed}이면 발화는 원문이 아니다(규칙 13).
  * {@code aiVerdict}는 대화 중 AI가 한 판정을 추출한 값이고, 사용자 답변 판정이 아니다.
  */
 record ConversationDetailResponse(
         String id,
+        @Nullable Long learningSessionId,
         Instant receivedAt,
         InputPath inputPath,
         Fidelity fidelity,
@@ -28,8 +29,8 @@ record ConversationDetailResponse(
         List<ReviewUnitResponse> reviewUnits,
         List<String> warnings) {
 
-    static ConversationDetailResponse from(SavedSession session) {
-        return new ConversationDetailResponse(session.id(), Instant.parse(session.receivedAt()),
+    static ConversationDetailResponse from(SavedSession session, @Nullable Long learningSessionId) {
+        return new ConversationDetailResponse(session.id(), learningSessionId, Instant.parse(session.receivedAt()),
                 InputPath.valueOf(session.source()), Fidelity.valueOf(session.transcription()), session.topicHint(),
                 session.userTurns().stream().map(UserTurnResponse::from).toList(),
                 session.reviewUnits().stream().map(ReviewUnitResponse::from).toList(),

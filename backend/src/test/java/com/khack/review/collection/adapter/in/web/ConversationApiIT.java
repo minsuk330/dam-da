@@ -2,12 +2,14 @@ package com.khack.review.collection.adapter.in.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.khack.review.analysis.domain.LearningSessionRepository;
 import com.khack.review.collection.application.ConnectorIntakeService;
 import com.khack.review.collection.domain.AiVerdict;
 import com.khack.review.collection.domain.ConfusionPoint;
 import com.khack.review.collection.domain.FactKind;
 import com.khack.review.collection.domain.Intent;
 import com.khack.review.collection.domain.KeyPoint;
+import com.khack.review.collection.domain.LearningConversationRepository;
 import com.khack.review.collection.domain.ReviewUnit;
 import com.khack.review.collection.domain.SavedSession;
 import com.khack.review.collection.domain.SessionInput;
@@ -30,6 +32,17 @@ class ConversationApiIT {
 
     @Autowired
     ConnectorIntakeService intake;
+
+    @Autowired
+    LearningConversationRepository conversations;
+
+    @Autowired
+    LearningSessionRepository sessions;
+
+    private long learningSessionOf(SavedSession saved) {
+        Long conversationId = conversations.findBySessionId(saved.id()).orElseThrow().getId();
+        return sessions.findByConversationId(conversationId).orElseThrow().getId();
+    }
 
     private HttpResponse<String> get(String path) throws Exception {
         HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).build();
@@ -54,7 +67,8 @@ class ConversationApiIT {
         HttpResponse<String> response = get("/api/conversations");
 
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.body()).contains("\"id\":\"" + saved.id() + "\"", "\"inputPath\":\"connector\"",
+        assertThat(response.body()).contains("\"id\":\"" + saved.id() + "\",\"learningSessionId\":" + learningSessionOf(saved) + ",",
+                "\"inputPath\":\"connector\"",
                 "\"fidelity\":\"model_transcribed\"", "\"userTurnCount\":2", "\"reviewUnitCount\":1");
     }
 
@@ -65,7 +79,7 @@ class ConversationApiIT {
         HttpResponse<String> response = get("/api/conversations/" + saved.id());
 
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.body()).contains("\"topicHint\":\"InnoDB 잠금\"", "\"aiVerdict\":\"not_applicable\"",
+        assertThat(response.body()).contains("\"learningSessionId\":" + learningSessionOf(saved) + ",", "\"topicHint\":\"InnoDB 잠금\"", "\"aiVerdict\":\"not_applicable\"",
                 "\"aiVerdict\":\"corrected\"", "\"kind\":\"fact\"", "\"evidenceTurns\":[1,2]",
                 "\"userBelief\":\"RC에서도 갭 락이 걸린다\"");
     }

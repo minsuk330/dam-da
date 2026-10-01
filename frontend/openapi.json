@@ -943,6 +943,10 @@
             "type" : "string",
             "enum" : [ "connector", "share_link", "paste" ]
           },
+          "learningSessionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
           "receivedAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -969,7 +973,7 @@
             }
           }
         },
-        "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnits", "topicHint", "userTurns", "warnings" ]
+        "required" : [ "fidelity", "id", "inputPath", "learningSessionId", "receivedAt", "reviewUnits", "topicHint", "userTurns", "warnings" ]
       },
       "ConversationSummaryResponse" : {
         "type" : "object",
@@ -984,6 +988,10 @@
           "inputPath" : {
             "type" : "string",
             "enum" : [ "connector", "share_link", "paste" ]
+          },
+          "learningSessionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
           },
           "receivedAt" : {
             "type" : "string",
@@ -1005,7 +1013,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
+        "required" : [ "fidelity", "id", "inputPath", "learningSessionId", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
       },
       "DailyItemView" : {
         "type" : "object",
@@ -1274,6 +1282,10 @@
           "inputPath" : {
             "type" : "string"
           },
+          "learningSessionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
           "reviewUnitCount" : {
             "type" : "integer",
             "format" : "int32"
@@ -1289,7 +1301,7 @@
             }
           }
         },
-        "required" : [ "conversationId", "inputPath", "reviewUnitCount", "userTurnCount", "warnings" ]
+        "required" : [ "conversationId", "inputPath", "learningSessionId", "reviewUnitCount", "userTurnCount", "warnings" ]
       },
       "Item" : {
         "type" : "object",
@@ -1407,6 +1419,9 @@
             "type" : [ "string", "null" ],
             "format" : "date-time"
           },
+          "conversationId" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -1447,11 +1462,14 @@
             }
           }
         },
-        "required" : [ "confirmedAt", "createdAt", "fidelity", "id", "inputPath", "status", "topicHint", "turns", "units", "warnings" ]
+        "required" : [ "confirmedAt", "conversationId", "createdAt", "fidelity", "id", "inputPath", "status", "topicHint", "turns", "units", "warnings" ]
       },
       "LearningSessionSummary" : {
         "type" : "object",
         "properties" : {
+          "conversationId" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -1482,7 +1500,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "createdAt", "fidelity", "id", "inputPath", "itemCount", "status", "topicHint", "unitCount" ]
+        "required" : [ "conversationId", "createdAt", "fidelity", "id", "inputPath", "itemCount", "status", "topicHint", "unitCount" ]
       },
       "NewTurnRequest" : {
         "type" : "object",

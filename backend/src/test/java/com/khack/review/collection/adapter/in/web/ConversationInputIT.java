@@ -108,7 +108,8 @@ class ConversationInputIT {
         assertThat(conversation.getInputPath()).isEqualTo(InputPath.share_link);
         assertThat(conversation.getFidelity()).isEqualTo(Fidelity.verbatim);
         assertThat(conversation.getRawTranscript()).contains("표본평균의 퍼짐입니다.");
-        assertThat(sessions.findByConversationId(conversation.getId())).isPresent();
+        assertThat(sessions.findByConversationId(conversation.getId())).hasValueSatisfying(session ->
+                assertThat(body.get("learningSessionId").asLong()).as("응답의 학습 세션 ID").isEqualTo(session.getId()));
     }
 
     @Test
@@ -151,7 +152,8 @@ class ConversationInputIT {
         LearningConversation conversation = stored(response);
         assertThat(conversation.getInputPath()).isEqualTo(InputPath.paste);
         assertThat(conversation.getFidelity()).isEqualTo(Fidelity.verbatim);
-        assertThat(sessions.findByConversationId(conversation.getId())).isPresent();
+        assertThat(sessions.findByConversationId(conversation.getId())).hasValueSatisfying(session ->
+                assertThat(Json.MAPPER.readTree(response.body()).get("learningSessionId").asLong()).isEqualTo(session.getId()));
     }
 
     @Test
