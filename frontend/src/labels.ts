@@ -70,6 +70,18 @@ export const unitVerdictLabel: Record<Schemas['Unit']['verdict'], string> = {
   UNAVAILABLE: '확인 못 함',
 }
 
+/**
+ * 주제 확인 결과 안내. 서버의 `verdictReason`은 판정 수치(worth_reviewing, evidence_fit 등)를 담은 진단이라 화면에 내지 않고
+ * 판정 종류로만 안내한다.
+ */
+export const unitVerdictNote: Record<Schemas['Unit']['verdict'], string | null> = {
+  PENDING: null,
+  APPROVED: null,
+  HELD: '대화와 맞는지 확실하게 판단하지 못했어요. 한 번 살펴봐 주세요.',
+  REJECTED: '복습할 만한 내용이 아니거나 대화와 잘 맞지 않아 보여요. 빼는 걸 추천해요.',
+  UNAVAILABLE: '자동으로 확인하지 못했어요. 직접 살펴봐 주세요.',
+}
+
 export const questionTypeLabel: Record<Schemas['QuestionView']['type'], string> = {
   MULTIPLE_CHOICE: '객관식',
   SHORT_ANSWER: '단답',
