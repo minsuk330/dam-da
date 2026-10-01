@@ -820,6 +820,68 @@
         },
         "tags" : [ "memory-strength-controller" ]
       }
+    },
+    "/api/settings/daily" : {
+      "get" : {
+        "operationId" : "settings",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-habit-controller" ]
+      },
+      "put" : {
+        "operationId" : "change",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-habit-controller" ]
+      }
+    },
+    "/api/streak" : {
+      "get" : {
+        "operationId" : "streak",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Streak"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-habit-controller" ]
+      }
     }
   },
   "components" : {
@@ -1858,6 +1920,34 @@
         },
         "required" : [ "sessionId", "units" ]
       },
+      "Settings" : {
+        "type" : "object",
+        "properties" : {
+          "budgetMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "notifyAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "time-local"
+          }
+        },
+        "required" : [ "budgetMinutes", "notifyAt" ]
+      },
+      "SettingsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "budgetMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "notifyAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "time-local"
+          }
+        },
+        "required" : [ "budgetMinutes", "notifyAt" ]
+      },
       "ShareLinkRequest" : {
         "type" : "object",
         "properties" : {
@@ -1866,6 +1956,24 @@
           }
         },
         "required" : [ "url" ]
+      },
+      "Streak" : {
+        "type" : "object",
+        "properties" : {
+          "best" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "current" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "today" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "COMPLETED", "EMPTY" ]
+          }
+        },
+        "required" : [ "best", "current", "today" ]
       },
       "StrengthRequest" : {
         "type" : "object",
