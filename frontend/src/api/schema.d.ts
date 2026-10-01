@@ -483,10 +483,6 @@ export interface components {
             /** Format: int64 */
             responseTimeMs: number;
         };
-        ChooseRequest: {
-            /** @enum {string} */
-            strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
-        };
         Composition: {
             goals: components["schemas"]["GoalSummary"][];
             /** Format: int32 */
@@ -528,6 +524,24 @@ export interface components {
             /** Format: int32 */
             warningCount: number;
         };
+        DailyItemView: {
+            /** Format: int64 */
+            estimatedSeconds: number;
+            held: boolean;
+            /** @enum {string} */
+            kind: "FACT" | "WARNING" | "PRACTICE" | "CONFUSION";
+            /** Format: int64 */
+            learningSessionId: number;
+            /** Format: int64 */
+            memoryItemId: number;
+            /** @enum {string} */
+            questionType: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
+            relearnToday: boolean;
+            /** Format: double */
+            retrievability: number | null;
+            /** @enum {string} */
+            source: "REVIEW" | "NEW";
+        };
         DailyView: {
             /** Format: int32 */
             carriedOver: number;
@@ -536,7 +550,7 @@ export interface components {
             date: string;
             /** Format: int64 */
             estimatedSeconds: number;
-            items: components["schemas"]["ItemView"][];
+            items: components["schemas"]["DailyItemView"][];
             /** Format: int32 */
             newCount: number;
             /** Format: int64 */
@@ -595,6 +609,11 @@ export interface components {
             /** Format: int32 */
             number: number;
         };
+        GoalsRequest: {
+            goals: ("KEY_RECALL" | "PRINCIPLE" | "DISTINGUISH" | "CONDITION" | "APPLY_CASE" | "CORRECT_MISCONCEPTION" | "EXPLAIN_OWN_WORDS")[];
+            /** @enum {string} */
+            strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
+        };
         HeldSlot: {
             /** Format: int64 */
             memoryItemId: number;
@@ -632,22 +651,12 @@ export interface components {
             retrievability: number | null;
         };
         ItemView: {
-            /** Format: int64 */
-            estimatedSeconds: number;
-            held: boolean;
+            content: string;
+            gauge: components["schemas"]["ItemGauge"];
             /** @enum {string} */
             kind: "FACT" | "WARNING" | "PRACTICE" | "CONFUSION";
             /** Format: int64 */
-            learningSessionId: number;
-            /** Format: int64 */
             memoryItemId: number;
-            /** @enum {string} */
-            questionType: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
-            relearnToday: boolean;
-            /** Format: double */
-            retrievability: number | null;
-            /** @enum {string} */
-            source: "REVIEW" | "NEW";
         };
         JudgmentView: {
             judged: boolean;
@@ -740,8 +749,8 @@ export interface components {
             strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
         };
         Options: {
-            /** @enum {string} */
-            current: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
+            /** @enum {string|null} */
+            current: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER" | null;
             /** Format: int32 */
             itemCount: number;
             options: components["schemas"]["Option"][];
@@ -845,6 +854,10 @@ export interface components {
             current: number;
             /** @enum {string|null} */
             today: "COMPLETED" | "EMPTY" | null;
+        };
+        StrengthRequest: {
+            /** @enum {string} */
+            strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
         };
         Submission: {
             answer: string | null;
@@ -1530,7 +1543,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ChooseRequest"];
+                "application/json": components["schemas"]["GoalsRequest"];
             };
         };
         responses: {
@@ -1600,7 +1613,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ChooseRequest"];
+                "application/json": components["schemas"]["StrengthRequest"];
             };
         };
         responses: {
