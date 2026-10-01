@@ -37,6 +37,15 @@ export const factKindLabel: Record<Schemas['KeyPointResponse']['kind'], string |
   practice: '실습 팁',
 }
 
+export const sessionStatusLabel: Record<Schemas['LearningSessionSummary']['status'], string> = {
+  RECEIVED: '받음',
+  REVIEWING: '검수 중',
+  AWAITING_CONFIRMATION: '확인 필요',
+  CONFIRMED: '확인 완료',
+  QUESTIONS_READY: '문제 준비됨',
+  IN_PROGRESS: '학습 중',
+}
+
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
 }

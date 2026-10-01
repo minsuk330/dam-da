@@ -43,6 +43,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: colors.canvas },
           }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="conversations/index" options={{ title: '받은 학습 대화' }} />
           <Stack.Screen name="conversations/[id]" options={{ title: '대화 확인' }} />
           <Stack.Screen name="review" options={{ title: '오늘의 복습' }} />
         </Stack>

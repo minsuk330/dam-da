@@ -27,7 +27,7 @@ cd frontend            # Expo (SDK 57, Expo Router). 시연은 웹 빌드
 npm run typecheck     # frontend/ 변경 PR 전 필수
 npm run lint          # frontend/ 변경 PR 전 필수
 npm run build:web     # frontend/ 변경 PR 전 필수 (expo export -p web → dist/)
-npm run web           # :8081 웹 개발 서버. API는 EXPO_PUBLIC_API_URL(기본 http://localhost:8080)
+npm run web           # :8081 웹 개발 서버. 기본은 mock 데이터(src/api/mock.ts). 실제 API는 EXPO_PUBLIC_API_MOCK=false + EXPO_PUBLIC_API_URL(기본 http://localhost:8080)
 npm run api:types     # API 계약(frontend/openapi.json) 바뀌면 타입 재생성
 npm run design:lint   # DESIGN.md 검사 (대비·깨진 참조)
 npm run design:tokens # DESIGN.md → src/theme/tokens.ts

@@ -12,7 +12,8 @@ type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tab
 /** 라우트 이름 → 아이콘·접근성 라벨. 탭을 추가하면 여기에도 추가한다. */
 const TABS: Record<string, { icon: IconName; label: string }> = {
   index: { icon: 'home', label: '홈' },
-  conversations: { icon: 'message-circle', label: '대화' },
+  memory: { icon: 'bar-chart-2', label: '기억' },
+  add: { icon: 'plus', label: '대화 추가' },
 };
 
 const BAR_HEIGHT = components.tabItem.size + components.tabBar.padding * 2;

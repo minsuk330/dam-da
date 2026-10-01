@@ -16,7 +16,8 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.canvas },
       }}>
       <Tabs.Screen name="index" options={{ headerShown: false }} />
-      <Tabs.Screen name="conversations" options={{ title: '받은 학습 대화' }} />
+      <Tabs.Screen name="memory" options={{ title: '기억' }} />
+      <Tabs.Screen name="add" options={{ headerShown: false }} />
     </Tabs>
   );
 }

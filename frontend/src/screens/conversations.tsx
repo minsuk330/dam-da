@@ -4,14 +4,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useConversations } from '@/api/conversations';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
-import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { fidelityLabel, formatDateTime, inputPathLabel } from '@/labels';
 import { colors, spacing } from '@/theme';
 
 export function Conversations() {
   const { data, isPending, isError } = useConversations();
-  const tabBarSpace = useTabBarSpace();
 
   if (isPending) {
     return (
@@ -32,7 +30,7 @@ export function Conversations() {
   const conversations = [...data].reverse();
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.content, { paddingBottom: tabBarSpace }]}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
       {conversations.length === 0 ? (
         <ThemedText tone="inkMuted">
           아직 저장된 대화가 없어요. Claude에서 “복습에 넣어줘”라고 요청해 보세요.
