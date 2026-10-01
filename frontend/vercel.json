@@ -1,7 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "npx expo export -p web",
+  "buildCommand": "EXPO_PUBLIC_API_MOCK=false npx expo export -p web",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://hack.refit-100.site/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
