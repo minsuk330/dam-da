@@ -73,7 +73,7 @@ public class MemoryItem {
     /** 제외를 되돌린다. 출처 발화가 없으면 근거가 없어 되돌릴 수 없다(규칙 2). */
     void include() {
         if (sourceTurns.isEmpty()) {
-            throw new IllegalStateException("기억 항목 %d은(는) 출처 발화가 없어 다시 넣을 수 없습니다.".formatted(id));
+            throw new IllegalStateException("근거 메시지가 없어 다시 넣을 수 없어요.");
         }
         status = MemoryItemStatus.NEW;
     }

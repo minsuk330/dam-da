@@ -122,8 +122,7 @@ public class LearningSession {
     /** 확인 대기 중에만 사용자가 내용을 고칠 수 있다(규칙 9, 12). */
     public void requireEditable() {
         if (status != LearningSessionStatus.AWAITING_CONFIRMATION) {
-            throw new IllegalStateException("학습 세션 %d은(는) %s 상태라 고칠 수 없습니다. 확인 대기 중에만 고칠 수 있습니다."
-                    .formatted(id, status));
+            throw new IllegalStateException("지금은 고칠 수 없어요. 내용을 확인하는 단계에서만 고칠 수 있어요.");
         }
     }
 
@@ -143,7 +142,7 @@ public class LearningSession {
         if (excluded) {
             item.exclude();
         } else if (item.getUnit().isExcluded()) {
-            throw new IllegalStateException("기억 항목 %d이 속한 복습 단위가 제외되어 있습니다. 복습 단위를 먼저 다시 넣으세요.".formatted(itemId));
+            throw new IllegalStateException("이 내용이 속한 주제가 빠져 있어요. 주제를 먼저 다시 넣어 주세요.");
         } else {
             item.include();
         }
@@ -178,12 +177,12 @@ public class LearningSession {
 
     private ReviewUnit unit(Long unitId) {
         return units.stream().filter(unit -> unit.getId().equals(unitId)).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("학습 세션 %d에 복습 단위 %d이 없습니다.".formatted(id, unitId)));
+                .orElseThrow(() -> new IllegalArgumentException("이 학습에 없는 주제예요."));
     }
 
     private MemoryItem item(Long itemId) {
         return items().stream().filter(item -> item.getId().equals(itemId)).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("학습 세션 %d에 기억 항목 %d이 없습니다.".formatted(id, itemId)));
+                .orElseThrow(() -> new IllegalArgumentException("이 학습에 없는 내용이에요."));
     }
 
     public List<MemoryItem> items() {

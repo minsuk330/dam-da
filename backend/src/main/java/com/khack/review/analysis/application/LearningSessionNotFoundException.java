@@ -4,6 +4,6 @@ package com.khack.review.analysis.application;
 public class LearningSessionNotFoundException extends RuntimeException {
 
     public LearningSessionNotFoundException(Long sessionId) {
-        super("학습 세션 없음: " + sessionId);
+        super("학습을 찾을 수 없어요.");
     }
 }

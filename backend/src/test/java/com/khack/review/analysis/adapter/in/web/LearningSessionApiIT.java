@@ -122,7 +122,7 @@ class LearningSessionApiIT {
         detail = send("PATCH", "/api/learning-sessions/%d/units/%d".formatted(id, lockUnit), "{\"excluded\":true}", 200);
         assertThat(detail.get("units").get(1).get("excluded").asBoolean()).isTrue();
         assertThat(detail.get("units").get(1).get("items").get(0).get("status").asString()).isEqualTo("EXCLUDED");
-        assertThat(texts(detail.get("warnings"))).containsExactly("3번 발화: 어느 기억 항목에도 연결되지 않았습니다.");
+        assertThat(texts(detail.get("warnings"))).containsExactly("3번째 메시지: 어느 기억할 내용에도 연결되지 않았어요.");
 
         detail = send("PATCH", "/api/learning-sessions/%d/units/%d".formatted(id, lockUnit), "{\"excluded\":false}", 200);
         assertThat(detail.get("units").get(1).get("items").get(0).get("status").asString()).isEqualTo("NEW");
@@ -137,7 +137,7 @@ class LearningSessionApiIT {
         assertThat(detail.get("turns").valueStream().map(t -> t.get("index").asInt()).toList()).containsExactly(1, 2, 3, 4);
         assertThat(detail.get("units").get(0).get("items").get(1).get("sourceTurns").valueStream().map(JsonNode::asInt).toList())
                 .as("헷갈린 지점 출처 2번 → 3번").containsExactly(3);
-        assertThat(texts(detail.get("warnings"))).containsExactly("2번 발화: 어느 기억 항목에도 연결되지 않았습니다.");
+        assertThat(texts(detail.get("warnings"))).containsExactly("2번째 메시지: 어느 기억할 내용에도 연결되지 않았어요.");
 
         detail = send("POST", "/api/learning-sessions/%d/turns".formatted(id),
                 "{\"afterIndex\":4,\"text\":\"MVCC가 정확히 뭐야?\",\"intent\":\"info_request\",\"sourceOf\":[%d]}".formatted(snapshotFact), 201);

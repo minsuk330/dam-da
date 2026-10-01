@@ -164,8 +164,8 @@ class LearningSessionTest {
                 new UserTurn(5, "복습에 넣어줘", null, Intent.meta, null, null));
 
         assertThat(ConfirmationWarnings.of(session, turns)).containsExactly(
-                "2번 발화: AI가 바로잡았다고 표시됐지만 교정 내용이 비어 있습니다.",
-                "4번 발화: 어느 기억 항목에도 연결되지 않았습니다.");
+                "2번째 메시지: AI가 바로잡았다고 표시됐지만 바로잡은 내용이 비어 있어요.",
+                "4번째 메시지: 어느 기억할 내용에도 연결되지 않았어요.");
 
         session.getUnits().get(0).exclude();
         assertThat(ConfirmationWarnings.of(session, turns)).hasSize(5);
