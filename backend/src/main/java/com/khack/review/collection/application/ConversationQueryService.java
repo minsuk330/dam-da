@@ -4,6 +4,7 @@ import com.khack.review.collection.domain.LearningConversation;
 import com.khack.review.collection.domain.LearningConversationRepository;
 import com.khack.review.collection.domain.SavedSession;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,5 +23,10 @@ public class ConversationQueryService {
         return conversations.findAllByOrderByReceivedAtAscIdAsc().stream()
                 .map(LearningConversation::toSavedSession)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<SavedSession> find(String sessionId) {
+        return conversations.findBySessionId(sessionId).map(LearningConversation::toSavedSession);
     }
 }

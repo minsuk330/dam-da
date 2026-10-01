@@ -1,0 +1,229 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "AI Learning Companion API",
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "/"
+  } ],
+  "paths" : {
+    "/api/conversations" : {
+      "get" : {
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ConversationSummaryResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "conversation-controller" ]
+      }
+    },
+    "/api/conversations/{id}" : {
+      "get" : {
+        "operationId" : "get",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "conversation-controller" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ConfusionPointResponse" : {
+        "type" : "object",
+        "properties" : {
+          "turn" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "userBelief" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "turn", "userBelief" ]
+      },
+      "ConversationDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "fidelity" : {
+            "type" : "string",
+            "enum" : [ "verbatim", "model_transcribed" ]
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "inputPath" : {
+            "type" : "string",
+            "enum" : [ "connector", "share_link", "paste" ]
+          },
+          "receivedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "reviewUnits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReviewUnitResponse"
+            }
+          },
+          "topicHint" : {
+            "type" : [ "string", "null" ]
+          },
+          "userTurns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserTurnResponse"
+            }
+          },
+          "warnings" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnits", "topicHint", "userTurns", "warnings" ]
+      },
+      "ConversationSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "fidelity" : {
+            "type" : "string",
+            "enum" : [ "verbatim", "model_transcribed" ]
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "inputPath" : {
+            "type" : "string",
+            "enum" : [ "connector", "share_link", "paste" ]
+          },
+          "receivedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "reviewUnitCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "topicHint" : {
+            "type" : [ "string", "null" ]
+          },
+          "userTurnCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "warningCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
+      },
+      "KeyPointResponse" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "fact", "warning", "practice" ]
+          },
+          "point" : {
+            "type" : "string"
+          },
+          "turns" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        },
+        "required" : [ "kind", "point", "turns" ]
+      },
+      "ReviewUnitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "confusionPoints" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConfusionPointResponse"
+            }
+          },
+          "evidenceTurns" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "keyPoints" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/KeyPointResponse"
+            }
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "confusionPoints", "evidenceTurns", "keyPoints", "title" ]
+      },
+      "UserTurnResponse" : {
+        "type" : "object",
+        "properties" : {
+          "aiVerdict" : {
+            "type" : "string",
+            "enum" : [ "confirmed", "partial", "corrected", "not_applicable" ]
+          },
+          "correction" : {
+            "type" : [ "string", "null" ]
+          },
+          "index" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "intent" : {
+            "type" : "string",
+            "enum" : [ "info_request", "rephrase_request", "understanding_check", "restatement", "challenge", "meta" ]
+          },
+          "quotedText" : {
+            "type" : [ "string", "null" ]
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "aiVerdict", "correction", "index", "intent", "quotedText", "text" ]
+      }
+    }
+  }
+}
