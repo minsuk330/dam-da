@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * 학습 세션의 학습 목표와 첫 학습 문제 계획 (스펙 §7 3·4단계, §7.8). 세션은 ID로만 참조한다.
@@ -62,6 +63,7 @@ public class FirstStudyPlan {
 
     /** 목표를 고를 때마다 오른다. 늦게 끝난 옛 생성이 새 계획의 상태를 덮어쓰지 않게 한다. */
     @Column(nullable = false)
+    @ColumnDefault("0")
     private int generation;
 
     protected FirstStudyPlan() {
