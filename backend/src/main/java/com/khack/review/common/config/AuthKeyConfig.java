@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 앱 로그인 토큰(과 #96의 커넥터 토큰)에 서명하는 RSA 키.
  * {@code review.auth.signing-key}(AUTH_SIGNING_KEY)는 PKCS#8 DER 개인 키를 base64 한 줄로 넣는다.
- * 만들기: {@code openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -outform DER | base64 | tr -d '\n'}
+ * 만들기: {@code openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 | openssl pkcs8 -topk8 -nocrypt -outform DER | base64 | tr -d '\n'}
  * <p>
  * 비어 있으면 시작할 때마다 새 키를 만든다(로컬·테스트용). 그러면 재시작할 때 발급한 토큰이 모두 무효가 되므로 배포 서버는 반드시 넣는다.
  */
