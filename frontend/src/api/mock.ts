@@ -195,10 +195,23 @@ export const mockLearningSessions: Schemas['LearningSessionSummary'][] = [
   },
 ]
 
-/** 검수를 마친 세션의 "학습 내용 도착" 알림. 읽음 처리를 mock 안에서도 유지하도록 변경 가능한 객체로 둔다. */
+/**
+ * 알림 시각이 지난 "오늘의 학습"과 검수를 마친 세션의 "학습 내용 도착" 알림.
+ * 읽음 처리를 mock 안에서도 유지하도록 변경 가능한 객체로 둔다.
+ */
 export const mockNotifications: Schemas['NotificationsView'] = {
-  unreadCount: 1,
+  unreadCount: 2,
   items: [
+    {
+      id: 3,
+      type: 'DAILY_LEARNING',
+      title: '오늘의 학습 · 약 5분',
+      body: '문제 3개를 풀면 오늘 학습이 끝나요.',
+      // 시작 전에 보낸 매일 학습 알림은 풀이 ID가 없다(계약 보정은 navigation.ts dailyPracticeOf).
+      targetId: null as unknown as number,
+      read: false,
+      createdAt: daysAgo(0),
+    },
     {
       id: 2,
       type: 'SESSION_READY',

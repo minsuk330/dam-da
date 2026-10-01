@@ -10,7 +10,7 @@ import { Gauge, percent } from '@/components/gauge';
 import { Icon } from '@/components/icon';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
-import { formatDateTime, sessionStatusLabel } from '@/labels';
+import { formatDateTime, memoryModelStatus, sessionStatusLabel } from '@/labels';
 import { openSession } from '@/navigation';
 import { colors, spacing } from '@/theme';
 
@@ -107,11 +107,7 @@ export function Memory() {
 /** 내 기억 패턴 화면으로 가는 행. 지금 쓰는 기억 모델과 개인화 진행도를 한 줄로 보여준다. */
 function MemoryModelLink() {
   const { data } = useMemoryModel();
-  const status = !data
-    ? '망각 곡선과 기억 유지 기간'
-    : data.status === 'PERSONALIZED'
-      ? `개인 모델 v${data.parametersVersion} 적용 중`
-      : `기본 모델 · 복습 기록 ${data.progress.gradedReviews.toLocaleString()} / ${data.progress.requiredReviews.toLocaleString()}`;
+  const status = memoryModelStatus(data);
   return (
     <Pressable
       accessibilityRole="link"

@@ -79,3 +79,18 @@ export function formatDateTime(iso: string): string {
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
 }
+
+/** 지금 쓰는 기억 모델과 개인화 진행도 한 줄. 불러오기 전이면 화면 설명을 보여준다. */
+export function memoryModelStatus(model: Schemas['MemoryModel'] | undefined): string {
+  if (!model) return '망각 곡선과 기억 유지 기간'
+  if (model.status === 'PERSONALIZED') return `개인 모델 v${model.parametersVersion} 적용 중`
+  const { gradedReviews, requiredReviews } = model.progress
+  return `기본 모델 · 복습 기록 ${gradedReviews.toLocaleString()} / ${requiredReviews.toLocaleString()}`
+}
+
+/** 매일 학습 설정 한 줄. 서버 시각은 "07:30:00"으로 올 수 있어 "HH:mm"만 쓴다. */
+export function dailySettingsStatus(settings: Schemas['Settings'] | undefined): string {
+  if (!settings) return '하루 학습 시간과 알림 시각'
+  const notify = settings.notifyAt === null ? '알림 꺼짐' : `${settings.notifyAt.slice(0, 5)} 알림`
+  return `하루 ${settings.budgetMinutes}분 · ${notify}`
+}

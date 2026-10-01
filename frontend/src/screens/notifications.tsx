@@ -1,23 +1,14 @@
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import type { Schemas } from '@/api/client';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/api/notifications';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime } from '@/labels';
+import { openNotification } from '@/navigation';
 import { colors, components, spacing } from '@/theme';
-
-type Notification = Schemas['NotificationView'];
-
-/** 알림을 누르면 가는 곳. 학습 내용 도착 알림은 그 세션의 확인 화면으로 간다. */
-function open(notification: Notification) {
-  if (notification.type === 'SESSION_READY') {
-    router.push({ pathname: '/sessions/[id]', params: { id: String(notification.targetId) } });
-  }
-}
 
 /** 앱 안 알림 목록 (스펙 §7.7). 최근 것부터, 읽지 않은 알림은 점과 굵은 제목으로 구분한다. */
 export function Notifications() {
@@ -46,7 +37,7 @@ export function Notifications() {
         <Icon name="bell" size="xl" color={colors.inkMuted} />
         <ThemedText variant="headline">아직 알림이 없어요</ThemedText>
         <ThemedText variant="subhead" tone="inkMuted" style={styles.centerText}>
-          대화를 추가하면 학습 내용이 준비됐을 때 알려드릴게요.
+          대화를 추가하면 학습 내용이 준비됐을 때, 매일 학습 시각이 되면 알려드릴게요.
         </ThemedText>
       </View>
     );
@@ -78,11 +69,11 @@ export function Notifications() {
             accessibilityLabel={`${notification.read ? '' : '새 알림, '}${notification.title}. ${notification.body}`}
             onPress={() => {
               if (!notification.read) markRead.mutate(notification.id);
-              open(notification);
+              openNotification(notification);
             }}
             style={({ pressed }) => [styles.row, i > 0 && styles.divided, pressed && styles.rowPressed]}>
             <View style={styles.rowIcon}>
-              <Icon name="book-open" color={colors.primaryInk} />
+              <Icon name={notification.type === 'DAILY_LEARNING' ? 'clock' : 'book-open'} color={colors.primaryInk} />
             </View>
             <View style={styles.rowText}>
               <ThemedText
