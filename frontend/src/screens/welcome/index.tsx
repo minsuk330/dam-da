@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { demoLoginAvailable, useSession, type Provider } from '@/api/session';
+import { useLoginOptions, useSession, type Provider } from '@/api/session';
 import { Card } from '@/components/card';
 import { Icon, type IconName } from '@/components/icon';
 import { Notice } from '@/components/notice';
@@ -24,6 +24,7 @@ const STEPS: { icon: IconName; title: string; detail: string }[] = [
 export function Welcome() {
   const insets = useSafeAreaInsets();
   const { signIn } = useSession();
+  const options = useLoginOptions();
   const [pending, setPending] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +32,7 @@ export function Welcome() {
     setPending(provider);
     setError(null);
     try {
-      await signIn(provider);
+      await signIn(provider, options.data);
     } catch (e) {
       setError(e instanceof Error ? e.message : '로그인하지 못했어요. 다시 시도해 주세요.');
       setPending(null);
@@ -74,6 +75,7 @@ export function Welcome() {
 
       <View style={styles.footer}>
         {error && <Notice tone="danger">{error}</Notice>}
+        {options.isError && <Notice tone="danger">로그인 방법을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</Notice>}
         <SocialButton
           provider="kakao"
           label="카카오로 시작하기"
@@ -91,7 +93,7 @@ export function Welcome() {
         <ThemedText variant="caption" tone="inkMuted" style={styles.note}>
           처음 로그인하면 계정이 만들어져요.
         </ThemedText>
-        {demoLoginAvailable && (
+        {options.data?.demoLogin && (
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ disabled: pending !== null }}
