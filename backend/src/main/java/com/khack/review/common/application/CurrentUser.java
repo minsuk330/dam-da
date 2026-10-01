@@ -21,7 +21,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * 인증이 없을 때는 다음 경우에만 개발 도구 사용자로 대신한다. 시작할 때 만드는 데모 사용자가 기본이고, {@link #switchTo}로 바꾼다.
  * <ul>
  *   <li>{@code /dev/**} 요청 (옵티마이저·시간 이동 등. 접근 제한은 DevToolsFilter가 한다)</li>
- *   <li>{@code /mcp} 요청: 커넥터 OAuth(#96)를 붙이기 전까지만</li>
  *   <li>{@code review.auth.required=false} (테스트 프로파일)</li>
  * </ul>
  * 그 밖에 인증이 없으면 {@link UnauthenticatedException}. 비동기 처리처럼 요청 밖에서는 사용자 ID를 명시적으로 넘겨받는다.
@@ -109,7 +108,7 @@ public class CurrentUser implements ApplicationRunner {
         }
         HttpServletRequest request = attributes.getRequest();
         String path = request.getRequestURI().substring(request.getContextPath().length());
-        return path.startsWith("/dev/") || path.startsWith("/dev.") || path.equals("/mcp") || path.startsWith("/mcp/");
+        return path.startsWith("/dev/") || path.startsWith("/dev.");
     }
 
     private AppUser findOrCreate(String name) {

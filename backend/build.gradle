@@ -27,6 +27,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+	// 커넥터 MCP OAuth 2.1(#96). 0.1.x는 Spring AI 2.0.x 전용. 자동 설정 없는 모듈만 쓰고 체인은 SecurityConfig에서 직접 짠다.
+	implementation 'org.springaicommunity:mcp-server-security:0.1.14'
+	implementation 'org.springaicommunity:mcp-authorization-server:0.1.14'
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
 	implementation 'org.springframework.ai:spring-ai-starter-model-openai'

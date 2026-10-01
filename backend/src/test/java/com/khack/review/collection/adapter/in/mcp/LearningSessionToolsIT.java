@@ -7,6 +7,7 @@ import com.khack.review.collection.domain.FactKind;
 import com.khack.review.collection.domain.Intent;
 import com.khack.review.collection.domain.SavedSession;
 import com.khack.review.collection.domain.UserTurn;
+import com.khack.review.common.application.CurrentUser;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
@@ -19,6 +20,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -27,6 +29,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class LearningSessionToolsIT {
@@ -43,11 +50,29 @@ class LearningSessionToolsIT {
         return all.get(all.size() - 1);
     }
 
+    @Autowired
+    JwtEncoder encoder;
+
+    @Autowired
+    CurrentUser currentUser;
+
+    @Value("${review.auth.server-url}")
+    String issuer;
+
     McpSyncClient client;
+
+    /** 인가 서버가 발급하는 것과 같은 커넥터 토큰(데모 사용자). */
+    private String connectorToken() {
+        Instant now = Instant.now();
+        return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(SignatureAlgorithm.RS256).build(), JwtClaimsSet.builder()
+                .issuer(issuer).subject(currentUser.demoUserId().toString()).audience(List.of("http://localhost:" + port + "/mcp"))
+                .issuedAt(now).expiresAt(now.plusSeconds(300)).build())).getTokenValue();
+    }
 
     @BeforeEach
     void connect() {
-        client = McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port).build())
+        client = McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
+                        .requestBuilder(HttpRequest.newBuilder().header("Authorization", "Bearer " + connectorToken())).build())
                 .requestTimeout(Duration.ofSeconds(10))
                 .build();
         client.initialize();
