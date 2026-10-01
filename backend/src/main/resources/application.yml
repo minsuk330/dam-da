@@ -1,5 +1,6 @@
 server:
   port: 8080
+  forward-headers-strategy: framework
 spring:
   application:
     name: review
@@ -40,6 +41,8 @@ springdoc:
   writer-with-order-by-keys: true
   writer-with-default-pretty-printer: true
 review:
+  auth:
+    issuer: ${AUTH_ISSUER:http://localhost:8080}
   cors:
     # 로컬 Expo 웹 개발 서버만. 배포 서버는 Vercel rewrites로 같은 출처라 비워 둔다(CORS_ALLOWED_ORIGINS=).
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8081}

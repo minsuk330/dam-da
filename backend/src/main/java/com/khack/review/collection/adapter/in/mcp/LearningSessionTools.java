@@ -62,6 +62,8 @@ public class LearningSessionTools {
             List<ReviewUnit> reviewUnits,
             @McpToolParam(required = false, description = "학습 주제 (선택)")
             String topicHint) {
+        var spikeAuth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        log.info("[spike] thread={} principal={}", Thread.currentThread().getName(), spikeAuth == null ? null : spikeAuth.getName());
         SessionInput input = new SessionInput(userTurns, reviewUnits, topicHint);
         SavedSession saved;
         try {
