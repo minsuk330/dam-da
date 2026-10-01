@@ -144,6 +144,14 @@ class ConnectorOAuthIT {
         MvcResult allowed = mvc.perform(post("/connect/consent").with(demoUser()).session(session)
                 .param("query", query).param("csrf", csrf(html)).param("decision", "allow")).andReturn();
         assertThat(allowed.getResponse().getRedirectedUrl()).isEqualTo("/oauth2/authorize?" + query);
+        assertThat(html).as("폼은 한 번만 제출").contains("this.dataset.sent");
+
+        // 버튼을 두 번 눌러 같은 요청이 다시 오면 만료 오류 대신 이미 승인했다고 안내한다(승인을 다시 하지는 않는다).
+        MvcResult again = mvc.perform(post("/connect/consent").with(demoUser()).session(session)
+                .param("query", query).param("csrf", csrf(html)).param("decision", "allow")).andReturn();
+        assertThat(again.getResponse().getStatus()).isEqualTo(200);
+        assertThat(again.getResponse().getContentAsString()).contains("이미 연결을 승인했습니다");
+        assertThat(again.getResponse().getRedirectedUrl()).isNull();
 
         MvcResult issued = mvc.perform(get(URI.create("/oauth2/authorize?" + query)).with(demoUser()).session(session)).andReturn();
         String callback = issued.getResponse().getRedirectedUrl();

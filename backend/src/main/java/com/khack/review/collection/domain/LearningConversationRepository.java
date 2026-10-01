@@ -8,5 +8,9 @@ public interface LearningConversationRepository extends JpaRepository<LearningCo
 
     List<LearningConversation> findAllByOrderByReceivedAtAscIdAsc();
 
+    List<LearningConversation> findAllByUserIdOrderByReceivedAtAscIdAsc(Long userId);
+
+    Optional<LearningConversation> findBySessionIdAndUserId(String sessionId, Long userId);
+
     Optional<LearningConversation> findBySessionId(String sessionId);
 }

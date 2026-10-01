@@ -687,6 +687,24 @@ class FeedbackIT {
     }
 
     @Test
+    void slowGenerationFallsBackToStoredHintWithinTheTimeLimit() throws Exception {
+        long practiceId = startPractice(PracticeKind.FIRST_STUDY);
+        long p1 = nextPresentation(practiceId).get("presentationId").asLong();
+        answerJudged(p1, WRONG_TEXT, "WRONG");
+        generator.willDelay(Duration.ofSeconds(5));
+
+        Instant started = Instant.now();
+        JsonNode view = decide(p1);
+
+        // 학습자가 기다리는 자리라 생성이 시간 상한(테스트 1초)을 넘으면 기다리지 않고 문제에 저장된 기본 힌트를 쓴다.
+        assertThat(Duration.between(started, Instant.now())).isLessThan(Duration.ofSeconds(4));
+        assertThat(view.get("action").asString()).isEqualTo("GIVE_HINT");
+        assertThat(view.get("hint").asString()).isEqualTo("떠올릴 방향");
+        assertThat(aids.findByPresentationIdOrderByExposedAtAscIdAsc(p1)).extracting(AidExposure::getType)
+                .containsExactly(AidType.HINT);
+    }
+
+    @Test
     void failureWhileSavingLeavesNoAidRecheckOrFeedback() throws Exception {
         long practiceId = startPractice(PracticeKind.FIRST_STUDY);
         long p1 = nextPresentation(practiceId).get("presentationId").asLong();

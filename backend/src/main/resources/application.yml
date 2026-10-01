@@ -42,6 +42,9 @@ springdoc:
   writer-with-order-by-keys: true
   writer-with-default-pretty-printer: true
 review:
+  llm:
+    # 학습자가 기다리는 짧은 생성(힌트·개념 설명·선행 개념)에 보내는 reasoning_effort. 모델이 지원하는 값이어야 한다(gpt-6-luna: none·low·medium·high·xhigh)
+    minimal-reasoning-effort: none
   auth:
     # false는 테스트 전용: /api/**를 열고 토큰 없는 요청을 데모 사용자로 처리한다.
     required: true
@@ -93,6 +96,9 @@ review:
     retry-delay: 1s
     # 문제 1개 자리에 생성을 시도하는 최대 횟수 (첫 시도 + 재생성 2회). 넘으면 그 항목 출제 보류
     max-generations: 3
+    # 첫 학습 문제를 동시에 만드는 복습 단위 수, 동시에 하는 품질 검사(Jev) 수. 같은 기억 항목의 문제는 차례로 검사한다
+    parallel-units: 4
+    parallel-judges: 8
   practice:
     # 첫 학습 문제 상한 (스펙 §7.8)
     first-study-max-questions: 12
@@ -117,6 +123,8 @@ review:
       relearn-max-per-session: 5
       # 한 기억 항목에서 틀린 제시가 이만큼 쌓이면 반복 어려움으로 보고 선행 개념을 제안한다
       repeated-difficulty-presentations: 2
+      # 힌트·개념 설명·선행 개념 생성(LLM)을 기다리는 최대 시간. 넘으면 문제에 저장된 기본 힌트·설명을 쓰고 선행 개념은 제안하지 않는다
+      content-timeout: 4s
   memory:
     # 기억 강도를 정하기 전의 기본 목표 유지율 (스펙 §6.4.7)
     default-retention: 0.9
