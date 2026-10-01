@@ -52,7 +52,10 @@ export function SessionMemory({ id }: { id: number }) {
   const units = gauge.data.units;
   const { value } = gaugeOf(units);
   const nextReview = new Map(
-    [...(summary.data?.confirmed ?? []), ...(summary.data?.needsHelp ?? [])].map((i) => [i.memoryItemId, i.nextReviewAt]),
+    // 첫 학습 뒤 매일 학습에서 처음 푼 항목은 아직 확인 전 목록에 있으므로 세 목록을 모두 본다.
+    [...(summary.data?.confirmed ?? []), ...(summary.data?.needsHelp ?? []), ...(summary.data?.notChecked ?? [])].map(
+      (i) => [i.memoryItemId, i.nextReviewAt],
+    ),
   );
   const unfinished = summary.data && !summary.data.completed;
 
@@ -92,6 +95,12 @@ export function SessionMemory({ id }: { id: number }) {
           <UnitCard key={unit.unitId} unit={unit} target={target} nextReview={nextReview} />
         ))
       )}
+
+      <Button
+        variant="secondary"
+        title="원본 대화 보기"
+        onPress={() => router.push({ pathname: '/conversations/[id]', params: { id: session.data.conversationId } })}
+      />
     </ScrollView>
   );
 }

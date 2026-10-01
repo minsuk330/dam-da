@@ -2,10 +2,13 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ApiError, type Schemas } from '@/api/client';
 import { useConversation } from '@/api/conversations';
+import { useLearningSessions } from '@/api/learning-sessions';
+import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { ThemedText } from '@/components/themed-text';
 import { aiVerdictLabel, factKindLabel, fidelityLabel, formatDateTime, inputPathLabel, intentLabel } from '@/labels';
+import { openSession } from '@/navigation';
 import { colors, components, opacity, radius, spacing } from '@/theme';
 
 type Turn = Schemas['UserTurnResponse'];
@@ -13,6 +16,7 @@ type ReviewUnit = Schemas['ReviewUnitResponse'];
 
 export function ConversationDetail({ id }: { id: string }) {
   const { data, isPending, error } = useConversation(id);
+  const sessions = useLearningSessions();
 
   if (isPending) {
     return (
@@ -31,6 +35,8 @@ export function ConversationDetail({ id }: { id: string }) {
   }
 
   const turnsByIndex = new Map(data.userTurns.map((t) => [t.index, t]));
+  const sessionId = data.learningSessionId;
+  const session = sessions.data?.find((s) => s.id === sessionId);
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
@@ -40,6 +46,13 @@ export function ConversationDetail({ id }: { id: string }) {
           {formatDateTime(data.receivedAt)} · {inputPathLabel[data.inputPath]} · {fidelityLabel[data.fidelity]}
         </ThemedText>
       </View>
+
+      {sessionId !== null && (
+        <Button
+          title={session?.status === 'IN_PROGRESS' ? '기억 상태 보기' : '학습 내용 확인하기'}
+          onPress={() => openSession(sessionId, session?.status)}
+        />
+      )}
 
       {data.fidelity === 'model_transcribed' && (
         <View style={styles.notice}>

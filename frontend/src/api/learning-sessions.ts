@@ -33,6 +33,11 @@ export function useLearningSession(id: number) {
       mockEnabled
         ? mockCall(() => structuredClone(mockSessionApi.detail(id)))
         : unwrap(await api.GET('/api/learning-sessions/{sessionId}', { params: { path: { sessionId: id } } })),
+    // 대화를 막 추가해 검수 중이면 끝날 때까지 2초마다 다시 읽는다.
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === 'RECEIVED' || status === 'REVIEWING' ? 2000 : false
+    },
   })
 }
 
