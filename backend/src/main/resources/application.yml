@@ -48,6 +48,17 @@ review:
     # 429·529 재시도 (첫 호출 포함)
     max-attempts: 3
     retry-delay: 1s
+  question:
+    # 문제 품질 검사 기준 (docs/jev.md). 실제 판정 분포를 보고 맞춘다.
+    min-grounded: 0.7
+    min-clarity: 0.5
+    min-confidence: 0.5
+    max-duplicate: 0.7
+    # Jev 429·529 재시도 (첫 호출 포함)
+    max-attempts: 3
+    retry-delay: 1s
+    # 문제 1개 자리에 생성을 시도하는 최대 횟수 (첫 시도 + 재생성 2회). 넘으면 그 항목 출제 보류
+    max-generations: 3
   practice:
     # 첫 학습 문제 상한 (스펙 §7.8)
     first-study-max-questions: 12
