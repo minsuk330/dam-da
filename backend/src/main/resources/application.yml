@@ -5,6 +5,15 @@ spring:
     name: review
   config:
     import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/review}
+    username: ${DB_USERNAME:review}
+    password: ${DB_PASSWORD:review}
+  jpa:
+    # 해커톤 단계는 엔티티 기준 자동 갱신. 운영 전 마이그레이션 도구로 바꾼다.
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:}
@@ -19,6 +28,8 @@ spring:
         streamable-http:
           mcp-endpoint: /mcp
 review:
+  demo-user:
+    name: 지원
   sessions-file: data/sessions.jsonl
   jev:
     api-key: ${TYPESAFE_API_KEY:}
