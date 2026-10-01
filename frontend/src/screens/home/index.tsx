@@ -16,6 +16,7 @@ import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime } from '@/labels';
 import { openNotification } from '@/navigation';
+import { profile } from '@/profile';
 import { colors, components, spacing } from '@/theme';
 
 import { StatCard } from '@/components/stat-card';
@@ -61,7 +62,7 @@ export function Home() {
         <View style={styles.title}>
           <ThemedText variant="caption" tone="inkMuted">
             {/* 서버의 오늘(시간 이동 데모에서도 맞는 날짜). 불러오기 전에는 기기 날짜. */}
-            {today.format(data ? new Date(`${data.date}T00:00:00`) : new Date())} · 지원님
+            {today.format(data ? new Date(`${data.date}T00:00:00`) : new Date())} · {profile.name}님
           </ThemedText>
           <ThemedText variant="display">
             {data?.completed ? '오늘 학습을\n마쳤어요' : empty ? '오늘은\n쉬어도 돼요' : '오늘 학습할\n지식이 있어요'}
@@ -239,11 +240,11 @@ function HomeHeader() {
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="내 정보: 지원"
+        accessibilityLabel={`내 정보: ${profile.name}`}
         onPress={() => router.push('/me')}
         style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}>
         <ThemedText variant="headline" tone="primaryInk">
-          지
+          {profile.initial}
         </ThemedText>
       </Pressable>
     </View>

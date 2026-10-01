@@ -1,13 +1,17 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router, type Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useStreak } from '@/api/daily';
 import { useMemoryModel } from '@/api/memory-model';
+import { authGateEnabled, useSession } from '@/api/session';
 import { useDailySettings } from '@/api/settings';
+import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { dailySettingsStatus, memoryModelStatus } from '@/labels';
+import { profile } from '@/profile';
 import { colors, components, spacing } from '@/theme';
 
 /**
@@ -18,16 +22,24 @@ export function Me() {
   const streak = useStreak();
   const model = useMemoryModel();
   const settings = useDailySettings();
+  const { signOut } = useSession();
+  const queryClient = useQueryClient();
+
+  /** 다른 사람이 같은 기기로 로그인해도 이전 계정의 화면이 남지 않게 불러온 데이터를 지운다. */
+  function logOut() {
+    queryClient.clear();
+    signOut();
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.profile}>
         <View style={styles.avatar}>
           <ThemedText variant="display" tone="primaryInk">
-            지
+            {profile.initial}
           </ThemedText>
         </View>
-        <ThemedText variant="title">지원</ThemedText>
+        <ThemedText variant="title">{profile.name}</ThemedText>
         {streak.data && (
           <ThemedText variant="subhead" tone="inkSecondary">
             연속 학습 {streak.data.current}일 · 최고 {streak.data.best}일
@@ -45,6 +57,9 @@ export function Me() {
           divided
         />
       </Card>
+
+      {/* 로그인 게이트가 켜진 빌드에서만. 실제 API는 #95(앱 토큰) 전이라 데모 사용자 하나로 동작한다. */}
+      {authGateEnabled && <Button variant="secondary" title="로그아웃" onPress={logOut} />}
     </ScrollView>
   );
 }
