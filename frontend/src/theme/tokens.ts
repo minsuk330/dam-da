@@ -30,7 +30,10 @@ export const colors = {
   "warningInk": "#7A4D00",
   "warningFill": "#B87800",
   "glass": "#DCE4FCB8",
-  "glassItem": "#CED6EB"
+  "glassItem": "#CED6EB",
+  "kakao": "#FEE500",
+  "kakaoPressed": "#E5CE00",
+  "kakaoInk": "#000000D9"
 } as const;
 
 export const spacing = {
@@ -140,6 +143,37 @@ export const components = {
     },
     "rounded": 9999,
     "height": 56
+  },
+  "buttonKakao": {
+    "backgroundColor": "#FEE500",
+    "textColor": "#000000D9",
+    "typography": {
+      "fontFamily": "SUIT-SemiBold",
+      "fontSize": 17,
+      "lineHeight": 24
+    },
+    "rounded": 9999,
+    "height": 56
+  },
+  "buttonKakaoPressed": {
+    "backgroundColor": "#E5CE00",
+    "textColor": "#000000D9",
+    "rounded": 9999
+  },
+  "buttonGoogle": {
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#12141F",
+    "typography": {
+      "fontFamily": "SUIT-SemiBold",
+      "fontSize": 17,
+      "lineHeight": 24
+    },
+    "rounded": 9999,
+    "height": 56
+  },
+  "buttonGoogleOutline": {
+    "backgroundColor": "#E2E7FA",
+    "width": 1
   },
   "iconButton": {
     "backgroundColor": "#FFFFFF",
