@@ -5,11 +5,12 @@ import { useEditLearningSession } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
+import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
 import { itemKindLabel, unitVerdictLabel } from '@/labels';
 import { spacing } from '@/theme';
 
-import { Notice, OptionRow, StepHeader } from './parts';
+import { Notice, StepHeader } from './parts';
 
 type Detail = Schemas['LearningSessionDetail'];
 type Unit = Schemas['Unit'];

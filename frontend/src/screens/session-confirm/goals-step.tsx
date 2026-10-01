@@ -4,10 +4,11 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { Schemas } from '@/api/client';
 import { useChooseGoals, useLearningGoals, useMemoryStrength } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
+import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
 import { colors, spacing } from '@/theme';
 
-import { Notice, OptionRow, StepHeader } from './parts';
+import { Notice, StepHeader } from './parts';
 
 type Goal = Schemas['GoalView']['goal'];
 type Strength = Schemas['Option']['strength'];

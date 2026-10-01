@@ -4,7 +4,7 @@ import { sampleMinutes, sampleQuestions } from '@/screens/review/sample-question
 
 /** 오늘의 학습: 복습할 항목과 새로 배울 항목은 따로 편성한다(스펙 §6.4.4). */
 export const sampleToday = {
-  reviewCount: sampleQuestions.length,
+  reviewCount: sampleQuestions.length - 2,
   newCount: 2,
   minutes: sampleMinutes,
 }
