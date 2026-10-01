@@ -9,6 +9,7 @@ export const colors = {
   "inkMuted": "#646B88",
   "primary": "#2E5BE8",
   "primaryInk": "#2448C8",
+  "primaryPressed": "#2149CF",
   "onPrimary": "#FFFFFF",
   "primaryTint": "#D6E1FF",
   "lavender": "#BDCDFF",
@@ -118,6 +119,11 @@ export const components = {
     },
     "rounded": 9999,
     "height": 56
+  },
+  "buttonPrimaryPressed": {
+    "backgroundColor": "#2149CF",
+    "textColor": "#FFFFFF",
+    "rounded": 9999
   },
   "buttonSecondary": {
     "backgroundColor": "#FFFFFF",

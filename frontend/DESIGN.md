@@ -12,6 +12,7 @@ colors:
   ink-muted: "#646B88"
   primary: "#2E5BE8"
   primary-ink: "#2448C8"
+  primary-pressed: "#2149CF"
   on-primary: "#FFFFFF"
   primary-tint: "#D6E1FF"
   lavender: "#BDCDFF"
@@ -99,6 +100,10 @@ components:
     typography: "{typography.headline}"
     rounded: "{rounded.full}"
     height: 56px
+  button-primary-pressed:
+    backgroundColor: "{colors.primary-pressed}"
+    textColor: "{colors.on-primary}"
+    rounded: "{rounded.full}"
   button-secondary:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
@@ -259,7 +264,7 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
 
 ## Components
 
-- **주 버튼**: primary, 흰 글자, 높이 56, 전체 폭, 알약형. 화면 하단에 하나.
+- **주 버튼**: primary, 흰 글자, 높이 56, 전체 폭, 알약형. 화면 하단에 하나. 누르면 `primary-pressed`로 어두워진다(크기 변화 없음).
 - **보조 버튼**: 흰 바탕, ink 글자, 알약형.
 - **선택지**: `surface-soft` + 1px `outline`, 알약형, 높이 56. 선택되면 `lavender`로 채우고 테두리를 없앤다.
   - 채점 후: 정답 선택지는 `answer-option-correct` + 2px `success` 테두리 + ✓ 아이콘, 고른 오답은 `answer-option-wrong` + 2px `danger` 테두리 + ✕ 아이콘. 나머지는 그대로 둔다.

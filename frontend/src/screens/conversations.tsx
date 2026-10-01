@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { fidelityLabel, formatDateTime, inputPathLabel } from '@/labels';
 import { colors, spacing } from '@/theme';
 
-export function ConversationList() {
+export function Conversations() {
   const { data, isPending, isError } = useConversations();
 
   if (isPending) {
