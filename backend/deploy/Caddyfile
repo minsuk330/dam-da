@@ -1,0 +1,13 @@
+# DOMAIN의 A 레코드가 이 VPS를 가리키면 Let's Encrypt 인증서를 자동으로 받는다.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# API 문서는 배포 서버에서 열지 않는다(API_DOCS_ENABLED=false와 이중 차단).
+	@docs path /v3/api-docs* /swagger-ui*
+	respond @docs 404
+
+	reverse_proxy app:8080 {
+		# /mcp(Streamable HTTP)의 스트리밍 응답을 버퍼링 없이 바로 넘긴다.
+		flush_interval -1
+	}
+}
