@@ -40,6 +40,9 @@ springdoc:
   writer-with-order-by-keys: true
   writer-with-default-pretty-printer: true
 review:
+  cors:
+    # 로컬 Expo 웹 개발 서버만. 배포 서버는 Vercel rewrites로 같은 출처라 비워 둔다(CORS_ALLOWED_ORIGINS=).
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8081}
   dev-tools:
     # /dev/** (세션 뷰어, 시간 이동). 켜면 이 기기에서 직접 온 요청과, X-Dev-Token 헤더가 token과 같은 원격 요청만 허용한다.
     enabled: ${DEV_TOOLS_ENABLED:false}
