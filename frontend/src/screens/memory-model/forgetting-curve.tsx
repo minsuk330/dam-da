@@ -97,8 +97,10 @@ export function ForgettingCurve({ curve, defaultCurve }: { curve: CurvePoint[]; 
               x2={pad.left + plotWidth}
               y1={y(TARGET)}
               y2={y(TARGET)}
-              stroke={components.chartGrid.backgroundColor}
+              // 목표선은 격자와 구분되게 진한 회색 점선(DESIGN.md 망각 곡선 차트). 점 간격은 spacing.xs.
+              stroke={components.chartLineContext.backgroundColor}
               strokeWidth={components.chartGrid.width}
+              strokeDasharray={`${spacing.xs} ${spacing.xs}`}
             />
             <SvgText
               x={pad.left + plotWidth}
