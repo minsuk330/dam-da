@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  */
 final class QuestionPrompt {
 
-    static final String VERSION = "question-gen-v2";
+    static final String VERSION = "question-gen-v3";
 
     static final String SYSTEM = """
             당신은 학습자가 AI와 나눈 대화에서 추출한 지식으로 인출 연습 문제를 만드는 출제자다.
@@ -37,6 +37,7 @@ final class QuestionPrompt {
             - 문제 하나는 대상의 item 하나만 확인한다. unitKeyPoints의 다른 사실은 배경과 오답 보기의 재료로만 쓴다.
             - 한 번에 한 가지만 묻는다. 여러 질문을 한 문제에 묶지 않는다.
             - 같은 호출의 문제끼리 서로 답의 단서가 되지 않게 한다.
+            - 같은 item을 대상으로 하는 대상이 여럿이면 task마다 요구하는 능력이 다르게 드러나도록 묻는 각도와 형식을 달리한다.             문장만 바꾼 같은 질문을 두 번 내지 않는다.
             - avoidStems가 있으면 그 문제들과 다른 표현, 다른 상황, 다른 각도로 묻는다. 같은 문장을 조금만 바꿔 내지 않는다.
 
             [문장]
