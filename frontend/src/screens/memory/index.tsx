@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { useDaily } from '@/api/daily';
 import { useMemoryOverview } from '@/api/memory';
 import { useMemoryModel } from '@/api/memory-model';
 import { Button } from '@/components/button';
@@ -10,15 +11,17 @@ import { Gauge, percent } from '@/components/gauge';
 import { Icon } from '@/components/icon';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
-import { formatDateTime, memoryModelStatus, sessionStatusLabel } from '@/labels';
+import { formatRelativeDay, memoryModelStatus, sessionStatusLabel } from '@/labels';
 import { openSession } from '@/navigation';
-import { colors, spacing } from '@/theme';
+import { colors, components, spacing } from '@/theme';
 
 /** 기억 탭: 학습 세션 목록과 세션별 기억 게이지 (스펙 §6.4.3). 색은 세션의 목표 유지율 기준이다. */
 export function Memory() {
   const overview = useMemoryOverview();
   const { data, isPending, isError } = overview.sessions;
   const tabBarSpace = useTabBarSpace();
+  // 서버의 오늘(시간 이동 반영). 오늘·어제·N일 전 계산에 쓴다.
+  const serverToday = useDaily().data?.date;
 
   if (isPending) {
     return (
@@ -66,40 +69,42 @@ export function Memory() {
 
       <MemoryModelLink />
 
-      <ThemedText variant="headline">학습 세션</ThemedText>
-      {data.map((session) => {
-        const memory = overview.bySession.get(session.id);
-        return (
-          <Pressable
-            key={session.id}
-            accessibilityRole="link"
-            accessibilityLabel={`${session.topicHint ?? '주제 없음'}, ${sessionStatusLabel[session.status]}`}
-            onPress={() => openSession(session.id, session.status)}>
-            {({ pressed }) => (
-              <Card pressed={pressed} style={styles.card}>
-                <View style={styles.row}>
-                  <ThemedText variant="headline" style={styles.title}>
-                    {session.topicHint ?? '주제 없음'}
-                  </ThemedText>
-                  <Chip
-                    variant={session.status === 'AWAITING_CONFIRMATION' ? 'status' : 'soft'}
-                    label={sessionStatusLabel[session.status]}
-                  />
-                </View>
-                <ThemedText variant="caption" tone="inkMuted">
-                  {formatDateTime(session.createdAt)} · 복습 단위 {session.unitCount}개 · 기억 항목 {session.itemCount}개
+      <ThemedText variant="title" style={styles.sectionTitle}>
+        학습 세션
+      </ThemedText>
+      <Card style={styles.list}>
+        {data.map((session, i) => {
+          const memory = overview.bySession.get(session.id);
+          return (
+            <Pressable
+              key={session.id}
+              accessibilityRole="link"
+              accessibilityLabel={`${session.topicHint ?? '주제 없음'}, ${sessionStatusLabel[session.status]}`}
+              onPress={() => openSession(session.id, session.status)}
+              style={({ pressed }) => [styles.sessionRow, i > 0 && styles.divided, pressed && styles.rowPressed]}>
+              <View style={styles.row}>
+                <ThemedText variant="headline" numberOfLines={1} style={styles.title}>
+                  {session.topicHint ?? '주제 없음'}
                 </ThemedText>
-                <Gauge value={memory?.value ?? null} target={memory?.target} />
-                {memory?.weakest && (
-                  <ThemedText variant="caption" tone="inkSecondary" numberOfLines={1}>
-                    가장 약한 항목 {percent(memory.weakest.value)}% · {memory.weakest.content}
-                  </ThemedText>
-                )}
-              </Card>
-            )}
-          </Pressable>
-        );
-      })}
+                <Chip
+                  variant={session.status === 'AWAITING_CONFIRMATION' ? 'status' : 'soft'}
+                  label={sessionStatusLabel[session.status]}
+                />
+              </View>
+              <ThemedText variant="caption" tone="inkMuted">
+                {formatRelativeDay(session.createdAt, serverToday)} · 복습 단위 {session.unitCount}개 · 기억 항목{' '}
+                {session.itemCount}개
+              </ThemedText>
+              <Gauge value={memory?.value ?? null} target={memory?.target} />
+              {memory?.weakest && (
+                <ThemedText variant="caption" tone="inkSecondary" numberOfLines={1}>
+                  가장 약한 항목 {percent(memory.weakest.value)}% · {memory.weakest.content}
+                </ThemedText>
+              )}
+            </Pressable>
+          );
+        })}
+      </Card>
     </ScrollView>
   );
 }
@@ -138,8 +143,12 @@ const styles = StyleSheet.create({
   },
   centerText: { textAlign: 'center' },
   content: { padding: spacing.xl, gap: spacing.md },
-  summary: { gap: spacing.md, marginBottom: spacing.md },
-  card: { gap: spacing.sm },
+  summary: { gap: spacing.md },
+  sectionTitle: { marginTop: spacing.md },
+  list: { paddingVertical: spacing.xs },
+  sessionRow: { gap: spacing.sm, paddingVertical: spacing.lg },
+  divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline },
+  rowPressed: { backgroundColor: components.cardPressed.backgroundColor },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -130,3 +130,13 @@ export function formatRelativeDay(iso: string, serverToday?: string): string {
   if (days < 7) return `${days}일 전`
   return date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
 }
+
+/** 알림처럼 시각이 중요한 목록: 방금 · N분 전 · N시간 전(오늘) · 그 밖은 `formatRelativeDay`. */
+export function formatRelativeTime(iso: string, serverToday?: string): string {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000)
+  // 시간 이동 데모에서는 서버 시각이 기기보다 앞설 수 있다. 미래 시각은 방금으로 본다.
+  if (minutes < 1) return '방금'
+  if (minutes < 60) return `${minutes}분 전`
+  const day = formatRelativeDay(iso, serverToday)
+  return day === '오늘' ? `${Math.floor(minutes / 60)}시간 전` : day
+}

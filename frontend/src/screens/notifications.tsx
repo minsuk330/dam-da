@@ -1,18 +1,21 @@
 import { Stack } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { useDaily } from '@/api/daily';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/api/notifications';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { formatDateTime } from '@/labels';
+import { formatRelativeTime } from '@/labels';
 import { openNotification } from '@/navigation';
 import { colors, components, spacing } from '@/theme';
 
 /** 앱 안 알림 목록 (스펙 §7.7). 최근 것부터, 읽지 않은 알림은 점과 굵은 제목으로 구분한다. */
 export function Notifications() {
   const { data, isPending, isError, refetch } = useNotifications();
+  // 서버의 오늘(시간 이동 반영). 어제·N일 전 계산에 쓴다.
+  const serverToday = useDaily().data?.date;
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
 
@@ -82,7 +85,7 @@ export function Notifications() {
                 {notification.title}
               </ThemedText>
               <ThemedText variant="caption" tone="inkMuted">
-                {notification.body} · {formatDateTime(notification.createdAt)}
+                {notification.body} · {formatRelativeTime(notification.createdAt, serverToday)}
               </ThemedText>
             </View>
             {!notification.read && <View accessibilityElementsHidden style={styles.unreadDot} />}
