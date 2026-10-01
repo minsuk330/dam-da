@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 인증 전 단계의 현재 사용자 전환. 합성 기록 사용자로 개인화 화면을 시연하고 기본 데모 사용자로 돌아올 때 쓴다.
+ * 인증 없는 개발 도구 요청(`/dev/**`)의 사용자 전환. 합성 기록 사용자로 옵티마이저를 돌리고 기본 데모 사용자로 돌아올 때 쓴다.
+ * 로그인한 앱 요청에는 영향이 없다.
  * 접근 제한은 {@link DevToolsFilter}가 한다.
  */
 @RestController
@@ -32,7 +33,7 @@ class DevCurrentUserController {
 
     @GetMapping("/dev/current-user")
     UserView current() {
-        return view(currentUser.current());
+        return view(currentUser.devUser());
     }
 
     @PostMapping("/dev/current-user")
@@ -49,6 +50,6 @@ class DevCurrentUserController {
     }
 
     private UserView view(AppUser user) {
-        return new UserView(user.getId(), user.getName(), currentUser.isDemoUser());
+        return new UserView(user.getId(), user.getName(), currentUser.isDemoDevUser());
     }
 }

@@ -74,7 +74,7 @@ class MemoryModelServiceIT {
         long user = USERS.incrementAndGet();
         double[] faster = FsrsSchedulers.defaultParameters();
         faster[2] = 1.0;
-        int version = parameters.registerOptimized(faster, "{\"improvement\": 0.055}").version();
+        int version = parameters.registerOptimized(user, faster, "{\"improvement\": 0.055}").version();
         activation.activate(user, version);
 
         MemoryModel model = models.model(user);

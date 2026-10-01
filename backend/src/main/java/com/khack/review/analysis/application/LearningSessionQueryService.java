@@ -44,7 +44,25 @@ public class LearningSessionQueryService {
 
     @Transactional(readOnly = true)
     public LearningSessionDetail detail(Long sessionId) {
-        LearningSession session = owned(sessionId);
+        return detail(owned(sessionId));
+    }
+
+    /**
+     * 비동기 처리(문제 생성 등)용: 요청 사용자 확인 없이 세션 상세를 돌려준다. 그 세션을 다루는 요청의 소유자 확인은 처리를 시작한 쪽이 이미 했다.
+     * 사용자는 {@link #ownerOf}로 얻는다.
+     */
+    @Transactional(readOnly = true)
+    public LearningSessionDetail detailForProcessing(Long sessionId) {
+        return detail(sessions.findById(sessionId).orElseThrow(() -> new LearningSessionNotFoundException(sessionId)));
+    }
+
+    /** 세션 소유자 ID. 요청 밖(비동기)에서 사용자 ID가 필요할 때 쓴다. */
+    @Transactional(readOnly = true)
+    public Long ownerOf(Long sessionId) {
+        return sessions.findById(sessionId).orElseThrow(() -> new LearningSessionNotFoundException(sessionId)).getUserId();
+    }
+
+    private LearningSessionDetail detail(LearningSession session) {
         SavedSession conversation = conversations.find(session.getConversationId());
         List<UserTurn> turns = conversation.userTurns();
         return new LearningSessionDetail(session.getId(), conversation.id(), session.getStatus(), session.getTopicHint(),
