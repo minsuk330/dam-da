@@ -57,7 +57,7 @@ public class SessionConfirmationService {
         LearningSession session = query.owned(sessionId);
         session.requireEditable();
         if (content.intent() == Intent.meta && !sourceOf.isEmpty()) {
-            throw new IllegalArgumentException("meta 발화는 기억 항목의 출처가 될 수 없습니다.");
+            throw new IllegalArgumentException("대화 진행 메시지는 근거로 고를 수 없어요.");
         }
         int index = conversations.insertTurnAfter(session.getConversationId(), afterIndex, content);
         session.turnInserted(index, sourceOf);

@@ -1514,6 +1514,10 @@
             "type" : "string",
             "enum" : [ "FIRST_UNASSISTED", "ASSISTED_RETRY", "DELAYED_RECHECK" ]
           },
+          "outcome" : {
+            "type" : "string",
+            "enum" : [ "CORRECT", "WRONG", "UNCERTAIN", "QUESTION_AMBIGUOUS" ]
+          },
           "rating" : {
             "type" : [ "string", "null" ],
             "enum" : [ "AGAIN", "HARD", "GOOD", "EASY" ]
@@ -1523,7 +1527,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "attemptId", "correct", "evaluated", "holdReason", "judgment", "kind", "rating", "responseTimeMs" ]
+        "required" : [ "attemptId", "correct", "evaluated", "holdReason", "judgment", "kind", "outcome", "rating", "responseTimeMs" ]
       },
       "AuthToken" : {
         "type" : "object",

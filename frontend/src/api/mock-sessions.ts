@@ -58,7 +58,7 @@ const details: Record<number, Detail> = {
         items: [{ id: 321, kind: 'WARNING', content: 'SELECT ... FOR UPDATE는 읽은 행에 배타 락을 건다', sourceTurns: [4], status: 'NEW' }],
       },
     ],
-    warnings: ['모델이 옮겨 적은 대화예요. 원문과 다른 발화가 있으면 고쳐 주세요.'],
+    warnings: ['Claude가 옮겨 적은 대화예요. 원문과 다른 메시지가 있으면 고쳐 주세요.'],
   },
   2: {
     id: 2,
@@ -154,7 +154,7 @@ export const mockSessionApi = {
 
   setUnitExcluded(id: number, unitId: number, excluded: boolean): Detail {
     const unit = editable(id).units.find((u) => u.id === unitId)
-    if (!unit) throw new ApiError(400, '복습 단위가 없어요.')
+    if (!unit) throw new ApiError(400, '이 학습에 없는 주제예요.')
     unit.excluded = excluded
     for (const item of unit.items) {
       if (excluded) item.status = 'EXCLUDED'
@@ -167,8 +167,8 @@ export const mockSessionApi = {
     const session = editable(id)
     const unit = session.units.find((u) => u.items.some((i) => i.id === itemId))
     const item = unit?.items.find((i) => i.id === itemId)
-    if (!unit || !item) throw new ApiError(400, '기억 항목이 없어요.')
-    if (!excluded && unit.excluded) throw new ApiError(409, '복습 단위를 먼저 다시 넣어 주세요.')
+    if (!unit || !item) throw new ApiError(400, '이 학습에 없는 내용이에요.')
+    if (!excluded && unit.excluded) throw new ApiError(409, '이 내용이 속한 주제가 빠져 있어요. 주제를 먼저 다시 넣어 주세요.')
     if (!excluded && item.sourceTurns.length === 0) throw new ApiError(409, '근거 발화가 없어 다시 넣을 수 없어요.')
     item.status = excluded ? 'EXCLUDED' : 'NEW'
     return session
@@ -299,18 +299,18 @@ const GENERATION_MS = 4000
 const chosen: Record<number, { goals: Goal[]; strength: Strength; at: number }> = {}
 
 const GOALS: Schemas['GoalView'][] = [
-  { goal: 'KEY_RECALL', number: 1, label: '핵심 내용 기억하기', description: '정의, 용어, 규칙을 단서 없이 떠올린다.' },
-  { goal: 'PRINCIPLE', number: 2, label: '원리 이해하기', description: '결과가 발생하는 이유와 작동 과정을 이해한다.' },
-  { goal: 'DISTINGUISH', number: 3, label: '개념 구분하기', description: '비슷한 개념의 차이를 구분한다.' },
-  { goal: 'CONDITION', number: 4, label: '조건과 예외 판단하기', description: '어떤 조건에서 규칙이 적용되거나 달라지는지 판단한다.' },
-  { goal: 'APPLY_CASE', number: 5, label: '사례에 적용하기', description: '배운 내용을 새로운 상황이나 문제에 적용한다.' },
+  { goal: 'KEY_RECALL', number: 1, label: '핵심 내용 기억하기', description: '정의·용어·규칙을 단서 없이 떠올려요.' },
+  { goal: 'PRINCIPLE', number: 2, label: '원리 이해하기', description: '결과가 생기는 이유와 작동 과정을 이해해요.' },
+  { goal: 'DISTINGUISH', number: 3, label: '개념 구분하기', description: '비슷한 개념의 차이를 구분해요.' },
+  { goal: 'CONDITION', number: 4, label: '조건과 예외 판단하기', description: '어떤 조건에서 규칙이 적용되거나 달라지는지 판단해요.' },
+  { goal: 'APPLY_CASE', number: 5, label: '사례에 적용하기', description: '배운 내용을 새로운 상황이나 문제에 적용해요.' },
   {
     goal: 'CORRECT_MISCONCEPTION',
     number: 6,
     label: '잘못된 이해 바로잡기',
-    description: '이전에 가졌던 오개념이나 불완전한 이해를 교정한다.',
+    description: '전에 잘못 알았거나 덜 이해한 부분을 바로잡아요.',
   },
-  { goal: 'EXPLAIN_OWN_WORDS', number: 7, label: '자기 말로 설명하기', description: '외운 문장이 아니라 자신의 언어로 개념을 설명한다.' },
+  { goal: 'EXPLAIN_OWN_WORDS', number: 7, label: '자기 말로 설명하기', description: '외운 문장이 아니라 내 말로 개념을 설명해요.' },
 ]
 
 const STRENGTHS: Schemas['Option'][] = [

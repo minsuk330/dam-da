@@ -1,6 +1,6 @@
 ---
 version: alpha
-name: AI Learning Companion
+name: 담다
 description: 매일 짧게 복습하는 학습 앱. 맑은 블루와 라벤더 면, 알약형 컨트롤, 큰 라운드. 레퍼런스(Fluentify 시안)에서 추출.
 colors:
   canvas: "#F3F6FF"
@@ -363,7 +363,7 @@ components:
     size: 56px
 ---
 
-# AI Learning Companion 디자인 시스템
+# 담다 디자인 시스템
 
 > 이 파일이 UI의 기준이다. 토큰 값은 위 YAML이 정본이고, 앱의 `theme/`는 여기서 만든다.
 > 값은 사용자가 준 레퍼런스(Fluentify 학습 앱 시안, 3화면)에서 픽셀 샘플링으로 뽑고, 글자 대비가 WCAG AA(4.5:1)에 못 미치는 보조 텍스트만 어둡게 조정했다.

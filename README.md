@@ -1,4 +1,4 @@
-# AI Learning Companion
+# 담다
 
 > AI에게 물어본 것을, 내 지식으로 남긴다.
 
@@ -96,4 +96,4 @@ API 계약 규칙과 변경 절차는 [`AGENTS.md`](AGENTS.md#api-계약-필수)
 
 - 배포: 프론트엔드는 Vercel(Root Directory `frontend`), 백엔드는 VPS에 Docker Compose(`backend/deploy/`)로 올린다. 절차는 [`docs/deploy.md`](docs/deploy.md).
 - 백엔드 API는 `/api/**` 접두사를 쓴다. Vercel에서는 `frontend/vercel.json` rewrites로 `/api/**`를 VPS(`https://hack.refit-100.site`)로 넘겨 같은 출처로 호출한다.
-- `X-Dev-Token`은 프론트엔드 번들에 넣지 않는다. 배포 환경에서 `/dev/**`는 curl로만 호출한다.
+- `X-Dev-Token`은 코드·프론트엔드 번들에 넣지 않는다. 배포 환경에서 `/dev/**`는 curl이나 앱의 시연 도구(내 정보 → 시연 도구, 토큰은 시연자가 직접 입력해 그 브라우저에만 저장)로 호출한다.

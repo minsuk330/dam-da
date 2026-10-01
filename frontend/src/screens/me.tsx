@@ -49,6 +49,7 @@ export function Me() {
           href="/settings"
           divided
         />
+        <Row icon="fast-forward" title="시연 도구" status="서버 날짜를 옮겨 복습 장면 보여주기" href="/demo-tools" divided />
       </Card>
 
       {/* 로그인 게이트가 켜진 빌드에서만. 실제 API는 #95(앱 토큰) 전이라 데모 사용자 하나로 동작한다. */}

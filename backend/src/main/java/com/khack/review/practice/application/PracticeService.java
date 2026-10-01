@@ -21,6 +21,7 @@ import com.khack.review.practice.domain.AidType;
 import com.khack.review.practice.domain.AnswerFailure;
 import com.khack.review.practice.domain.AnswerJudgment;
 import com.khack.review.practice.domain.AnswerJudgmentRepository;
+import com.khack.review.practice.domain.AttemptOutcome;
 import com.khack.review.practice.domain.AttemptRules;
 import com.khack.review.practice.domain.JudgedBy;
 import com.khack.review.practice.domain.JudgmentStatus;
@@ -79,13 +80,14 @@ public class PracticeService {
     private final TransactionTemplate transaction;
     private final Duration multipleChoiceGuessTime;
     private final ApplicationEventPublisher events;
+    private final AttemptOutcomes outcomes;
 
     public PracticeService(PracticeSessionRepository practices, QuestionPresentationRepository presentations,
             AidExposureRepository aids, PracticeAttemptRepository attempts, SessionProgressService progress, FirstStudyQueryService firstStudy, QuestionQueryService questions,
             MemoryStateService memory, ReviewRecordService reviews, CurrentUser currentUser, Clock clock,
             AnswerJudgmentRepository judgments, LearningSessionQueryService sessions, AnswerJudge judge, AnswerJudgePolicy judgePolicy,
             TransactionTemplate transaction, @Value("${review.practice.mc-guess-threshold:3s}") Duration multipleChoiceGuessTime,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events, AttemptOutcomes outcomes) {
         this.practices = practices;
         this.presentations = presentations;
         this.aids = aids;
@@ -104,6 +106,7 @@ public class PracticeService {
         this.transaction = transaction;
         this.multipleChoiceGuessTime = multipleChoiceGuessTime;
         this.events = events;
+        this.outcomes = outcomes;
     }
 
     public record PracticeView(Long practiceId, PracticeKind kind, @Nullable Long learningSessionId, int total,
@@ -128,13 +131,14 @@ public class PracticeService {
             @Nullable Long responseTimeMs, @Nullable Long firstInputMs) {
     }
 
-    /** 제출 결과. {@code correct}는 객관식 코드 채점 결과이고 서술형이면 null이다(판정은 Jev). */
     /**
      * 제출 결과. {@code correct}는 객관식 코드 채점 결과이고 서술형이면 null이다(판정은 {@code judgment}).
      * {@code rating}·{@code holdReason}은 등급 변환 결과다. 평가 대상이 아니거나 판정하지 못했으면 둘 다 null이다.
+     * {@code outcome}은 단계적 피드백이 받는 것과 같은 시도 결과라, 앱은 피드백을 기다리지 않고 맞음·틀림·보류를 먼저 보여 준다.
      */
     public record AttemptView(Long attemptId, AttemptKind kind, boolean evaluated, @Nullable Boolean correct,
-            long responseTimeMs, JudgmentView judgment, @Nullable Rating rating, @Nullable HoldReason holdReason) {
+            long responseTimeMs, JudgmentView judgment, @Nullable Rating rating, @Nullable HoldReason holdReason,
+            AttemptOutcome outcome) {
     }
 
     /**
@@ -233,7 +237,7 @@ public class PracticeService {
         return new AttemptView(attempt.getId(), attempt.getKind(), AttemptRules.isEvaluated(attempt.getKind()),
                 attempt.getChoiceCorrect(), attempt.getResponseTimeMs(), JudgmentView.of(judgment),
                 decision instanceof RatingDecision.Rated rated ? rated.rating() : null,
-                decision instanceof RatingDecision.Held held ? held.reason() : null);
+                decision instanceof RatingDecision.Held held ? held.reason() : null, outcomes.of(attempt, judgment));
     }
 
     /**

@@ -5,11 +5,6 @@ import com.khack.review.analysis.application.LearningSessionQueryService;
 import com.khack.review.analysis.domain.MemoryItemKind;
 import com.khack.review.common.application.CurrentUser;
 import com.khack.review.memory.domain.AttemptKind;
-import com.khack.review.memory.domain.AnswerVerdict;
-import com.khack.review.memory.domain.HoldReason;
-import com.khack.review.memory.domain.RatingDecision;
-import com.khack.review.memory.domain.RatingInput;
-import com.khack.review.memory.domain.RatingPolicy;
 import com.khack.review.practice.application.NextActionJudge.DecidedBy;
 import com.khack.review.practice.application.port.out.FeedbackContent;
 import com.khack.review.practice.application.port.out.FeedbackContentGenerator;
@@ -22,7 +17,6 @@ import com.khack.review.practice.domain.AidType;
 import com.khack.review.practice.domain.AttemptOutcome;
 import com.khack.review.practice.domain.AnswerJudgment;
 import com.khack.review.practice.domain.AnswerJudgmentRepository;
-import com.khack.review.practice.domain.JudgmentStatus;
 import com.khack.review.practice.domain.FeedbackAction;
 import com.khack.review.practice.domain.FeedbackPath;
 import com.khack.review.practice.domain.FeedbackRules;
@@ -87,7 +81,7 @@ public class FeedbackService {
     private final AidExposureRepository aids;
     private final PracticeAttemptRepository attempts;
     private final AnswerJudgmentRepository judgments;
-    private final RatingPolicy ratingPolicy;
+    private final AttemptOutcomes outcomes;
     private final PresentationFeedbackRepository feedbacks;
     private final PracticeService practice;
     private final QuestionQueryService questions;
@@ -102,7 +96,7 @@ public class FeedbackService {
     private final Executor generation;
 
     public FeedbackService(PracticeSessionRepository practices, QuestionPresentationRepository presentations,
-            AidExposureRepository aids, PracticeAttemptRepository attempts, AnswerJudgmentRepository judgments, RatingPolicy ratingPolicy,
+            AidExposureRepository aids, PracticeAttemptRepository attempts, AnswerJudgmentRepository judgments, AttemptOutcomes outcomes,
             PresentationFeedbackRepository feedbacks, PracticeService practice, QuestionQueryService questions,
             QuestionRecheckService rechecks, LearningSessionQueryService sessions,
             ObjectProvider<FeedbackContentGenerator> generator, NextActionJudge judge, FeedbackPolicy policy,
@@ -113,7 +107,7 @@ public class FeedbackService {
         this.aids = aids;
         this.attempts = attempts;
         this.judgments = judgments;
-        this.ratingPolicy = ratingPolicy;
+        this.outcomes = outcomes;
         this.feedbacks = feedbacks;
         this.practice = practice;
         this.questions = questions;
@@ -459,27 +453,9 @@ public class FeedbackService {
         List<AttemptOutcome> results = new ArrayList<>();
         for (PracticeAttempt attempt : history) {
             AnswerJudgment judgment = byAttempt.get(attempt.getId());
-            results.add(judgment == null ? null : outcome(attempt, judgment));
+            results.add(judgment == null ? null : outcomes.of(attempt, judgment));
         }
         return results;
-    }
-
-    /**
-     * 판정 → 피드백 입력 (스펙 §6.4.5). 판정 실패·신뢰도 미달은 UNCERTAIN(등급 변환이 보류한 경우와 같다), 판정 불가·질문 오해는
-     * 문제가 모호한 것이라 QUESTION_AMBIGUOUS, 나머지는 verdict대로다. 신뢰도 기준은 등급 변환 정책에 맡기며, 도움 후 재시도는
-     * 등급 변환을 거치지 않으므로 첫 무도움 시도로 가정해 같은 정책에 물어본다. 추측 의심 보류는 맞힌 것이므로 CORRECT다.
-     */
-    private AttemptOutcome outcome(PracticeAttempt attempt, AnswerJudgment judgment) {
-        if (judgment.getStatus() == JudgmentStatus.FAILED) {
-            return AttemptOutcome.UNCERTAIN;
-        }
-        RatingInput input = new RatingInput(AttemptKind.FIRST_UNASSISTED, judgment.getVerdict(), judgment.getVerdictConfidence(),
-                judgment.isMisread(), judgment.getMisreadConfidence() == null ? 0 : judgment.getMisreadConfidence(), false,
-                attempt.getSelfAssessment(), attempt.getQuestionType(), null, judgment.isEvidenceTranscribed());
-        if (ratingPolicy.decide(input) instanceof RatingDecision.Held held) {
-            return held.reason() == HoldReason.LOW_CONFIDENCE ? AttemptOutcome.UNCERTAIN : AttemptOutcome.QUESTION_AMBIGUOUS;
-        }
-        return judgment.getVerdict() == AnswerVerdict.MET ? AttemptOutcome.CORRECT : AttemptOutcome.WRONG;
     }
 
     /** 피드백은 세션의 현재(마지막) 제시에만 받는다. */

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLoginOptions, useSession, type Provider } from '@/api/session';
 import { Card } from '@/components/card';
 import { Icon, type IconName } from '@/components/icon';
+import { Logo } from '@/components/logo';
 import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
 import { colors, components, opacity, spacing } from '@/theme';
@@ -43,10 +44,8 @@ export function Welcome() {
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom + spacing.xl }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.brand}>
-          <View style={styles.brandMark}>
-            <Icon name="book-open" color={colors.onPrimary} />
-          </View>
-          <ThemedText variant="headline">AI Learning Companion</ThemedText>
+          <Logo size={components.iconButtonPrimary.size} />
+          <ThemedText variant="title">담다</ThemedText>
         </View>
 
         <View style={styles.intro}>
@@ -157,14 +156,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
   content: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, gap: spacing['2xl'] },
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  brandMark: {
-    width: components.iconButtonPrimary.size,
-    height: components.iconButtonPrimary.size,
-    borderRadius: components.iconButtonPrimary.rounded,
-    backgroundColor: components.iconButtonPrimary.backgroundColor,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   intro: { gap: spacing.md },
   steps: { paddingVertical: spacing.xs },
   step: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg },
