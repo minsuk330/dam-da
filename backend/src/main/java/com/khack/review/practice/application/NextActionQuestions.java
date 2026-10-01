@@ -16,7 +16,8 @@ import java.util.Set;
  * <ul>
  *   <li>스스로 떠올릴 기회를 먼저 준다. 처음 틀렸으면 설명보다 힌트가 먼저다.</li>
  *   <li>여러 번 틀려 온 항목({@code repeatedDifficulty})은 힌트로 부족하므로 설명하고, 도움을 보고 맞혔어도 오늘 한 번 더 묻는다.</li>
- *   <li>도움을 보고 맞힌 답은 스스로 떠올린 것이 아니다. 설명을 보고 맞혔으면 오늘 한 번 더 묻고, 힌트만 보고 맞혔으면 넘어간다.</li>
+ *   <li>도움을 보고 맞힌 답은 스스로 떠올린 것이 아니므로 오늘 한 번 더 묻는다. 첫 학습의 도움 후 정답은 상태 규칙이 바로 확인 문제를
+ *       편성해 Jev에 오지 않는다(스펙 §11.3 7단계). 매일 학습에는 힌트 단계가 없으므로 Jev가 보는 경우는 매일 학습의 설명 후 정답이다.</li>
  *   <li>매일 학습은 시간이 짧다. 처음 틀린 항목은 설명 없이 그날 끝에 다시 묻는다(스펙 §6.4.8).</li>
  * </ul>
  * 다음 행동은 학습 흐름만 바꾸고 FSRS 등급에는 관여하지 않는다.
@@ -27,15 +28,15 @@ public final class NextActionQuestions {
     public static final String NEXT_ACTION = "next_action";
 
     private static final Map<FeedbackAction, String> DESCRIPTIONS = Map.of(
-            FeedbackAction.ADVANCE, "다음 문제로 넘어간다. 스스로 맞혔거나 힌트만 보고 맞혔고 `repeatedDifficulty`가 거짓일 때, "
-                    + "또는 더 할 수 있는 도움이 없을 때 고른다",
+            FeedbackAction.ADVANCE, "다음 문제로 넘어간다. 스스로 맞혔을 때, 또는 설명까지 이미 보아 더 할 수 있는 도움이 없을 때 고른다. "
+                    + "틀렸는데 설명을 아직 보지 않았으면 고르지 않는다",
             FeedbackAction.RETRY, "도움을 보았으니 같은 문제를 다시 풀게 한다",
             FeedbackAction.GIVE_HINT, "정답을 말하지 않는 힌트를 주고 다시 풀게 한다. 이 문제를 처음 틀렸고 `repeatedDifficulty`가 거짓일 때 고른다",
             FeedbackAction.EXPLAIN_CONCEPT, "개념을 설명한다. `repeatedDifficulty`가 참이거나, 오늘 다시 물을 수 없어 설명 말고는 "
                     + "도울 방법이 없을 때 고른다",
             FeedbackAction.GENERATE_VARIANT, "문제가 모호하므로 변형 문제로 다시 확인한다",
             FeedbackAction.RELEARN_TODAY, "지금은 넘어가고 오늘 풀이 끝에 같은 항목을 한 번 더 묻는다. `practiceKind`가 DAILY인데 처음 틀렸을 때, "
-                    + "설명을 보고 맞혔을 때, 도움을 보고 맞혔지만 `repeatedDifficulty`가 참일 때 고른다",
+                    + "도움(설명)을 보고 맞혔을 때 고른다",
             FeedbackAction.REQUEST_CONFIRMATION, "판정이 불확실하니 사용자에게 확인을 요청한다");
 
     private NextActionQuestions() {
@@ -61,8 +62,8 @@ public final class NextActionQuestions {
                         + "(2) `repeatedDifficulty`가 거짓이고 `latestOutcome`이 WRONG이면: `practiceKind`가 FIRST_STUDY일 때는 스스로 떠올릴 "
                         + "기회를 주기 위해 설명보다 힌트를 먼저 준다. DAILY일 때는 시간이 짧으므로 설명하지 않고 오늘 끝에 다시 묻는다. "
                         + "다시 묻기가 선택지에 없으면 개념을 설명한다. "
-                        + "(3) `repeatedDifficulty`가 거짓이고 `latestOutcome`이 CORRECT이면: `explanationShown`이 참이면 설명을 보고 맞힌 것이라 "
-                        + "스스로 떠올린 것이 아니므로 오늘 한 번 더 묻는다. `hintShown`만 참이면 다음 문제로 넘어간다.",
+                        + "(3) `latestOutcome`이 CORRECT이고 `explanationShown`이나 `hintShown`이 참이면 도움을 보고 맞힌 것이라 "
+                        + "스스로 떠올린 것이 아니므로 오늘 한 번 더 묻는다.",
                 options));
     }
 }

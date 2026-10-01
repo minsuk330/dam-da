@@ -59,12 +59,11 @@ public final class NextActionCheckCli {
                 false, false, false), hintOrExplain, FeedbackAction.GIVE_HINT));
         samples.add(new Sample("첫 학습 · 틀림 · 여러 번 틀려 온 항목", state(PracticeKind.FIRST_STUDY, AttemptOutcome.WRONG,
                 List.of(wrong), false, false, true), hintOrExplain, FeedbackAction.EXPLAIN_CONCEPT));
-        samples.add(new Sample("첫 학습 · 힌트 보고 맞힘", state(PracticeKind.FIRST_STUDY, AttemptOutcome.CORRECT,
-                List.of(wrong, retryCorrect), true, false, false), advanceOrRelearn, FeedbackAction.ADVANCE));
-        samples.add(new Sample("첫 학습 · 힌트 보고 맞힘 · 여러 번 틀려 온 항목", state(PracticeKind.FIRST_STUDY, AttemptOutcome.CORRECT,
-                List.of(wrong, retryCorrect), true, false, true), advanceOrRelearn, FeedbackAction.RELEARN_TODAY));
+        // 첫 학습의 도움 후 정답은 상태 규칙이 확인 문제(RELEARN_TODAY)로 정해 Jev에 오지 않는다. 매일 학습은 힌트 단계가 없다.
         samples.add(new Sample("매일 학습 · 설명 보고 맞힘", state(PracticeKind.DAILY, AttemptOutcome.CORRECT,
                 List.of(wrong, retryCorrect), false, true, false), advanceOrRelearn, FeedbackAction.RELEARN_TODAY));
+        samples.add(new Sample("매일 학습 · 설명 보고 맞힘 · 여러 번 틀려 온 항목", state(PracticeKind.DAILY, AttemptOutcome.CORRECT,
+                List.of(wrong, retryCorrect), false, true, true), advanceOrRelearn, FeedbackAction.RELEARN_TODAY));
         samples.add(new Sample("매일 학습 · 처음 틀림", state(PracticeKind.DAILY, AttemptOutcome.WRONG, List.of(wrong),
                 false, false, false), relearnOrExplain, FeedbackAction.RELEARN_TODAY));
         samples.add(new Sample("매일 학습 · 틀림 · 여러 번 틀려 온 항목", state(PracticeKind.DAILY, AttemptOutcome.WRONG,
