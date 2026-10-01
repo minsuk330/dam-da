@@ -177,6 +177,9 @@ export const components = {
     "rounded": 9999,
     "size": 72
   },
+  "celebration": {
+    "size": 390
+  },
   "phoneStage": {
     "backgroundColor": "#D4D7DE"
   },
