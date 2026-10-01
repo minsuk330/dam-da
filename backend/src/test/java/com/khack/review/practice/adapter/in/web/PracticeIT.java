@@ -428,4 +428,37 @@ class PracticeIT {
         assertThat(misreadLog.getMisreadConfidence()).isEqualTo(0.9);
         assertThat(misreadLog.getFailures()).isEqualTo("misread");
     }
+
+    @Test
+    void summaryCountsAHintSeenBeforeTheFirstAnswerAsHelp() throws Exception {
+        long sessionId = readySession();
+        long practiceId = ok("POST", "/api/sessions/%d/first-study/practice".formatted(sessionId), null).get("practiceId").asLong();
+
+        // 1번 서술형: 도움 없이 답하고 Jev가 맞다고 판정한다.
+        JsonNode first = ok("GET", "/api/practice/%d/next".formatted(practiceId), null).get("presentation");
+        long firstItem = presentations.findById(first.get("presentationId").asLong()).orElseThrow().getMemoryItemId();
+        jev.answers.add(judged("met", 0.05, 0.05));
+        ok("POST", "/api/practice/presentations/%d/attempts".formatted(first.get("presentationId").asLong()),
+                "{\"answer\":\"표준편차는 줄지 않는다\",\"selfAssessment\":\"RECALLED_EASILY\"}");
+
+        // 2번 객관식: 답하기 전에 힌트를 보면 첫 답부터 도움 후 시도라 평가하지 않고 복습 기록도 없다.
+        JsonNode second = ok("GET", "/api/practice/%d/next".formatted(practiceId), null).get("presentation");
+        long secondId = second.get("presentationId").asLong();
+        long secondItem = presentations.findById(secondId).orElseThrow().getMemoryItemId();
+        ok("POST", "/api/practice/presentations/%d/aids".formatted(secondId), "{\"type\":\"HINT\"}");
+        clock.travel(Duration.ofSeconds(10));
+        JsonNode aided = ok("POST", "/api/practice/presentations/%d/attempts".formatted(secondId),
+                "{\"choiceIndex\":0,\"selfAssessment\":\"RECALLED_EASILY\"}");
+        assertThat(aided.get("kind").asString()).isEqualTo("ASSISTED_RETRY");
+        assertThat(reviewLogs.findByAttemptId(aided.get("attemptId").asLong())).isEmpty();
+        assertThat(ok("GET", "/api/practice/%d/next".formatted(practiceId), null).get("done").asBoolean()).isTrue();
+
+        JsonNode summary = ok("GET", "/api/sessions/%d/first-study/summary".formatted(sessionId), null);
+
+        assertThat(summary.get("completed").asBoolean()).isTrue();
+        assertThat(summary.get("needsHelp").valueStream().map(item -> item.get("memoryItemId").asLong()).toList())
+                .contains(secondItem).doesNotContain(firstItem);
+        assertThat(summary.get("confirmed").valueStream().map(item -> item.get("memoryItemId").asLong()).toList())
+                .contains(firstItem).doesNotContain(secondItem);
+    }
 }
