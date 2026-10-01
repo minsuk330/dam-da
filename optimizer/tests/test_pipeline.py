@@ -84,3 +84,45 @@ def test_cli_synthetic_run_prints_the_validation_without_saving(capsys):
     out = capsys.readouterr().out
     assert '"reviewCount"' in out
     assert "기존 매개변수 유지" in out
+
+
+class FakeServer:
+    def __init__(self):
+        self.calls = []
+        self.logs = []
+
+    def switch_user(self, name):
+        self.calls.append(("switch", name))
+        return {"name": name}
+
+    def replace_history(self, logs):
+        self.calls.append(("replace", len(logs)))
+        self.logs = logs
+        return {"items": len({log.card_id for log in logs}), "reviews": len(logs)}
+
+    def review_logs(self):
+        return self.logs
+
+    def current(self):
+        return DEFAULT
+
+    def register(self, weights, validation):
+        self.calls.append(("register", len(weights)))
+        return 2
+
+    def activate(self, version):
+        self.calls.append(("activate", version))
+        return {"recomputed": 200, "skipped": 0}
+
+
+def test_cli_seeds_a_synthetic_user_then_trains_saves_and_activates(monkeypatch, capsys):
+    fake = FakeServer()
+    monkeypatch.setattr(cli, "Server", lambda url: fake)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        assert cli.main(["--server", "http://x", "--seed-synthetic-user"]) == 0
+
+    assert [call[0] for call in fake.calls] == ["switch", "replace", "register", "activate"]
+    assert fake.calls[0] == ("switch", cli.SYNTHETIC_USER)
+    assert "버전 2 적용" in capsys.readouterr().out

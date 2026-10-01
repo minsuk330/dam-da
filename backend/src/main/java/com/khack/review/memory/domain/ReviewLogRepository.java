@@ -13,4 +13,8 @@ public interface ReviewLogRepository extends JpaRepository<ReviewLog, Long> {
     List<ReviewLog> findByUserIdOrderByReviewedAtAscIdAsc(Long userId);
 
     List<ReviewLog> findByMemoryItemIdOrderByReviewedAtAscIdAsc(Long memoryItemId);
+
+    long countByUserIdAndRatingIsNotNull(Long userId);
+
+    void deleteByUserId(Long userId);
 }
