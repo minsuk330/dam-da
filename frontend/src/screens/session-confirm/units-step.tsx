@@ -4,13 +4,14 @@ import type { Schemas } from '@/api/client';
 import { useEditLearningSession } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { Notice } from '@/components/notice';
 import { Chip } from '@/components/chip';
 import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
 import { itemKindLabel, unitVerdictLabel } from '@/labels';
 import { colors, opacity, spacing } from '@/theme';
 
-import { Notice, StepHeader } from './parts';
+import { StepHeader } from './parts';
 
 type Detail = Schemas['LearningSessionDetail'];
 type Unit = Schemas['Unit'];
