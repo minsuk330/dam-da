@@ -111,6 +111,42 @@
         "tags" : [ "conversation-controller" ]
       }
     },
+    "/api/daily" : {
+      "get" : {
+        "operationId" : "today",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DailyView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-practice-controller" ]
+      }
+    },
+    "/api/daily/start" : {
+      "post" : {
+        "operationId" : "start",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DailyView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-practice-controller" ]
+      }
+    },
     "/api/learning-sessions" : {
       "get" : {
         "operationId" : "list_1",
@@ -562,6 +598,33 @@
         "tags" : [ "practice-controller" ]
       }
     },
+    "/api/sessions/{sessionId}/first-study/summary" : {
+      "get" : {
+        "operationId" : "summary",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Summary"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "first-study-controller" ]
+      }
+    },
     "/api/sessions/{sessionId}/learning-goals" : {
       "get" : {
         "operationId" : "options_1",
@@ -622,6 +685,33 @@
           }
         },
         "tags" : [ "learning-goal-controller" ]
+      }
+    },
+    "/api/sessions/{sessionId}/memory-gauge" : {
+      "get" : {
+        "operationId" : "gauge",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionGauge"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "memory-gauge-controller" ]
       }
     },
     "/api/sessions/{sessionId}/memory-strength" : {
@@ -875,6 +965,59 @@
         },
         "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
       },
+      "DailyView" : {
+        "type" : "object",
+        "properties" : {
+          "carriedOver" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "completed" : {
+            "type" : "boolean"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "estimatedSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemView"
+            }
+          },
+          "newCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "practiceId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "reviewCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "started" : {
+            "type" : "boolean"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unavailable" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        },
+        "required" : [ "carriedOver", "completed", "date", "estimatedSeconds", "items", "newCount", "practiceId", "reviewCount", "started", "total", "unavailable" ]
+      },
       "ExclusionRequest" : {
         "type" : "object",
         "properties" : {
@@ -1025,6 +1168,67 @@
           }
         },
         "required" : [ "content", "id", "kind", "sourceTurns", "status" ]
+      },
+      "ItemGauge" : {
+        "type" : "object",
+        "properties" : {
+          "checked" : {
+            "type" : "boolean"
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "percent" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "retrievability" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          }
+        },
+        "required" : [ "checked", "memoryItemId", "percent", "retrievability" ]
+      },
+      "ItemView" : {
+        "type" : "object",
+        "properties" : {
+          "estimatedSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "held" : {
+            "type" : "boolean"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FACT", "WARNING", "PRACTICE", "CONFUSION" ]
+          },
+          "learningSessionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "questionType" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          },
+          "relearnToday" : {
+            "type" : "boolean"
+          },
+          "retrievability" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "REVIEW", "NEW" ]
+          }
+        },
+        "required" : [ "estimatedSeconds", "held", "kind", "learningSessionId", "memoryItemId", "questionType", "relearnToday", "retrievability", "source" ]
       },
       "JudgmentView" : {
         "type" : "object",
@@ -1478,6 +1682,22 @@
         },
         "required" : [ "confusionPoints", "evidenceTurns", "keyPoints", "title" ]
       },
+      "SessionGauge" : {
+        "type" : "object",
+        "properties" : {
+          "sessionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "units" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UnitView"
+            }
+          }
+        },
+        "required" : [ "sessionId", "units" ]
+      },
       "ShareLinkRequest" : {
         "type" : "object",
         "properties" : {
@@ -1511,6 +1731,82 @@
           }
         },
         "required" : [ "answer", "choiceIndex", "firstInputMs", "responseTimeMs", "selfAssessment" ]
+      },
+      "Summary" : {
+        "type" : "object",
+        "properties" : {
+          "completed" : {
+            "type" : "boolean"
+          },
+          "completedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "confirmed" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SummaryItem"
+            }
+          },
+          "needsHelp" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SummaryItem"
+            }
+          },
+          "nextReviewAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "notChecked" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SummaryItem"
+            }
+          },
+          "sessionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "units" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UnitView"
+            }
+          }
+        },
+        "required" : [ "completed", "completedAt", "confirmed", "needsHelp", "nextReviewAt", "notChecked", "sessionId", "units" ]
+      },
+      "SummaryItem" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "gauge" : {
+            "$ref" : "#/components/schemas/ItemGauge"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FACT", "WARNING", "PRACTICE", "CONFUSION" ]
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nextReviewAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "unitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "unitTitle" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "content", "gauge", "kind", "memoryItemId", "nextReviewAt", "unitId", "unitTitle" ]
       },
       "Turn" : {
         "type" : "object",
@@ -1594,6 +1890,58 @@
           }
         },
         "required" : [ "evidenceTurns", "excluded", "id", "items", "title", "verdict", "verdictReason" ]
+      },
+      "UnitGauge" : {
+        "type" : "object",
+        "properties" : {
+          "average" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "averagePercent" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "checkedItems" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalItems" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "weakestItemId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "weakestPercent" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          }
+        },
+        "required" : [ "average", "averagePercent", "checkedItems", "totalItems", "weakestItemId", "weakestPercent" ]
+      },
+      "UnitView" : {
+        "type" : "object",
+        "properties" : {
+          "gauge" : {
+            "$ref" : "#/components/schemas/UnitGauge"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemView"
+            }
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "unitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "gauge", "items", "title", "unitId" ]
       },
       "UserTurnResponse" : {
         "type" : "object",
