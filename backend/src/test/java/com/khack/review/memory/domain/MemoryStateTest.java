@@ -80,4 +80,32 @@ class MemoryStateTest {
         assertThat(FsrsSchedulers.defaultParameters()).hasSize(FsrsSchedulers.PARAMETER_COUNT);
         assertThatThrownBy(() -> FsrsSchedulers.create(new double[19], 0.9)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void twoConsecutiveHoldsPauseAutoQuestionsWithoutTouchingFsrs() {
+        MemoryState state = reviewed(Rating.GOOD, SCHEDULER);
+        Instant due = state.getDue();
+
+        state.hold();
+        assertThat(state.getConsecutiveHolds()).isEqualTo(1);
+        assertThat(state.isAutoQuestionsPaused()).isFalse();
+
+        state.hold();
+        assertThat(state.getConsecutiveHolds()).isEqualTo(MemoryState.MAX_CONSECUTIVE_HOLDS);
+        assertThat(state.isAutoQuestionsPaused()).isTrue();
+        assertThat(state.getDue()).isEqualTo(due);
+        assertThat(state.getLastReview()).isEqualTo(NOW);
+    }
+
+    @Test
+    void aRatingBreaksTheHoldStreak() {
+        MemoryState state = reviewed(Rating.GOOD, SCHEDULER);
+        state.hold();
+
+        state.review(SCHEDULER, 1, Rating.GOOD, NOW.plus(Duration.ofDays(3)));
+        state.hold();
+
+        assertThat(state.getConsecutiveHolds()).isEqualTo(1);
+        assertThat(state.isAutoQuestionsPaused()).isFalse();
+    }
 }
