@@ -4,6 +4,7 @@ import com.khack.review.collection.domain.LearningConversation;
 import com.khack.review.collection.domain.LearningConversationRepository;
 import com.khack.review.collection.domain.SavedSession;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,12 @@ public class ConversationQueryService {
         return conversations.findAllByOrderByReceivedAtAscIdAsc().stream()
                 .map(LearningConversation::toSavedSession)
                 .toList();
+    }
+
+    /** 외부 ID(sessionId)로 찾는다. 앱의 받은 대화 화면이 쓴다. */
+    @Transactional(readOnly = true)
+    public Optional<SavedSession> findBySessionId(String sessionId) {
+        return conversations.findBySessionId(sessionId).map(LearningConversation::toSavedSession);
     }
 
     private LearningConversation conversation(Long conversationId) {

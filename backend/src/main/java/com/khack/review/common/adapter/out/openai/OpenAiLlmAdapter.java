@@ -5,11 +5,11 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
 @Component
-class OpenAiLlmAdapter implements LlmPort {
+public class OpenAiLlmAdapter implements LlmPort {
 
 	private final ChatClient chatClient;
 
-	OpenAiLlmAdapter(ChatClient.Builder chatClientBuilder) {
+	public OpenAiLlmAdapter(ChatClient.Builder chatClientBuilder) {
 		this.chatClient = chatClientBuilder.build();
 	}
 

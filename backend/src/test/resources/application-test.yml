@@ -7,6 +7,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+springdoc:
+  api-docs:
+    enabled: true
 review:
   dev-tools:
     enabled: true

@@ -27,7 +27,22 @@ spring:
         protocol: STREAMABLE
         streamable-http:
           mcp-endpoint: /mcp
+springdoc:
+  # /v3/api-docs, /swagger-ui. 기본은 꺼 두고 로컬에서만 켠다(배포 서버에 API 문서를 노출하지 않는다).
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:false}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:false}
+  # 프론트엔드 계약은 /api/**만. /dev, /mcp, /healthz는 넣지 않는다.
+  paths-to-match: /api/**
+  default-produces-media-type: application/json
+  # frontend/openapi.json 비교가 순서에 흔들리지 않게 한다.
+  writer-with-order-by-keys: true
+  writer-with-default-pretty-printer: true
 review:
+  cors:
+    # 로컬 Expo 웹 개발 서버만. 배포 서버는 Vercel rewrites로 같은 출처라 비워 둔다(CORS_ALLOWED_ORIGINS=).
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8081}
   dev-tools:
     # /dev/** (세션 뷰어, 시간 이동). 켜면 이 기기에서 직접 온 요청과, X-Dev-Token 헤더가 token과 같은 원격 요청만 허용한다.
     enabled: ${DEV_TOOLS_ENABLED:false}
@@ -87,6 +102,23 @@ review:
     # 기억 강도별 예상 하루 부담 시뮬레이션 기간과 복습 1회 예상 시간(분)
     simulation-days: 30
     minutes-per-review: 0.75
+    # 매일 학습 큐 (스펙 §6.4.4, §6.4.6). 문제 유형별 소요 시간은 아래 rating.reference-times를 쓴다
+    daily:
+      # 하루 시간 예산 (문제 유형별 기준 시간의 합)
+      budget: 5m
+      # 신규 항목 하루 상한
+      max-new-items: 3
+      # 우선순위 = (1 - R) x 가중치. 헷갈린 지점 > warning > fact·practice
+      weights:
+        CONFUSION: 3.0
+        WARNING: 2.0
+        FACT: 1.0
+        PRACTICE: 1.0
+      # 보류 항목의 최소 긴급도(보류는 기억 상태를 바꾸지 않아 R이 높을 수 있다)
+      held-min-urgency: 0.5
+      # 안정도 사다리 경계 (S, 일). 초기안
+      ladder-level2-min-stability-days: 3
+      ladder-level3-min-stability-days: 14
     rating:
       # 등급 변환표 행 1·2의 판정 신뢰도 기준 (스펙 §6.4.5)
       min-confidence: 0.6

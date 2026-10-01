@@ -63,7 +63,17 @@ public class PracticeSession {
         return session;
     }
 
-    /** 같은 날 재확인을 큐 끝에 넣는다. 끝난 세션이면 다시 연다. */
+    /** 매일 학습 풀이. 여러 학습 세션을 섞으므로 학습 세션 ID가 없다. 문제는 매일 학습 큐 순서다(스펙 §6.4.4). */
+    public static PracticeSession daily(Long userId, List<Long> questionIds, Instant at) {
+        PracticeSession session = new PracticeSession();
+        session.userId = userId;
+        session.kind = PracticeKind.DAILY;
+        questionIds.forEach(id -> session.enqueue(id, null));
+        session.startedAt = at;
+        return session;
+    }
+
+    /** 같은 날 재확인을 넣는다. 끝난 세션이면 다시 연다. */
     public void enqueueRecheck(Long questionId, Long recheckOfPresentationId) {
         enqueue(questionId, recheckOfPresentationId);
         completedAt = null;

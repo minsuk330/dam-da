@@ -1,0 +1,63 @@
+{
+  "topicHint": "HTTP 캐시와 ETag",
+  "userTurns": [
+    { "index": 1, "text": "HTTP 캐시에서 ETag가 뭐야?", "intent": "info_request" },
+    {
+      "index": 2,
+      "text": "그럼 ETag는 요청 올 때마다 서버가 파일 내용을 전부 비교해서 만드는 거지?",
+      "intent": "understanding_check",
+      "aiVerdict": "corrected",
+      "correction": "서버는 요청마다 파일 내용을 비교하지 않는다. ETag는 내용 해시나 수정 시각·크기로 미리 만들어 둔 버전 식별자이고, 요청이 오면 If-None-Match 값과 현재 ETag 문자열만 비교한다."
+    },
+    { "index": 3, "text": "좀 더 쉽게 설명해줘", "intent": "rephrase_request" },
+    {
+      "index": 4,
+      "text": "정리하면 브라우저가 If-None-Match로 ETag를 보내고 같으면 서버가 304를 줘서 본문 없이 끝나는 거지?",
+      "intent": "restatement",
+      "aiVerdict": "confirmed"
+    },
+    { "index": 5, "text": "304가 항상 200보다 빠르다는 근거는 뭐야?", "intent": "challenge" },
+    { "index": 6, "text": "이 대화 복습에 넣어줘", "intent": "meta" }
+  ],
+  "reviewUnits": [
+    {
+      "title": "ETag와 조건부 요청",
+      "keyPoints": [
+        {
+          "point": "ETag는 서버가 응답에 붙이는 리소스 버전 식별자다. 리소스 내용이 바뀌면 ETag 값도 바뀐다.",
+          "turns": [1, 3]
+        },
+        {
+          "point": "브라우저는 캐시한 응답을 재검증할 때 If-None-Match 헤더에 ETag를 담아 보내고, 서버의 현재 ETag와 같으면 서버는 본문 없이 304 Not Modified를 응답한다.",
+          "turns": [1, 3, 4]
+        },
+        {
+          "point": "서버는 요청마다 파일 내용을 비교하지 않고 ETag 문자열만 비교한다. ETag는 내용 해시나 수정 시각·크기로 만든다.",
+          "turns": [2]
+        }
+      ],
+      "confusionPoints": [
+        { "turn": 2, "userBelief": "ETag는 요청이 올 때마다 서버가 파일 내용을 전부 비교해서 만든다" }
+      ]
+    },
+    {
+      "title": "304 응답의 성능",
+      "keyPoints": [
+        {
+          "point": "304 응답은 본문을 보내지 않아 전송량이 줄지만, 서버까지 왕복하는 요청 자체는 발생한다.",
+          "turns": [5]
+        },
+        {
+          "point": "리소스가 아주 작으면 304와 200의 시간 차이가 거의 없으므로 '304가 항상 더 빠르다'고 외우면 안 된다.",
+          "turns": [5],
+          "kind": "warning"
+        },
+        {
+          "point": "브라우저 개발자 도구의 Network 탭에서 상태 코드 304와 전송 크기를 보면 재검증이 일어났는지 확인할 수 있다.",
+          "turns": [5],
+          "kind": "practice"
+        }
+      ]
+    }
+  ]
+}

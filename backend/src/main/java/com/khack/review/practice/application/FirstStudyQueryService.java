@@ -4,6 +4,7 @@ import com.khack.review.analysis.application.LearningSessionQueryService;
 import com.khack.review.analysis.domain.LearningSessionStatus;
 import com.khack.review.practice.domain.FirstStudyPlan;
 import com.khack.review.practice.domain.FirstStudyPlanRepository;
+import com.khack.review.practice.domain.GenerationStatus;
 import com.khack.review.practice.domain.PlannedQuestionEntry;
 import com.khack.review.question.application.QuestionGenerationService;
 import com.khack.review.question.domain.Question;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +43,12 @@ public class FirstStudyQueryService {
     public record HeldSlot(int position, Long memoryItemId, QuestionType type) {
     }
 
-    public record FirstStudy(LearningSessionStatus sessionStatus, boolean generating, int planned, List<QuestionView> questions,
-            List<HeldSlot> held) {
+    /**
+     * {@code failed}면 승인된 문제가 하나도 없거나 생성 중 오류가 났다. 세션은 확인 완료에 머물러 목표를 다시 고를 수 있고,
+     * {@code failureReason}에 이유가 있다.
+     */
+    public record FirstStudy(LearningSessionStatus sessionStatus, boolean generating, boolean failed, @Nullable String failureReason,
+            int planned, List<QuestionView> questions, List<HeldSlot> held) {
     }
 
     @Transactional(readOnly = true)
@@ -50,12 +56,13 @@ public class FirstStudyQueryService {
         LearningSessionStatus status = sessions.detail(sessionId).status();
         FirstStudyPlan plan = plans.findBySessionId(sessionId).orElse(null);
         if (plan == null) {
-            return new FirstStudy(status, false, 0, List.of(), List.of());
+            return new FirstStudy(status, false, false, null, 0, List.of(), List.of());
         }
         Map<Integer, Question> approved = questions.questionsOf(sessionId).stream()
                 .filter(q -> q.getStatus() == QuestionStatus.APPROVED && q.getPlanPosition() != null)
                 .collect(Collectors.toMap(Question::getPlanPosition, Function.identity(), (first, later) -> later));
-        boolean generating = status == LearningSessionStatus.CONFIRMED;
+        boolean failed = plan.getGenerationStatus() == GenerationStatus.FAILED;
+        boolean generating = status == LearningSessionStatus.CONFIRMED && !failed;
         List<QuestionView> views = plan.getQuestions().stream()
                 .filter(entry -> approved.containsKey(entry.getPosition()))
                 .map(entry -> view(entry, approved.get(entry.getPosition())))
@@ -64,7 +71,8 @@ public class FirstStudyQueryService {
                 .filter(entry -> !approved.containsKey(entry.getPosition()))
                 .map(entry -> new HeldSlot(entry.getPosition(), entry.getMemoryItemId(), entry.getQuestionType()))
                 .toList();
-        return new FirstStudy(status, generating, plan.getQuestions().size(), views, held);
+        return new FirstStudy(status, generating, failed, failed ? plan.getGenerationFailure() : null, plan.getQuestions().size(),
+                views, held);
     }
 
     private static QuestionView view(PlannedQuestionEntry entry, Question question) {
