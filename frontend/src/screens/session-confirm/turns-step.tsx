@@ -7,6 +7,7 @@ import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Notice } from '@/components/notice';
 import { Chip } from '@/components/chip';
+import { ChoiceChip } from '@/components/choice-chip';
 import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
 import { aiVerdictLabel, intentLabel, itemKindLabel } from '@/labels';
@@ -46,10 +47,13 @@ export function TurnsStep({ session, onNext }: { session: Detail; onNext: () => 
       )}
       {edit.error && <Notice tone="danger">{edit.error.message}</Notice>}
 
-      {session.turns.map((turn) =>
-        editing === turn.index ? (
-          <TurnEditor
-            key={turn.index}
+      <Card style={styles.list}>
+        {session.turns.map((turn, i) =>
+          editing === turn.index ? (
+            <TurnEditor
+              key={turn.index}
+              inline
+              divided={i > 0}
             title={`${turn.index}번째 메시지 고치기`}
             initial={turn}
             saving={edit.isPending}
@@ -66,9 +70,16 @@ export function TurnsStep({ session, onNext }: { session: Detail; onNext: () => 
             }
           />
         ) : (
-          <TurnCard key={turn.index} turn={turn} onEdit={() => setEditing(turn.index)} disabled={editing !== null} />
-        ),
-      )}
+            <TurnRow
+              key={turn.index}
+              turn={turn}
+              divided={i > 0}
+              onEdit={() => setEditing(turn.index)}
+              disabled={editing !== null}
+            />
+          ),
+        )}
+      </Card>
 
       {editing === 'new' ? (
         <TurnEditor
@@ -98,11 +109,22 @@ export function TurnsStep({ session, onNext }: { session: Detail; onNext: () => 
   );
 }
 
-function TurnCard({ turn, onEdit, disabled }: { turn: Turn; onEdit: () => void; disabled: boolean }) {
+/** 메시지 한 줄. 대화 진행(meta) 메시지는 흐리게 두고 복습에 쓰지 않는다고 밝힌다. */
+function TurnRow({
+  turn,
+  divided,
+  onEdit,
+  disabled,
+}: {
+  turn: Turn;
+  divided: boolean;
+  onEdit: () => void;
+  disabled: boolean;
+}) {
   const meta = turn.intent === 'meta';
   const verdict = turn.aiVerdict ? aiVerdictLabel[turn.aiVerdict] : null;
   return (
-    <Card style={[styles.turn, meta && styles.turnMeta]}>
+    <View style={[styles.turn, divided && styles.divided]}>
       <View style={styles.turnHeader}>
         <ThemedText variant="caption" tone="inkMuted">
           {turn.index}번째 메시지
@@ -132,7 +154,7 @@ function TurnCard({ turn, onEdit, disabled }: { turn: Turn; onEdit: () => void; 
           {turn.correction ? ` · ${turn.correction}` : ''}
         </ThemedText>
       )}
-    </Card>
+    </View>
   );
 }
 
@@ -141,6 +163,8 @@ function TurnCard({ turn, onEdit, disabled }: { turn: Turn; onEdit: () => void; 
  * 대화 진행(meta) 발화는 근거가 될 수 없으므로(규칙 15) 그때는 고르지 않는다.
  */
 function TurnEditor({
+  inline,
+  divided,
   title,
   initial,
   sourceCandidates,
@@ -148,6 +172,9 @@ function TurnEditor({
   onSave,
   onCancel,
 }: {
+  /** 메시지 목록 카드 안에서 그 자리에 펼칠 때. 카드를 겹치지 않는다. */
+  inline?: boolean;
+  divided?: boolean;
   title: string;
   initial: { text: string; intent: Intent };
   sourceCandidates?: Item[];
@@ -164,8 +191,9 @@ function TurnEditor({
     setSourceOf((ids) => (ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id]));
   }
 
+  const Wrapper = inline ? View : Card;
   return (
-    <Card style={styles.turn}>
+    <Wrapper style={[styles.turn, divided && styles.divided]}>
       <ThemedText variant="headline">{title}</ThemedText>
       <TextInput
         accessibilityLabel="메시지 내용"
@@ -181,21 +209,9 @@ function TurnEditor({
         이 메시지는 무엇이었나요?
       </ThemedText>
       <View style={styles.intents}>
-        {INTENTS.map((value) => {
-          const selected = value === intent;
-          return (
-            <Pressable
-              key={value}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: selected }}
-              onPress={() => setIntent(value)}
-              style={[styles.intent, selected && styles.intentSelected]}>
-              <ThemedText variant="caption" tone={selected ? 'onPrimary' : 'ink'}>
-                {intentLabel[value]}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
+        {INTENTS.map((value) => (
+          <ChoiceChip key={value} label={intentLabel[value]} selected={value === intent} onPress={() => setIntent(value)} />
+        ))}
       </View>
       {canBeSource && (
         <View>
@@ -228,14 +244,14 @@ function TurnEditor({
           style={styles.editorButton}
         />
       </View>
-    </Card>
+    </Wrapper>
   );
 }
 
 const styles = StyleSheet.create({
   step: { gap: spacing.md },
-  turn: { gap: spacing.sm },
-  turnMeta: { backgroundColor: colors.surfaceSoft },
+  list: { paddingVertical: spacing.xs },
+  turn: { gap: spacing.sm, paddingVertical: spacing.lg },
   turnHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   spacer: { flex: 1 },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline },
@@ -249,15 +265,6 @@ const styles = StyleSheet.create({
     minHeight: components.textAreaCompact.height,
   },
   intents: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  intent: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: components.chipSoft.rounded,
-    backgroundColor: colors.surfaceSoft,
-    borderWidth: components.answerOptionOutline.width,
-    borderColor: components.answerOptionOutline.backgroundColor,
-  },
-  intentSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   editorActions: { flexDirection: 'row', gap: spacing.sm },
   editorButton: { flex: 1 },
 });

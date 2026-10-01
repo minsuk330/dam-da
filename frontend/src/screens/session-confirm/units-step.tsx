@@ -114,7 +114,7 @@ function UnitCard({
 
       <Pressable accessibilityRole="button" disabled={busy} onPress={onToggleUnit} hitSlop={8} style={styles.unitToggle}>
         <ThemedText variant="subhead" tone={busy ? 'inkMuted' : 'primaryInk'}>
-          {unit.excluded ? '이 단위 다시 넣기' : '이 단위 통째로 빼기'}
+          {unit.excluded ? '이 주제 다시 넣기' : '이 주제 빼기'}
         </ThemedText>
       </Pressable>
     </Card>

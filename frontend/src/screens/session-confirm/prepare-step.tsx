@@ -5,6 +5,7 @@ import { useFirstStudy } from '@/api/learning-sessions';
 import { useStartFirstStudy } from '@/api/practice';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { Chip } from '@/components/chip';
 import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
 import { questionTypeLabel } from '@/labels';
@@ -86,9 +87,7 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
 
       <View style={styles.types}>
         {summarizeTypes(data.questions.map((q) => q.type)).map(([type, count]) => (
-          <ThemedText key={type} variant="subhead" tone="inkSecondary">
-            {questionTypeLabel[type]} {count}개
-          </ThemedText>
+          <Chip key={type} label={`${questionTypeLabel[type]} ${count}`} />
         ))}
       </View>
 
@@ -133,5 +132,5 @@ const styles = StyleSheet.create({
   quality: { gap: spacing.md },
   stats: { flexDirection: 'row' },
   stat: { flex: 1, alignItems: 'center', gap: spacing.xs },
-  types: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, justifyContent: 'center' },
+  types: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 });
