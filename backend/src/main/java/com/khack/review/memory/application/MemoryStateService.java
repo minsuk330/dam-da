@@ -6,6 +6,7 @@ import io.github.openspacedrepetition.Rating;
 import io.github.openspacedrepetition.State;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,21 @@ public class MemoryStateService {
         states.save(state);
         return new ReviewResult(memoryItemId, rating, reviewedAt, before, state.getState(), state.getStability(),
                 state.getDifficulty(), state.getDue(), active.version());
+    }
+
+    /**
+     * 기억 항목들의 목표 유지율을 바꾼다(기억 강도 설정, 스펙 §6.4.7). 아직 등급을 받지 않은 항목도 상태 행을 만들어
+     * 유지율을 담아 두며, R과 다음 복습 시각은 여전히 첫 등급 전까지 비어 있다.
+     * 이미 복습한 항목은 다음 등급부터 새 유지율로 간격을 계산한다.
+     */
+    @Transactional
+    public void applyRetention(Long userId, List<Long> memoryItemIds, double desiredRetention) {
+        for (Long itemId : memoryItemIds) {
+            MemoryState state = states.findByMemoryItemId(itemId)
+                    .orElseGet(() -> new MemoryState(userId, itemId, desiredRetention, clock.instant()));
+            state.changeDesiredRetention(desiredRetention);
+            states.save(state);
+        }
     }
 
     /** 지금 떠올릴 수 있는 확률 R. 아직 등급을 받은 적 없는 항목이면 비어 있다("아직 확인 전"). */
