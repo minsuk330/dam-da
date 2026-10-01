@@ -1,0 +1,211 @@
+{
+  "name": "innodb-lock-mvcc",
+  "source": "Claude 공유 링크 (비공개, 커밋 금지)",
+  "turns": [
+    {
+      "text": "* 인덱스는 조회의 성능을 높여주는 것 뿐만 아니라 잠금 범위를 줄여 동시성도 높이는 역할을 한다. Inno DB의 경우 SQL의 최종 결과가 아닌 실제로 스캔한 인덱스 범위를 기준으로 잠금을 설정한다.\n* 인덱스가 없이 범위 조건의 SELECT를 For update로 조회하게 된다면 많은 레코드를 스캔해야 하고 훨씬 넓은 잠금을 해야 한다.\n* -> 여기서 의문 더 많은 레코드를 스캔한다고 하는건 이해가 돼 왜냐면 범위를 찾으려면 인덱스가 없는 경우 전체 스캔을 해야 하니까 하지만 이때 잠금의 범위를 어떻게 설정 한다는 거지? 예를 들어 결국 full scan으로 범위를 찾았어 그러면 해당 범위만 잠금하면 되는거 아닌지?",
+      "verdict": "corrected",
+      "intent": null
+    },
+    {
+      "text": "이건 먼지 간단 설명좀",
+      "verdict": null,
+      "intent": "info_request"
+    },
+    {
+      "text": "그니까 정리를 하자면 인덱스가 없을 경우에는 테이블 full scan을 때려야 하는데 인덱스가 없다면 이게 물리적으로 정렬되어 있지가 않기 때문에 val 5~7인 행들 사이가 물리적으로 어디있는줄 모르고 결국 더 많은 범위를 잠근다는 건가?",
+      "verdict": "corrected",
+      "intent": null
+    },
+    {
+      "text": "그러면 보통 인덱스가 없을 경우에는 전부를 잠궈? \n행이 어디 있는지는 아는데 그 사이에 물리적으로 누가 있는지는 모르잖아",
+      "verdict": "corrected",
+      "intent": null
+    },
+    {
+      "text": "그러면 full scan전에 하나씩 찾아보면서 lock을 거는게 맞지?\n스캔 하고 락을 거는게 아니라?",
+      "verdict": "confirmed",
+      "intent": "understanding_check"
+    },
+    {
+      "text": "정리\n\n1. 인덱스가 잠금을 하려는 컬럼에 대해서 존재 하고 범위에 대해서 잠금을 적용하려 할 땐 그 범위에 대해서 lock을 걸어줘야 한다. 각각 행에는 record lock을 걸고 그 사이에는 gap lock을 통해서 팬텀을 막는다.\n2. 인덱스가 잠금을 하려는 컬럼에 존재하지 않고 범위에 대해서 잠금을 수행해야 할 땐 테이블 전체를 스캔해야 하는데 각각 하나씩 돌면서 잠금을 하고 이걸 서버쪽에서 평가해서 맞다면 잠금 아니면 회수 이런 식으로 간다",
+      "verdict": "corrected",
+      "intent": "restatement"
+    },
+    {
+      "text": "아 그니까 lock은 next-key lock이 적용된다는 거지? \n\n머 갭락 레코드락 따로따로 조건에 따라 적용되는게 아니라?",
+      "verdict": "corrected",
+      "intent": null
+    },
+    {
+      "text": "그럼 인덱스 없을 때 모든 행에 대해 lock을 걸어?",
+      "verdict": "confirmed",
+      "intent": null
+    },
+    {
+      "text": "mvcc설명에서 질문\n\n1. tx a와 b가 있고 a가 수정을 진행할 때 수정하기 전 원본을 snapshot을 생성하고 b가 도중에 조회하면 이 스냅샷을 읽는게 맞아?",
+      "verdict": "corrected",
+      "intent": null
+    },
+    {
+      "text": "그니까 간단하게 B는 이 행을 가지고 작업중인 tx가 있다면 log를 읽는거지?",
+      "verdict": "corrected",
+      "intent": null
+    },
+    {
+      "text": "간단하게 설명해줘",
+      "verdict": null,
+      "intent": "rephrase_request"
+    },
+    {
+      "text": "trx_id가 뭔데",
+      "verdict": null,
+      "intent": "info_request"
+    },
+    {
+      "text": "인덱스가 없는 컬럼에 잠금 for update를 걸면 해당 테이블에 모든 행이 잠기는거야?",
+      "verdict": "confirmed",
+      "intent": null
+    },
+    {
+      "text": "그러면 select for update에서 조건이 범위인지 하나인지 상관 없이 그냥 다 잠기는구나?",
+      "verdict": "confirmed",
+      "intent": null
+    },
+    {
+      "text": "이러한 개념은 기본 개념이야?",
+      "verdict": null,
+      "intent": null
+    },
+    {
+      "text": "실무 3~4년차도 next-key lock 설명 못 하는 경우가 흔해요. -> 이거 기준은?",
+      "verdict": null,
+      "intent": "challenge"
+    },
+    {
+      "text": "gap lock에서 앞쪽을 잠그는걸로 이해했는데 이때 앞쪽은 물리적인 위치 기준?",
+      "verdict": "corrected",
+      "intent": null
+    },
+    {
+      "text": "근데 인덱스가 없는 경우에도 각 행마다 next key lock을 거는데 이러면 갭락과 레코드락이 같이 걸리잖아 이때 갭락은 어떤 기준으로 걸리는 거야?",
+      "verdict": null,
+      "intent": null
+    },
+    {
+      "text": "mvcc는 결국 readview를 다룬 개념이지?",
+      "verdict": "corrected",
+      "intent": null
+    }
+  ],
+  "facts": [
+    {
+      "id": "explain-full-scan",
+      "allOf": [
+        [
+          "EXPLAIN"
+        ],
+        [
+          "ALL",
+          "풀스캔",
+          "옵티마이저"
+        ]
+      ]
+    },
+    {
+      "id": "progressive-lock-deadlock",
+      "allOf": [
+        [
+          "데드락"
+        ],
+        [
+          "레코드마다",
+          "하나씩",
+          "읽는 즉시",
+          "점진",
+          "부분"
+        ]
+      ]
+    },
+    {
+      "id": "next-record-locked",
+      "allOf": [
+        [
+          "다음 레코드",
+          "다음 엔트리",
+          "바로 다음"
+        ],
+        [
+          "잠"
+        ]
+      ]
+    },
+    {
+      "id": "rc-gap-exception",
+      "allOf": [
+        [
+          "RC",
+          "READ COMMITTED"
+        ],
+        [
+          "외래키",
+          "FK",
+          "중복 검사",
+          "중복 체크"
+        ]
+      ]
+    },
+    {
+      "id": "secondary-locks-clustered",
+      "allOf": [
+        [
+          "세컨더리"
+        ],
+        [
+          "클러스터 인덱스도",
+          "PK 행도",
+          "양쪽",
+          "같이 잠",
+          "함께 잠"
+        ]
+      ]
+    },
+    {
+      "id": "gap-only-insert-deadlock",
+      "allOf": [
+        [
+          "gap",
+          "갭"
+        ],
+        [
+          "INSERT"
+        ],
+        [
+          "데드락"
+        ]
+      ]
+    },
+    {
+      "id": "supremum",
+      "allOf": [
+        [
+          "supremum"
+        ]
+      ]
+    },
+    {
+      "id": "data-locks-check",
+      "allOf": [
+        [
+          "data_locks"
+        ]
+      ]
+    }
+  ],
+  "forbidden": [
+    {
+      "id": "rc-no-gap-lock",
+      "regex": "(READ COMMITTED|RC)[^\\n]{0,40}(record lock만|record only|레코드 락만|갭 ?락(이|은)? ?없|gap lock 없)"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "c4-short-acks",
+  "platform": "claude",
+  "userTurns": [
+    "HTTP 캐시에서 ETag가 뭐야?",
+    "아 네",
+    "그럼 Last-Modified랑 같은 거죠?",
+    "ㅇㅋ",
+    "둘 다 있으면 뭐가 우선이야?",
+    "복습에 넣어줘"
+  ],
+  "shareUrl": ""
+}

@@ -1,0 +1,50 @@
+{
+  "name": "b2-http-etag",
+  "source": "fixtures/scripts/b2-short.json",
+  "turns": [
+    {
+      "text": "HTTP 캐시에서 ETag가 뭐야?",
+      "verdict": null,
+      "intent": "info_request"
+    },
+    {
+      "text": "그럼 ETag는 요청 올 때마다 서버가 파일 내용을 전부 비교해서 만드는 거지?",
+      "verdict": null,
+      "intent": "understanding_check"
+    },
+    {
+      "text": "좀 더 쉽게 설명해줘",
+      "verdict": null,
+      "intent": "rephrase_request"
+    },
+    {
+      "text": "정리하면 브라우저가 If-None-Match로 ETag를 보내고 같으면 서버가 304를 줘서 본문 없이 끝나는 거지?",
+      "verdict": null,
+      "intent": "restatement"
+    },
+    {
+      "text": "304가 항상 200보다 빠르다는 근거는 뭐야?",
+      "verdict": null,
+      "intent": "challenge"
+    }
+  ],
+  "facts": [
+    {
+      "id": "if-none-match",
+      "allOf": [
+        [
+          "If-None-Match"
+        ]
+      ]
+    },
+    {
+      "id": "304",
+      "allOf": [
+        [
+          "304"
+        ]
+      ]
+    }
+  ],
+  "forbidden": []
+}

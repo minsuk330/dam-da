@@ -1,0 +1,12 @@
+{
+  "name": "c1-short",
+  "platform": "claude",
+  "userTurns": [
+    "TCP랑 UDP 차이를 쉽게 설명해줘",
+    "그럼 TCP가 느린 이유가 3-way handshake 때문이야?",
+    "handshake는 연결할 때 한 번만 하는 거지?",
+    "UDP는 순서가 안 맞으면 어떻게 돼?",
+    "이 내용 복습에 넣어줘"
+  ],
+  "shareUrl": ""
+}

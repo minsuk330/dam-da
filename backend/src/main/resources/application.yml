@@ -1,0 +1,29 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: review
+  config:
+    import: optional:file:.env[.properties]
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        model: ${OPENAI_MODEL:gpt-5-mini}
+    mcp:
+      server:
+        name: review-connector
+        version: 0.1.0
+        type: SYNC
+        protocol: STREAMABLE
+        streamable-http:
+          mcp-endpoint: /mcp
+review:
+  sessions-file: data/sessions.jsonl
+  jev:
+    api-key: ${TYPESAFE_API_KEY:}
+    base-url: https://api.typesafe.ai
+    model: jev-latest
+logging:
+  level:
+    io.modelcontextprotocol: INFO

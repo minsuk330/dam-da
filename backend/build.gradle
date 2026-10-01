@@ -1,0 +1,59 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.khack'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('springAiVersion', "2.0.1")
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-restclient'
+	implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
+	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+	implementation 'com.microsoft.playwright:playwright:1.63.0'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+def cli = { String taskName, String main ->
+	tasks.register(taskName, JavaExec) {
+		group = 'verification cli'
+		classpath = sourceSets.main.runtimeClasspath
+		mainClass = main
+		workingDir = projectDir
+		args = ((project.findProperty('args') ?: '') as String).tokenize()
+	}
+}
+cli('longScript', 'com.khack.review.tools.verify.LongScriptGenerator')
+cli('connectorCheck', 'com.khack.review.tools.verify.ConnectorCheckCli')
+cli('shareProbe', 'com.khack.review.tools.verify.ShareProbeCli')
+cli('shareVerify', 'com.khack.review.tools.verify.ShareVerifyCli')
+cli('sessionsMd', 'com.khack.review.tools.verify.SessionsMarkdownCli')
+cli('benchmark', 'com.khack.review.tools.benchmark.BenchmarkCli')
+cli('jevCheck', 'com.khack.review.tools.verify.JevCheckCli')
