@@ -1,18 +1,18 @@
 package com.khack.review.tools.verify;
 
 import com.khack.review.collection.adapter.in.web.dev.SessionMarkdown;
-import com.khack.review.collection.domain.SessionStore;
+import com.khack.review.collection.domain.SavedSession;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
+import java.util.List;
 
 public final class SessionsMarkdownCli {
 
     public static void main(String[] args) throws Exception {
-        SessionStore store = new SessionStore(Path.of(System.getProperty("review.sessions-file", "data/sessions.jsonl")), Clock.systemUTC());
+        List<SavedSession> sessions = SessionSource.list();
         Path out = Path.of(args.length > 0 ? args[0] : "data/sessions.md");
         Files.createDirectories(out.toAbsolutePath().getParent());
-        Files.writeString(out, SessionMarkdown.render(store.list()));
-        System.out.println(out.toAbsolutePath() + ": " + store.list().size() + " sessions");
+        Files.writeString(out, SessionMarkdown.render(sessions));
+        System.out.println(out.toAbsolutePath() + ": " + sessions.size() + " sessions");
     }
 }
