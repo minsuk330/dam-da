@@ -1,0 +1,233 @@
+package com.khack.review.practice.domain;
+
+import com.khack.review.memory.domain.AnswerVerdict;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.Instant;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * 답변 판정 1개 (스펙 §6.4.5 Jev 출력, 기록). 시도마다 하나다. Jev 확률은 그대로 남기고, 등급 변환(#18 {@code RatingPolicy})이
+ * 신뢰도 기준을 적용한다. 근거가 `model_transcribed`면 더 높은 기준을 쓰도록 {@code evidenceFidelity}를 함께 남긴다.
+ */
+@Entity
+@Table(name = "answer_judgment")
+public class AnswerJudgment {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private Long attemptId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private JudgmentStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private JudgedBy judgedBy;
+
+    @Enumerated(EnumType.STRING)
+    private AnswerVerdict verdict;
+
+    private Double verdictConfidence;
+
+    private Double omissionProbability;
+
+    private Double contradictionProbability;
+
+    /** `misread` 확률. 등급 변환의 `misread` 신뢰도로 쓴다. */
+    private Double misreadProbability;
+
+    @Column(nullable = false)
+    private boolean omission;
+
+    @Column(nullable = false)
+    private boolean contradiction;
+
+    @Column(nullable = false)
+    private boolean misread;
+
+    /** 대표 이유. `not_met`이 아니면 null. */
+    @Enumerated(EnumType.STRING)
+    private AnswerFailure primaryFailure;
+
+    /** 헷갈린 지점 항목에서 `contradiction`이 대화 속 `userBelief`와 같은 내용인가. 헷갈린 지점 항목이 아니면 null. */
+    private Boolean repeatsUserBelief;
+
+    private Double repeatsUserBeliefProbability;
+
+    /** 평가 대상과 무관한 부분에 틀린 내용이 있는가. 등급에 반영하지 않고 기록만 한다. */
+    @Column(nullable = false)
+    private boolean offTargetError;
+
+    private Double offTargetErrorProbability;
+
+    /** 근거 대화의 원문 여부 ({@code verbatim} / {@code model_transcribed}). */
+    @Column(nullable = false)
+    private String evidenceFidelity;
+
+    private String model;
+
+    @Column(length = 2_000)
+    private String note;
+
+    @Column(nullable = false)
+    private Instant judgedAt;
+
+    protected AnswerJudgment() {
+    }
+
+    /** Jev 확률과 그 해석. {@code repeatsUserBelief}는 헷갈린 지점 항목이 아니면 null. */
+    public record Jev(AnswerVerdict verdict, double verdictConfidence, double omission, double contradiction, double misread,
+            @Nullable Double repeatsUserBelief, double offTargetError, String model) {
+    }
+
+    /** Jev 판정을 해석한다. 확률이 {@code failureThreshold} 이상이면 그 이유가 있다고 본다. 이유는 `not_met`일 때만 고른다. */
+    public static AnswerJudgment byJev(Long attemptId, Jev jev, double failureThreshold, String evidenceFidelity, Instant at) {
+        AnswerJudgment judgment = base(attemptId, JudgmentStatus.JUDGED, JudgedBy.JEV, evidenceFidelity, at);
+        judgment.verdict = jev.verdict();
+        judgment.verdictConfidence = jev.verdictConfidence();
+        judgment.omissionProbability = jev.omission();
+        judgment.contradictionProbability = jev.contradiction();
+        judgment.misreadProbability = jev.misread();
+        judgment.repeatsUserBeliefProbability = jev.repeatsUserBelief();
+        judgment.offTargetErrorProbability = jev.offTargetError();
+        judgment.model = jev.model();
+        boolean notMet = jev.verdict() == AnswerVerdict.NOT_MET;
+        judgment.omission = notMet && jev.omission() >= failureThreshold;
+        judgment.contradiction = notMet && jev.contradiction() >= failureThreshold;
+        judgment.misread = notMet && jev.misread() >= failureThreshold;
+        judgment.primaryFailure = judgment.contradiction ? AnswerFailure.CONTRADICTION
+                : judgment.omission ? AnswerFailure.OMISSION
+                : judgment.misread ? AnswerFailure.MISREAD
+                : null;
+        judgment.repeatsUserBelief = jev.repeatsUserBelief() == null ? null
+                : judgment.contradiction && jev.repeatsUserBelief() >= failureThreshold;
+        judgment.offTargetError = jev.offTargetError() >= failureThreshold;
+        return judgment;
+    }
+
+    /** 객관식 코드 채점. 신뢰도는 1이다. */
+    public static AnswerJudgment byCode(Long attemptId, boolean correct, String evidenceFidelity, Instant at) {
+        AnswerJudgment judgment = base(attemptId, JudgmentStatus.JUDGED, JudgedBy.CODE, evidenceFidelity, at);
+        judgment.verdict = correct ? AnswerVerdict.MET : AnswerVerdict.NOT_MET;
+        judgment.verdictConfidence = 1.0;
+        return judgment;
+    }
+
+    /** 판정하지 못했다(Jev 호출·해석 실패, 객관식 정답 없음). 기억 상태를 바꾸지 않는다. */
+    public static AnswerJudgment failed(Long attemptId, JudgedBy judgedBy, String note, String evidenceFidelity, Instant at) {
+        AnswerJudgment judgment = base(attemptId, JudgmentStatus.FAILED, judgedBy, evidenceFidelity, at);
+        judgment.note = note.length() <= 2_000 ? note : note.substring(0, 2_000);
+        return judgment;
+    }
+
+    private static AnswerJudgment base(Long attemptId, JudgmentStatus status, JudgedBy judgedBy, String evidenceFidelity,
+            Instant at) {
+        AnswerJudgment judgment = new AnswerJudgment();
+        judgment.attemptId = attemptId;
+        judgment.status = status;
+        judgment.judgedBy = judgedBy;
+        judgment.evidenceFidelity = evidenceFidelity;
+        judgment.judgedAt = at;
+        return judgment;
+    }
+
+    /** 오개념 재발: 대화에서 믿었던 틀린 내용을 다시 주장했다. */
+    public boolean isMisconceptionRecurred() {
+        return Boolean.TRUE.equals(repeatsUserBelief);
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Long getAttemptId() {
+        return attemptId;
+    }
+
+    public JudgmentStatus getStatus() {
+        return status;
+    }
+
+    public JudgedBy getJudgedBy() {
+        return judgedBy;
+    }
+
+    public AnswerVerdict getVerdict() {
+        return verdict;
+    }
+
+    public Double getVerdictConfidence() {
+        return verdictConfidence;
+    }
+
+    public Double getOmissionProbability() {
+        return omissionProbability;
+    }
+
+    public Double getContradictionProbability() {
+        return contradictionProbability;
+    }
+
+    public Double getMisreadProbability() {
+        return misreadProbability;
+    }
+
+    public boolean isOmission() {
+        return omission;
+    }
+
+    public boolean isContradiction() {
+        return contradiction;
+    }
+
+    public boolean isMisread() {
+        return misread;
+    }
+
+    public AnswerFailure getPrimaryFailure() {
+        return primaryFailure;
+    }
+
+    public Boolean getRepeatsUserBelief() {
+        return repeatsUserBelief;
+    }
+
+    public Double getRepeatsUserBeliefProbability() {
+        return repeatsUserBeliefProbability;
+    }
+
+    public boolean isOffTargetError() {
+        return offTargetError;
+    }
+
+    public Double getOffTargetErrorProbability() {
+        return offTargetErrorProbability;
+    }
+
+    public String getEvidenceFidelity() {
+        return evidenceFidelity;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public Instant getJudgedAt() {
+        return judgedAt;
+    }
+}

@@ -62,6 +62,13 @@ review:
   practice:
     # 첫 학습 문제 상한 (스펙 §7.8)
     first-study-max-questions: 12
+    judge:
+      # 답변 판정 이유(omission·contradiction·misread 등 noul) 확률이 이 값 이상이면 그 이유가 있다고 본다.
+      # 판정 신뢰도 기준은 등급 변환(review.memory.rating)이 적용한다
+      failure-threshold: 0.5
+      # Jev 429·529 재시도 (첫 호출 포함)
+      max-attempts: 3
+      retry-delay: 1s
   memory:
     # 기억 강도를 정하기 전의 기본 목표 유지율 (스펙 §6.4.7)
     default-retention: 0.9

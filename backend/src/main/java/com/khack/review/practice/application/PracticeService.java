@@ -1,15 +1,24 @@
 package com.khack.review.practice.application;
 
+import com.khack.review.analysis.application.LearningSessionDetail;
+import com.khack.review.analysis.application.LearningSessionQueryService;
 import com.khack.review.analysis.application.SessionProgressService;
 import com.khack.review.analysis.domain.LearningSessionStatus;
+import com.khack.review.analysis.domain.MemoryItemKind;
 import com.khack.review.common.application.CurrentUser;
 import com.khack.review.memory.application.MemoryStateService;
+import com.khack.review.memory.domain.AnswerVerdict;
 import com.khack.review.memory.domain.AttemptKind;
 import com.khack.review.memory.domain.SelfAssessment;
 import com.khack.review.practice.domain.AidExposure;
 import com.khack.review.practice.domain.AidExposureRepository;
 import com.khack.review.practice.domain.AidType;
+import com.khack.review.practice.domain.AnswerFailure;
+import com.khack.review.practice.domain.AnswerJudgment;
+import com.khack.review.practice.domain.AnswerJudgmentRepository;
 import com.khack.review.practice.domain.AttemptRules;
+import com.khack.review.practice.domain.JudgedBy;
+import com.khack.review.practice.domain.JudgmentStatus;
 import com.khack.review.practice.domain.PracticeAttempt;
 import com.khack.review.practice.domain.PracticeAttemptRepository;
 import com.khack.review.practice.domain.PracticeKind;
@@ -30,10 +39,12 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 풀이 진행과 답변 제출 (스펙 §6.4.5, §9.4). 문제를 제시하고 답과 시도 정보를 기록한다.
- * 서술형 판정(Jev), 등급 변환, FSRS 갱신, 힌트·설명 내용은 여기서 하지 않는다. 정답은 응답에 넣지 않는다.
+ * 답은 제출하자마자 판정한다(객관식은 코드, 그 밖에는 Jev). 등급 변환, FSRS 갱신, 힌트·설명 내용은 여기서 하지 않는다.
+ * 정답은 응답에 넣지 않는다.
  */
 @Service
 public class PracticeService {
@@ -48,10 +59,16 @@ public class PracticeService {
     private final MemoryStateService memory;
     private final CurrentUser currentUser;
     private final Clock clock;
+    private final AnswerJudgmentRepository judgments;
+    private final LearningSessionQueryService sessions;
+    private final AnswerJudge judge;
+    private final AnswerJudgePolicy judgePolicy;
+    private final TransactionTemplate transaction;
 
     public PracticeService(PracticeSessionRepository practices, QuestionPresentationRepository presentations,
             AidExposureRepository aids, PracticeAttemptRepository attempts, SessionProgressService progress, FirstStudyQueryService firstStudy, QuestionQueryService questions,
-            MemoryStateService memory, CurrentUser currentUser, Clock clock) {
+            MemoryStateService memory, CurrentUser currentUser, Clock clock, AnswerJudgmentRepository judgments,
+            LearningSessionQueryService sessions, AnswerJudge judge, AnswerJudgePolicy judgePolicy, TransactionTemplate transaction) {
         this.practices = practices;
         this.presentations = presentations;
         this.aids = aids;
@@ -62,6 +79,11 @@ public class PracticeService {
         this.memory = memory;
         this.currentUser = currentUser;
         this.clock = clock;
+        this.judgments = judgments;
+        this.sessions = sessions;
+        this.judge = judge;
+        this.judgePolicy = judgePolicy;
+        this.transaction = transaction;
     }
 
     public record PracticeView(Long practiceId, PracticeKind kind, @Nullable Long learningSessionId, int total,
@@ -88,7 +110,20 @@ public class PracticeService {
 
     /** 제출 결과. {@code correct}는 객관식 코드 채점 결과이고 서술형이면 null이다(판정은 Jev). */
     public record AttemptView(Long attemptId, AttemptKind kind, boolean evaluated, @Nullable Boolean correct,
-            long responseTimeMs) {
+            long responseTimeMs, JudgmentView judgment) {
+    }
+
+    /**
+     * 판정 결과. {@code judged}가 거짓이면 판정하지 못해 기억 상태를 바꾸지 않는다. {@code reason}은 `not_met`의 대표 이유,
+     * {@code misconceptionRecurred}는 대화에서 믿었던 틀린 내용을 다시 주장했는지다.
+     */
+    public record JudgmentView(boolean judged, @Nullable AnswerVerdict verdict, @Nullable AnswerFailure reason,
+            boolean misconceptionRecurred) {
+
+        static JudgmentView of(AnswerJudgment judgment) {
+            return new JudgmentView(judgment.getStatus() == JudgmentStatus.JUDGED, judgment.getVerdict(),
+                    judgment.getPrimaryFailure(), judgment.isMisconceptionRecurred());
+        }
     }
 
     /** 첫 학습 풀이를 시작한다. 이미 시작했으면 그 풀이를 이어서 연다. */
@@ -152,8 +187,23 @@ public class PracticeService {
         return new AidView(saved.getId(), saved.getType(), saved.getExposedAt());
     }
 
-    @Transactional
+    /**
+     * 답을 기록하고 바로 판정한다. 객관식은 코드가 채점하고, 그 밖에는 Jev가 판정한다. Jev 호출은 트랜잭션 밖에서 하며,
+     * 실패하면 판정 실패로 남겨 기억 상태를 바꾸지 않는다.
+     */
     public AttemptView submit(Long presentationId, Submission submission) {
+        Recorded recorded = transaction.execute(tx -> record(presentationId, submission));
+        AnswerJudgment judgment = judge(recorded.attempt(), recorded.question());
+        transaction.executeWithoutResult(tx -> judgments.save(judgment));
+        PracticeAttempt attempt = recorded.attempt();
+        return new AttemptView(attempt.getId(), attempt.getKind(), AttemptRules.isEvaluated(attempt.getKind()),
+                attempt.getChoiceCorrect(), attempt.getResponseTimeMs(), JudgmentView.of(judgment));
+    }
+
+    private record Recorded(PracticeAttempt attempt, Question question) {
+    }
+
+    private Recorded record(Long presentationId, Submission submission) {
         QuestionPresentation presentation = currentPresentation(presentationId);
         Instant now = clock.instant();
         AttemptRules.Classification classification = AttemptRules.classify(history(presentation),
@@ -161,11 +211,38 @@ public class PracticeService {
         if (AttemptRules.isEvaluated(classification.kind()) && submission.selfAssessment() == null) {
             throw new IllegalArgumentException("자기평가를 고르세요.");
         }
-        PracticeAttempt.Answer answer = answer(questions.question(presentation.getQuestionId()), submission);
+        Question question = questions.question(presentation.getQuestionId());
+        PracticeAttempt.Answer answer = answer(question, submission);
         PracticeAttempt saved = attempts.save(PracticeAttempt.of(presentation, classification, answer,
                 timing(submission, classification.timedFrom(), now)));
-        return new AttemptView(saved.getId(), saved.getKind(), AttemptRules.isEvaluated(saved.getKind()), saved.getChoiceCorrect(),
-                saved.getResponseTimeMs());
+        return new Recorded(saved, question);
+    }
+
+    private AnswerJudgment judge(PracticeAttempt attempt, Question question) {
+        LearningSessionDetail detail = sessions.detail(question.getSessionId());
+        String fidelity = detail.fidelity();
+        if (question.getType() == QuestionType.MULTIPLE_CHOICE) {
+            return attempt.getChoiceCorrect() == null
+                    ? AnswerJudgment.failed(attempt.getId(), JudgedBy.CODE, "객관식 정답 번호 없음", fidelity, clock.instant())
+                    : AnswerJudgment.byCode(attempt.getId(), attempt.getChoiceCorrect(), fidelity, clock.instant());
+        }
+        AnswerJudge.Outcome outcome = judge.judge(state(detail, question, attempt.getAnswerText()));
+        return outcome.judged()
+                ? AnswerJudgment.byJev(attempt.getId(), outcome.jev(), judgePolicy.failureThreshold(), fidelity, clock.instant())
+                : AnswerJudgment.failed(attempt.getId(), JudgedBy.JEV, outcome.failure(), fidelity, clock.instant());
+    }
+
+    /** 헷갈린 지점 항목이면 항목 내용이 대화 속 `userBelief`이고, 출처 발화의 AI 교정을 함께 보낸다. */
+    private static AnswerJudgeState state(LearningSessionDetail detail, Question question, String answer) {
+        LearningSessionDetail.Item item = detail.units().stream().flatMap(unit -> unit.items().stream())
+                .filter(i -> i.id().equals(question.getMemoryItemId())).findFirst()
+                .orElseThrow(() -> new IllegalStateException("기억 항목 %d 없음".formatted(question.getMemoryItemId())));
+        boolean confusion = item.kind() == MemoryItemKind.CONFUSION;
+        String correction = confusion ? detail.turns().stream()
+                .filter(turn -> item.sourceTurns().contains(turn.index()) && turn.correction() != null)
+                .map(LearningSessionDetail.Turn::correction).findFirst().orElse(null) : null;
+        return new AnswerJudgeState(question.getStem(), question.getType().name(), question.getAnswerCriteria(),
+                question.getModelAnswer(), answer, item.content(), confusion ? item.content() : null, correction);
     }
 
     private static PracticeAttempt.Answer answer(Question question, Submission submission) {
