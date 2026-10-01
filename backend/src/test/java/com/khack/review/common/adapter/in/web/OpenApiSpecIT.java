@@ -15,12 +15,14 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import com.khack.review.common.json.Json;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,6 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import tools.jackson.databind.JsonNode;
 
 /**
  * 프론트엔드 API 계약 {@code frontend/openapi.json}이 현재 코드와 같은지 확인한다.
@@ -59,6 +62,36 @@ class OpenApiSpecIT {
             Files.writeString(SPEC, actual, StandardCharsets.UTF_8);
             fail("API 계약이 바뀌어 %s를 다시 썼다. 확인 후 커밋하고 frontend에서 npm run api:types를 실행한다."
                     .formatted(SPEC.toAbsolutePath().normalize()));
+        }
+    }
+
+    /**
+     * {@code $ref}가 있는 스키마에 다른 키를 두면 openapi-typescript가 무시해 null 가능 필드가 non-null 타입이 된다(#73).
+     * null 가능한 참조는 {@code anyOf: [{$ref}, {type: null}]}로 나가야 한다.
+     */
+    @Test
+    void nullableReferencesAreWrappedInAnyOf() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v3/api-docs")).build();
+        JsonNode spec = Json.MAPPER.readTree(HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).body());
+        List<String> mixed = new ArrayList<>();
+        refsWithSiblings(spec, "", mixed);
+        assertThat(mixed).as("$ref 옆에 다른 키가 있는 스키마").isEmpty();
+
+        JsonNode presentation = spec.at("/components/schemas/Next/properties/presentation/anyOf");
+        assertThat(presentation.findValuesAsString("$ref")).containsExactly("#/components/schemas/PresentationView");
+        assertThat(presentation.findValuesAsString("type")).containsExactly("null");
+    }
+
+    private static void refsWithSiblings(JsonNode node, String path, List<String> found) {
+        if (node.isObject()) {
+            if (node.has("$ref") && node.size() > 1) {
+                found.add(path);
+            }
+            node.properties().forEach(e -> refsWithSiblings(e.getValue(), path + "/" + e.getKey(), found));
+        } else if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) {
+                refsWithSiblings(node.get(i), path + "/" + i, found);
+            }
         }
     }
 

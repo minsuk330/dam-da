@@ -1240,8 +1240,11 @@
             "enum" : [ "INDEPENDENT", "AFTER_HINT", "AFTER_EXPLANATION", "REPEATED_WRONG" ]
           },
           "prerequisite" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/Prerequisite"
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/Prerequisite"
+            }, {
+              "type" : "null"
+            } ]
           },
           "presentationId" : {
             "type" : "integer",
@@ -1679,8 +1682,11 @@
             "type" : "boolean"
           },
           "presentation" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/PresentationView"
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/PresentationView"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "done", "presentation" ]

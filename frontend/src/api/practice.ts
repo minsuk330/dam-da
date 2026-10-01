@@ -10,12 +10,8 @@ import { mockPracticeApi } from './mock-practice'
 export type Presentation = Schemas['PresentationView']
 export type Attempt = Schemas['AttemptView']
 
-// 계약이 null 가능한 $ref 필드를 `{"type": "null", "$ref": ...}`로 내보내 생성 타입에서 null이 빠진다(백엔드 이슈 #73).
-// 고쳐질 때까지 그 필드만 null을 더한다.
-export type Feedback = Omit<Schemas['FeedbackView'], 'prerequisite'> & {
-  prerequisite: Schemas['Prerequisite'] | null
-}
-export type Next = Omit<Schemas['Next'], 'presentation'> & { presentation: Presentation | null }
+export type Feedback = Schemas['FeedbackView']
+export type Next = Schemas['Next']
 export type Submission = Schemas['Submission']
 export type SelfAssessment = NonNullable<Submission['selfAssessment']>
 
