@@ -1,0 +1,21 @@
+[project]
+name = "khack-optimizer"
+version = "0.1.0"
+description = "개인 FSRS 매개변수 학습·검증 배치 (스펙 §6.4.9)"
+requires-python = ">=3.12"
+# java-fsrs 1.0.0과 같은 FSRS-6 계산·기본값을 쓰는 마지막 버전. 6.2부터 기본값이 바뀐다.
+# 올리면 tests/test_compat.py와 backend FsrsGoldenTest가 함께 통과해야 한다.
+dependencies = ["fsrs[optimizer]==6.1.1"]
+
+[project.scripts]
+khack-optimizer = "khack_optimizer.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

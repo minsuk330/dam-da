@@ -31,6 +31,10 @@ npm run web           # :8081 웹 개발 서버. 기본은 mock 데이터(src/ap
 npm run api:types     # API 계약(frontend/openapi.json) 바뀌면 타입 재생성
 npm run design:lint   # DESIGN.md 검사 (대비·깨진 참조)
 npm run design:tokens # DESIGN.md → src/theme/tokens.ts
+
+cd optimizer           # 개인 FSRS 매개변수 학습 배치 (Python, uv). 상세는 optimizer/README.md
+uv run pytest         # optimizer/ 변경 PR 전 필수
+uv run khack-optimizer --server http://localhost:8080   # 서버(DEV_TOOLS_ENABLED=true) 현재 사용자 기록으로 학습·검증, 개선되면 새 버전 저장
 ```
 
 ## Hard 제약
