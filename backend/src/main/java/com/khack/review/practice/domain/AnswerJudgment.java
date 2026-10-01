@@ -116,15 +116,15 @@ public class AnswerJudgment {
         return judgment;
     }
 
-    /** 객관식 코드 채점. 신뢰도는 1이다. */
-    public static AnswerJudgment byCode(Long attemptId, boolean correct, String evidenceFidelity, Instant at) {
+    /** 객관식 코드 채점. 신뢰도는 1이다. 정답 번호가 없는 문제면({@code correct}가 null) 판정 불가다. */
+    public static AnswerJudgment byCode(Long attemptId, @Nullable Boolean correct, String evidenceFidelity, Instant at) {
         AnswerJudgment judgment = base(attemptId, JudgmentStatus.JUDGED, JudgedBy.CODE, evidenceFidelity, at);
-        judgment.verdict = correct ? AnswerVerdict.MET : AnswerVerdict.NOT_MET;
+        judgment.verdict = correct == null ? AnswerVerdict.UNABLE_TO_JUDGE : correct ? AnswerVerdict.MET : AnswerVerdict.NOT_MET;
         judgment.verdictConfidence = 1.0;
         return judgment;
     }
 
-    /** 판정하지 못했다(Jev 호출·해석 실패, 객관식 정답 없음). 기억 상태를 바꾸지 않는다. */
+    /** 판정하지 못했다(Jev 호출·해석 실패). 기억 상태를 바꾸지 않는다. */
     public static AnswerJudgment failed(Long attemptId, JudgedBy judgedBy, String note, String evidenceFidelity, Instant at) {
         AnswerJudgment judgment = base(attemptId, JudgmentStatus.FAILED, judgedBy, evidenceFidelity, at);
         judgment.note = note.length() <= 2_000 ? note : note.substring(0, 2_000);

@@ -87,6 +87,12 @@ public class MemoryStateService {
         return new HoldResult(memoryItemId, state.getConsecutiveHolds(), state.isAutoQuestionsPaused());
     }
 
+    /** 마지막으로 등급을 받은 시각. 아직 없으면 비어 있다. */
+    @Transactional(readOnly = true)
+    public Optional<Instant> lastReviewedAt(Long memoryItemId) {
+        return states.findByMemoryItemId(memoryItemId).map(MemoryState::getLastReview);
+    }
+
     /** 등급을 한 번이라도 받았는가. 기억 강도만 정해 둔 상태 행은 아직 받지 않은 것이다. */
     @Transactional(readOnly = true)
     public boolean isReviewed(Long memoryItemId) {
