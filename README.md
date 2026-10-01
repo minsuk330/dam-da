@@ -1,4 +1,4 @@
-# AI Learning Companion
+# 담다
 
 > AI에게 물어본 것을, 내 지식으로 남긴다.
 

@@ -11,6 +11,7 @@ import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
 import { Icon } from '@/components/icon';
+import { Logo } from '@/components/logo';
 import { Notice } from '@/components/notice';
 import { Skeleton, SkeletonList } from '@/components/skeleton';
 import { useTabBarSpace } from '@/components/tab-bar';
@@ -226,9 +227,12 @@ function HomeHeader() {
         style={({ pressed }) => [styles.circleButton, pressed && styles.circlePressed]}>
         <Icon name="menu" />
       </Pressable>
-      <ThemedText variant="headline" numberOfLines={1} style={styles.brand}>
-        AI Learning Companion
-      </ThemedText>
+      <View style={styles.brand}>
+        <Logo size={components.iconXl.size} />
+        <ThemedText variant="headline" numberOfLines={1} style={styles.brandName}>
+          담다
+        </ThemedText>
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={unread ? '알림, 새 알림 있음' : '알림'}
@@ -395,7 +399,8 @@ const styles = StyleSheet.create({
   todayCard: { gap: spacing.md },
   content: { paddingHorizontal: spacing.xl, gap: spacing['2xl'] },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  brand: { flex: 1, marginLeft: spacing.sm },
+  brand: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginLeft: spacing.sm },
+  brandName: { flexShrink: 1 },
   circleButton: {
     width: components.iconButton.size,
     height: components.iconButton.size,
