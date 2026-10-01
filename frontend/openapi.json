@@ -562,6 +562,33 @@
         "tags" : [ "practice-controller" ]
       }
     },
+    "/api/sessions/{sessionId}/first-study/summary" : {
+      "get" : {
+        "operationId" : "summary",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Summary"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "first-study-controller" ]
+      }
+    },
     "/api/sessions/{sessionId}/learning-goals" : {
       "get" : {
         "operationId" : "options_1",
@@ -622,6 +649,33 @@
           }
         },
         "tags" : [ "learning-goal-controller" ]
+      }
+    },
+    "/api/sessions/{sessionId}/memory-gauge" : {
+      "get" : {
+        "operationId" : "gauge",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionGauge"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "memory-gauge-controller" ]
       }
     },
     "/api/sessions/{sessionId}/memory-strength" : {
@@ -887,6 +941,12 @@
       "FirstStudy" : {
         "type" : "object",
         "properties" : {
+          "failed" : {
+            "type" : "boolean"
+          },
+          "failureReason" : {
+            "type" : [ "string", "null" ]
+          },
           "generating" : {
             "type" : "boolean"
           },
@@ -911,7 +971,7 @@
             "enum" : [ "RECEIVED", "REVIEWING", "AWAITING_CONFIRMATION", "CONFIRMED", "QUESTIONS_READY", "IN_PROGRESS" ]
           }
         },
-        "required" : [ "generating", "held", "planned", "questions", "sessionStatus" ]
+        "required" : [ "failed", "failureReason", "generating", "held", "planned", "questions", "sessionStatus" ]
       },
       "GoalSummary" : {
         "type" : "object",
@@ -1025,6 +1085,47 @@
           }
         },
         "required" : [ "content", "id", "kind", "sourceTurns", "status" ]
+      },
+      "ItemGauge" : {
+        "type" : "object",
+        "properties" : {
+          "checked" : {
+            "type" : "boolean"
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "percent" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "retrievability" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          }
+        },
+        "required" : [ "checked", "memoryItemId", "percent", "retrievability" ]
+      },
+      "ItemView" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "gauge" : {
+            "$ref" : "#/components/schemas/ItemGauge"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FACT", "WARNING", "PRACTICE", "CONFUSION" ]
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "content", "gauge", "kind", "memoryItemId" ]
       },
       "JudgmentView" : {
         "type" : "object",
@@ -1478,6 +1579,22 @@
         },
         "required" : [ "confusionPoints", "evidenceTurns", "keyPoints", "title" ]
       },
+      "SessionGauge" : {
+        "type" : "object",
+        "properties" : {
+          "sessionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "units" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UnitView"
+            }
+          }
+        },
+        "required" : [ "sessionId", "units" ]
+      },
       "ShareLinkRequest" : {
         "type" : "object",
         "properties" : {
@@ -1511,6 +1628,82 @@
           }
         },
         "required" : [ "answer", "choiceIndex", "firstInputMs", "responseTimeMs", "selfAssessment" ]
+      },
+      "Summary" : {
+        "type" : "object",
+        "properties" : {
+          "completed" : {
+            "type" : "boolean"
+          },
+          "completedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "confirmed" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SummaryItem"
+            }
+          },
+          "needsHelp" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SummaryItem"
+            }
+          },
+          "nextReviewAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "notChecked" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SummaryItem"
+            }
+          },
+          "sessionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "units" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UnitView"
+            }
+          }
+        },
+        "required" : [ "completed", "completedAt", "confirmed", "needsHelp", "nextReviewAt", "notChecked", "sessionId", "units" ]
+      },
+      "SummaryItem" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "gauge" : {
+            "$ref" : "#/components/schemas/ItemGauge"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FACT", "WARNING", "PRACTICE", "CONFUSION" ]
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nextReviewAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "unitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "unitTitle" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "content", "gauge", "kind", "memoryItemId", "nextReviewAt", "unitId", "unitTitle" ]
       },
       "Turn" : {
         "type" : "object",
@@ -1594,6 +1787,58 @@
           }
         },
         "required" : [ "evidenceTurns", "excluded", "id", "items", "title", "verdict", "verdictReason" ]
+      },
+      "UnitGauge" : {
+        "type" : "object",
+        "properties" : {
+          "average" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "averagePercent" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "checkedItems" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalItems" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "weakestItemId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "weakestPercent" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          }
+        },
+        "required" : [ "average", "averagePercent", "checkedItems", "totalItems", "weakestItemId", "weakestPercent" ]
+      },
+      "UnitView" : {
+        "type" : "object",
+        "properties" : {
+          "gauge" : {
+            "$ref" : "#/components/schemas/UnitGauge"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemView"
+            }
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "unitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "gauge", "items", "title", "unitId" ]
       },
       "UserTurnResponse" : {
         "type" : "object",

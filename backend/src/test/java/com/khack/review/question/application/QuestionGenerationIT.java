@@ -223,12 +223,50 @@ class QuestionGenerationIT {
         long held = confirmedSession();
         jev.qualityDefault = QUALITY_FAIL;
         goals.choose(held, List.of(LearningGoal.CORRECT_MISCONCEPTION), null);
-        awaitStatus(() -> held, LearningSessionStatus.QUESTIONS_READY);
+        JsonNode body = awaitFailed(held);
 
-        JsonNode body = firstStudy(held);
+        assertThat(sessions.findById(held).orElseThrow().getStatus()).as("승인 0개면 문제 준비로 넘기지 않음")
+                .isEqualTo(LearningSessionStatus.CONFIRMED);
+        assertThat(body.get("generating").asBoolean()).isFalse();
+        assertThat(body.get("failureReason").asString()).contains("품질 검사");
         assertThat(body.get("questions")).isEmpty();
         assertThat(body.get("held")).singleElement().satisfies(slot -> assertThat(slot.get("type").asString()).isEqualTo("ERROR_FINDING"));
         assertThat(questions.findBySessionIdOrderByIdAsc(held)).hasSize(3).allMatch(q -> q.getStatus() == QuestionStatus.REJECTED);
+    }
+
+    @Test
+    void whenEveryGenerationFailsTheSessionStaysConfirmedAndChoosingAgainRetries() throws Exception {
+        long id = confirmedSession();
+        generator.willRespond(new QuestionGenerationException("LLM 호출 실패"), new QuestionGenerationException("LLM 호출 실패"),
+                new QuestionGenerationException("LLM 호출 실패"));
+
+        goals.choose(id, List.of(LearningGoal.CORRECT_MISCONCEPTION), null);
+        JsonNode failed = awaitFailed(id);
+
+        assertThat(sessions.findById(id).orElseThrow().getStatus()).isEqualTo(LearningSessionStatus.CONFIRMED);
+        assertThat(failed.get("generating").asBoolean()).isFalse();
+        assertThat(failed.get("failureReason").asString()).contains("다시 고르면");
+        assertThat(questions.findBySessionIdOrderByIdAsc(id)).isEmpty();
+
+        // 목표를 다시 고르면 막히지 않고 다시 만든다
+        goals.choose(id, List.of(LearningGoal.CORRECT_MISCONCEPTION), null);
+        awaitStatus(() -> id, LearningSessionStatus.QUESTIONS_READY);
+        JsonNode ready = firstStudy(id);
+        assertThat(ready.get("failed").asBoolean()).isFalse();
+        assertThat(ready.get("failureReason").isNull()).isTrue();
+        assertThat(ready.get("questions")).hasSize(1);
+    }
+
+    private JsonNode awaitFailed(long sessionId) throws Exception {
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(15));
+        while (true) {
+            JsonNode body = firstStudy(sessionId);
+            if (body.get("failed").asBoolean()) {
+                return body;
+            }
+            assertThat(Instant.now()).as("생성 실패 대기").isBefore(deadline);
+            Thread.onSpinWait();
+        }
     }
 
     @Test
