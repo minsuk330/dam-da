@@ -41,10 +41,31 @@ class DevSyntheticHistoryController {
         if (currentUser.isDemoDevUser()) {
             throw new IllegalStateException("기본 데모 사용자에게는 합성 기록을 넣지 않습니다. 먼저 POST /dev/current-user로 전환하세요.");
         }
-        return history.replace(currentUser.id(), reviews.stream()
+        return history.replace(currentUser.id(), toReviews(reviews));
+    }
+
+    record Link(@JsonProperty("card_id") int cardId, @JsonProperty("memory_item_id") Long memoryItemId) {
+    }
+
+    record AttachRequest(List<Link> links, List<Review> reviews) {
+    }
+
+    /** 합성 기록을 현재 사용자의 실제 기억 항목에 붙인다(로그인 계정 시연 데이터). 다른 데이터는 지우지 않는다. */
+    @PostMapping("/dev/synthetic-history/attach")
+    Imported attach(@RequestBody AttachRequest request) {
+        if (currentUser.isDemoDevUser()) {
+            throw new IllegalStateException("기본 데모 사용자에게는 합성 기록을 넣지 않습니다. 먼저 POST /dev/current-user로 전환하세요.");
+        }
+        return history.attach(currentUser.id(),
+                request.links().stream().map(link -> new SyntheticHistoryService.Link(link.cardId(), link.memoryItemId())).toList(),
+                toReviews(request.reviews()));
+    }
+
+    private static List<SyntheticReview> toReviews(List<Review> reviews) {
+        return reviews.stream()
                 .map(review -> new SyntheticReview(review.cardId(), Rating.values()[review.rating() - 1], review.reviewDatetime(),
                         review.reviewDuration() == null ? 0 : review.reviewDuration()))
-                .toList());
+                .toList();
     }
 
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class, ArrayIndexOutOfBoundsException.class})

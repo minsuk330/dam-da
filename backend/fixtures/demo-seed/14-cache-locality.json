@@ -1,0 +1,64 @@
+{
+  "topicHint": "캐시와 지역성",
+  "userTurns": [
+    {
+      "index": 1,
+      "text": "CPU 캐시가 왜 빨라?",
+      "intent": "info_request"
+    },
+    {
+      "index": 2,
+      "text": "지역성이 뭐야?",
+      "intent": "info_request"
+    },
+    {
+      "index": 3,
+      "text": "2차원 배열은 행 단위로 돌든 열 단위로 돌든 속도가 똑같지?",
+      "intent": "understanding_check",
+      "aiVerdict": "corrected",
+      "correction": "C나 Java처럼 행 우선으로 저장하는 경우 행 단위로 돌아야 연속 메모리를 읽어 캐시 적중률이 높다. 열 단위는 캐시 미스가 많아 느리다."
+    },
+    {
+      "index": 4,
+      "text": "학습에 넘겨줘",
+      "intent": "meta"
+    }
+  ],
+  "reviewUnits": [
+    {
+      "title": "지역성",
+      "keyPoints": [
+        {
+          "point": "캐시는 CPU 가까이의 작은 고속 메모리로, 지역성을 이용해 접근을 빠르게 한다.",
+          "turns": [
+            1
+          ]
+        },
+        {
+          "point": "시간 지역성은 최근 쓴 데이터를, 공간 지역성은 근처 데이터를 곧 다시 쓸 가능성이 높다는 성질이다.",
+          "turns": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "title": "배열 순회와 캐시",
+      "keyPoints": [
+        {
+          "point": "행 우선으로 저장된 배열은 행 단위로 순회해야 캐시 적중률이 높다.",
+          "turns": [
+            3
+          ],
+          "kind": "practice"
+        }
+      ],
+      "confusionPoints": [
+        {
+          "turn": 3,
+          "userBelief": "2차원 배열은 순회 방향과 상관없이 속도가 같다."
+        }
+      ]
+    }
+  ]
+}

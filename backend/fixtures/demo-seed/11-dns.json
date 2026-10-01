@@ -1,0 +1,64 @@
+{
+  "topicHint": "DNS 조회",
+  "userTurns": [
+    {
+      "index": 1,
+      "text": "주소창에 도메인 치면 어떻게 IP를 찾아?",
+      "intent": "info_request"
+    },
+    {
+      "index": 2,
+      "text": "브라우저가 매번 루트 DNS 서버부터 물어보는 거지?",
+      "intent": "understanding_check",
+      "aiVerdict": "corrected",
+      "correction": "브라우저·OS 캐시와 리졸버 캐시를 먼저 본다. 캐시에 없을 때만 리졸버가 루트, TLD, 권한 있는 네임서버 순으로 묻는다."
+    },
+    {
+      "index": 3,
+      "text": "TTL은 뭐야?",
+      "intent": "info_request"
+    },
+    {
+      "index": 4,
+      "text": "이거 복습에 넣어줘",
+      "intent": "meta"
+    }
+  ],
+  "reviewUnits": [
+    {
+      "title": "DNS 조회 과정",
+      "keyPoints": [
+        {
+          "point": "리졸버가 루트, TLD, 권한 있는 네임서버 순으로 물어 IP를 얻는다.",
+          "turns": [
+            1
+          ]
+        },
+        {
+          "point": "대부분 캐시에서 끝나고 매번 루트까지 가지 않는다.",
+          "turns": [
+            2
+          ],
+          "kind": "warning"
+        }
+      ],
+      "confusionPoints": [
+        {
+          "turn": 2,
+          "userBelief": "브라우저가 매번 루트 DNS 서버부터 묻는다."
+        }
+      ]
+    },
+    {
+      "title": "TTL",
+      "keyPoints": [
+        {
+          "point": "TTL은 DNS 응답을 캐시해 둬도 되는 시간이다.",
+          "turns": [
+            3
+          ]
+        }
+      ]
+    }
+  ]
+}

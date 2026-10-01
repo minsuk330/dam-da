@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.hibernate.annotations.ColumnDefault;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 기억 항목 1개의 FSRS 기억 상태 (스펙 §6.4). 첫 등급을 입력할 때 만든다. 그 전의 항목은 "아직 확인 전"이다.
@@ -219,6 +220,11 @@ public class MemoryState {
 
     public boolean isAutoQuestionsPaused() {
         return autoQuestionsPaused;
+    }
+
+    /** 초기 평가(대화 근거) 시각. 초기 평가가 없으면 null. */
+    public @Nullable Instant getInitialRatedAt() {
+        return initialRatedAt;
     }
 
     public int getParametersVersion() {

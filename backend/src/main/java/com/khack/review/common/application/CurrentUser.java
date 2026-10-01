@@ -82,6 +82,14 @@ public class CurrentUser implements ApplicationRunner {
         return user;
     }
 
+    /** 개발 도구 전용: 인증 없는 개발 도구 요청의 사용자를 기존 사용자 ID로 바꾼다. 로그인 계정에 시연 데이터를 넣을 때 쓴다. */
+    @Transactional(readOnly = true)
+    public AppUser switchTo(Long id) {
+        AppUser user = users.findById(id).orElseThrow(() -> new IllegalArgumentException("사용자 %d가 없습니다.".formatted(id)));
+        devUserId = user.getId();
+        return user;
+    }
+
     /** 개발 도구 전용: 기본 데모 사용자로 돌아간다. */
     @Transactional
     public AppUser reset() {

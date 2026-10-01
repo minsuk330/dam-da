@@ -1,0 +1,61 @@
+{
+  "topicHint": "재귀와 스택 오버플로",
+  "userTurns": [
+    {
+      "index": 1,
+      "text": "재귀 함수가 너무 깊으면 왜 에러가 나?",
+      "intent": "info_request"
+    },
+    {
+      "index": 2,
+      "text": "재귀 호출 정보는 힙에 쌓이는 거지?",
+      "intent": "understanding_check",
+      "aiVerdict": "corrected",
+      "correction": "호출마다 지역 변수와 복귀 주소를 담은 스택 프레임이 콜 스택에 쌓인다. 스택 크기를 넘으면 스택 오버플로가 난다."
+    },
+    {
+      "index": 3,
+      "text": "그래서 깊이가 큰 문제는 반복문으로 바꾸면 안전한 거구나",
+      "intent": "restatement",
+      "aiVerdict": "confirmed"
+    },
+    {
+      "index": 4,
+      "text": "이거 복습에 넣어줘",
+      "intent": "meta"
+    }
+  ],
+  "reviewUnits": [
+    {
+      "title": "콜 스택",
+      "keyPoints": [
+        {
+          "point": "재귀 호출마다 스택 프레임이 콜 스택에 쌓이고, 한도를 넘으면 스택 오버플로가 난다.",
+          "turns": [
+            1,
+            2
+          ],
+          "kind": "warning"
+        }
+      ],
+      "confusionPoints": [
+        {
+          "turn": 2,
+          "userBelief": "재귀 호출 정보는 힙에 쌓인다."
+        }
+      ]
+    },
+    {
+      "title": "깊은 재귀 다루기",
+      "keyPoints": [
+        {
+          "point": "깊은 재귀는 반복문이나 명시적 스택으로 바꾼다.",
+          "turns": [
+            3
+          ],
+          "kind": "practice"
+        }
+      ]
+    }
+  ]
+}

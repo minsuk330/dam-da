@@ -44,6 +44,37 @@ class Server:
         """현재 사용자 기록을 합성 기록으로 바꾼다. 기본 데모 사용자면 서버가 거부한다."""
         return self._request("POST", "/dev/synthetic-history", to_export(logs))
 
+    def switch_user_id(self, user_id: int) -> dict:
+        """이미 있는 사용자(로그인 계정)로 개발 도구 사용자를 바꾼다."""
+        return self._request("POST", "/dev/current-user", {"id": user_id})
+
+    def now(self) -> str:
+        """서버 시계(시간 이동 반영)의 지금 시각."""
+        return self._request("GET", "/dev/clock")["now"]
+
+    def seed_session(self, session: dict, conversation_at: str) -> dict:
+        return self._request("POST", "/dev/demo-seed/sessions", {"session": session, "conversationAt": conversation_at})
+
+    def session_status(self, session_id: int) -> str:
+        return self._request("GET", f"/dev/demo-seed/sessions/{session_id}")["status"]
+
+    def confirm_session(self, session_id: int) -> dict:
+        return self._request("POST", f"/dev/demo-seed/sessions/{session_id}/confirm", {})
+
+    def start_session(self, session_id: int) -> dict:
+        return self._request("POST", f"/dev/demo-seed/sessions/{session_id}/start")
+
+    def seed_items(self) -> list[dict]:
+        return self._request("GET", "/dev/demo-seed/items")
+
+    def attach_history(self, links: dict[int, int], logs: list[ReviewLog]) -> dict:
+        """합성 기록을 현재 사용자의 실제 기억 항목(card_id → memory_item_id)에 붙인다. 다른 데이터는 지우지 않는다."""
+        body = {
+            "links": [{"card_id": card, "memory_item_id": item} for card, item in links.items()],
+            "reviews": to_export(logs),
+        }
+        return self._request("POST", "/dev/synthetic-history/attach", body)
+
     def _request(self, method: str, path: str, payload: dict | None = None):
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         if self.token:

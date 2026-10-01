@@ -1,0 +1,78 @@
+{
+  "topicHint": "해시 테이블",
+  "userTurns": [
+    {
+      "index": 1,
+      "text": "해시 테이블 탐색이 왜 빨라?",
+      "intent": "info_request"
+    },
+    {
+      "index": 2,
+      "text": "그럼 해시 테이블 탐색은 항상 O(1)이지?",
+      "intent": "understanding_check",
+      "aiVerdict": "corrected",
+      "correction": "평균 O(1)이다. 충돌이 한 버킷에 몰리면 최악 O(n)까지 느려진다."
+    },
+    {
+      "index": 3,
+      "text": "충돌은 어떻게 해결해?",
+      "intent": "info_request"
+    },
+    {
+      "index": 4,
+      "text": "체이닝은 같은 버킷에 리스트로 달고, 개방 주소법은 빈 칸을 찾아가는 거네",
+      "intent": "restatement",
+      "aiVerdict": "confirmed"
+    },
+    {
+      "index": 5,
+      "text": "이거 복습에 넣어줘",
+      "intent": "meta"
+    }
+  ],
+  "reviewUnits": [
+    {
+      "title": "해시 테이블 시간복잡도",
+      "keyPoints": [
+        {
+          "point": "해시 함수로 키를 버킷 위치로 바로 바꿔 평균 O(1)에 찾는다.",
+          "turns": [
+            1
+          ]
+        },
+        {
+          "point": "충돌이 몰리면 최악 O(n)이 된다.",
+          "turns": [
+            2
+          ],
+          "kind": "warning"
+        }
+      ],
+      "confusionPoints": [
+        {
+          "turn": 2,
+          "userBelief": "해시 테이블 탐색은 항상 O(1)이다."
+        }
+      ]
+    },
+    {
+      "title": "충돌 해결",
+      "keyPoints": [
+        {
+          "point": "체이닝은 같은 버킷에 연결 리스트로 저장한다.",
+          "turns": [
+            3,
+            4
+          ]
+        },
+        {
+          "point": "개방 주소법은 다른 빈 버킷을 탐사해 저장한다.",
+          "turns": [
+            3,
+            4
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "topicHint": "트랜잭션 ACID",
+  "userTurns": [
+    {
+      "index": 1,
+      "text": "ACID가 뭐야?",
+      "intent": "info_request"
+    },
+    {
+      "index": 2,
+      "text": "격리성은 트랜잭션을 하나씩 순서대로만 실행한다는 뜻이지?",
+      "intent": "understanding_check",
+      "aiVerdict": "corrected",
+      "correction": "격리성은 동시에 실행돼도 서로의 중간 결과가 보이지 않게 하는 성질이다. 실제로는 격리 수준에 따라 동시 실행을 허용한다."
+    },
+    {
+      "index": 3,
+      "text": "지속성은 커밋되면 서버가 꺼져도 남아 있다는 거지?",
+      "intent": "understanding_check",
+      "aiVerdict": "confirmed"
+    },
+    {
+      "index": 4,
+      "text": "이거 학습에 넘겨줘",
+      "intent": "meta"
+    }
+  ],
+  "reviewUnits": [
+    {
+      "title": "ACID",
+      "keyPoints": [
+        {
+          "point": "원자성은 트랜잭션이 전부 반영되거나 전혀 반영되지 않는 성질이다.",
+          "turns": [
+            1
+          ]
+        },
+        {
+          "point": "격리성은 직렬 실행이 아니라 동시 실행 중 간섭을 막는 성질이고, 격리 수준으로 조절한다.",
+          "turns": [
+            2
+          ],
+          "kind": "warning"
+        },
+        {
+          "point": "지속성은 커밋된 결과가 장애 뒤에도 유지되는 성질이다.",
+          "turns": [
+            3
+          ]
+        }
+      ],
+      "confusionPoints": [
+        {
+          "turn": 2,
+          "userBelief": "격리성은 트랜잭션을 하나씩 순서대로만 실행한다는 뜻이다."
+        }
+      ]
+    }
+  ]
+}
