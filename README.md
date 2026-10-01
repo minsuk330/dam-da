@@ -35,11 +35,14 @@ AI 대화를 매일의 맞춤형 학습으로 연결하는 개인 지식 유지 
 | LLM | Spring AI OpenAI (`spring-ai-starter-model-openai`, `ChatClient`) | 2.0.1 (BOM) |
 | Jev | TypeSafe System One API (`RestClient` 직접 호출, `jev-latest`) | - |
 | 영속성 | Spring Data JPA (Hibernate) | Spring Boot BOM 관리 |
-| DB | PostgreSQL | TBD |
+| DB | PostgreSQL (`backend/docker-compose.yml`), 테스트는 H2 PostgreSQL 모드 | 17 |
 | 공유 링크 수집 | Playwright for Java | 1.63.0 |
 | 빌드 | Gradle (Groovy DSL) + `io.spring.dependency-management` | 1.1.7 |
 | 테스트 | JUnit 5 (`spring-boot-starter-webmvc-test`) | Spring Boot BOM 관리 |
 | 프론트엔드 | TBD (`frontend/`) | - |
+
+- 스키마는 해커톤 단계에서 JPA `ddl-auto: update`로 엔티티 기준 자동 갱신한다. 운영 전 마이그레이션 도구로 바꾼다.
+- 인증은 없다. 시작할 때 데모 사용자 1명(`review.demo-user.name`)을 만들고 `CurrentUser`가 그 ID를 돌려준다.
 
 의존성 버전은 `backend/build.gradle`이 기준이다. 표와 다르면 build.gradle을 따르고 표를 고친다.
 
@@ -49,11 +52,13 @@ AI 대화를 매일의 맞춤형 학습으로 연결하는 개인 지식 유지 
 cd backend
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # 시스템 기본 JDK가 21이 아니면 반드시 지정
 cp .env.example .env                                 # 공유받은 OPENAI_API_KEY, TYPESAFE_API_KEY 입력 (.env는 커밋 금지)
-./gradlew test
-./gradlew bootRun                                    # :8080
+./gradlew test                                       # Docker 없이 H2로 실행
+docker compose up -d --wait                          # PostgreSQL (5432가 사용 중이면 .env의 DB_PORT·DB_URL 변경)
+./gradlew bootRun                                    # :8080, 시작 시 데모 사용자 생성
 
 # 컨테이너 (Java 21 + Playwright Chromium 포함)
 docker build -t khack-review .
+# 컨테이너에서 호스트의 PostgreSQL에 붙으려면 DB_URL의 localhost를 host.docker.internal로 바꾼다
 docker run --rm --init --ipc=host -p 8080:8080 --env-file .env -v "$PWD/data:/app/data" khack-review
 ```
 
