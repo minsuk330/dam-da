@@ -35,7 +35,7 @@ public class Notification {
     @Column(nullable = false, length = 1_000)
     private String body;
 
-    /** 이동 대상 ID. {@link NotificationType#SESSION_READY}면 학습 세션 ID. */
+    /** 이동 대상 ID. {@link NotificationType#SESSION_READY}면 학습 세션 ID, {@link NotificationType#DAILY_LEARNING}이면 시작한 오늘의 풀이 ID. */
     private Long targetId;
 
     @Column(nullable = false)
@@ -60,6 +60,15 @@ public class Notification {
         String topic = topicHint == null || topicHint.isBlank() ? "새" : topicHint.strip();
         return new Notification(userId, NotificationType.SESSION_READY,
                 "%s 학습 내용이 도착했어요".formatted(topic), "공부할 내용을 확인해 보세요.", sessionId, createdAt);
+    }
+
+    /** 매일 학습 알림 (스토리 S2-1). {@code practiceId}는 이미 시작한 오늘의 풀이가 있을 때만 있다. */
+    public static Notification dailyLearning(Long userId, int minutes, int questions, boolean started, Long practiceId,
+            Instant createdAt) {
+        String body = started ? "시작한 오늘의 학습을 이어서 끝내 보세요."
+                : "문제 %d개를 풀면 오늘 학습이 끝나요.".formatted(questions);
+        return new Notification(userId, NotificationType.DAILY_LEARNING, "오늘의 학습 · 약 %d분".formatted(minutes), body,
+                practiceId, createdAt);
     }
 
     /** 이미 읽었으면 처음 읽은 시각을 유지한다. */

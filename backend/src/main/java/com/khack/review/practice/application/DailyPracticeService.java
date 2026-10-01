@@ -86,7 +86,12 @@ public class DailyPracticeService {
 
     @Transactional(readOnly = true)
     public DailyView today() {
-        Long userId = currentUser.id();
+        return today(currentUser.id());
+    }
+
+    /** 사용자의 오늘의 학습. 매일 학습 알림이 예상 시간을 보여줄 때도 쓴다. */
+    @Transactional(readOnly = true)
+    public DailyView today(Long userId) {
         Optional<PracticeSession> existing = todaysSession(userId);
         if (existing.isPresent()) {
             return startedView(existing.get(), List.of());

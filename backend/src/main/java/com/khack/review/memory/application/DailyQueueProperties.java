@@ -23,8 +23,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record DailyQueueProperties(Duration budget, int maxNewItems, Map<MemoryItemKind, Double> weights, double heldMinUrgency,
         double ladderLevel2MinStabilityDays, double ladderLevel3MinStabilityDays) {
 
-    DailyQueuePlanner.Policy policy(Map<QuestionType, Duration> referenceTimes) {
-        return new DailyQueuePlanner.Policy(budget, maxNewItems, weights, heldMinUrgency, referenceTimes);
+    /** {@code userBudget}은 사용자가 정한 하루 시간 예산. 없으면 {@link #budget}. */
+    DailyQueuePlanner.Policy policy(Map<QuestionType, Duration> referenceTimes, Duration userBudget) {
+        return new DailyQueuePlanner.Policy(userBudget, maxNewItems, weights, heldMinUrgency, referenceTimes);
     }
 
     QuestionLadder ladder() {
