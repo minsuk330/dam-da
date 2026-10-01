@@ -41,6 +41,21 @@ public class ConversationTurn {
         return stored;
     }
 
+    void edit(String text, Intent intent, AiVerdict aiVerdict, String correction) {
+        this.text = text;
+        this.intent = intent;
+        this.aiVerdict = aiVerdict;
+        this.correction = correction;
+    }
+
+    void moveTo(int turnIndex) {
+        this.turnIndex = turnIndex;
+    }
+
+    String getText() {
+        return text;
+    }
+
     UserTurn toUserTurn() {
         return new UserTurn(turnIndex, text, quotedText, intent, aiVerdict, correction);
     }

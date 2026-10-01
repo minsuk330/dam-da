@@ -50,6 +50,9 @@ public class LearningSession {
     @Column(nullable = false)
     private Instant createdAt;
 
+    /** 사용자가 확인을 마친 시각. 확인 전에는 null이다. */
+    private Instant confirmedAt;
+
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position")
     private List<ReviewUnit> units = new ArrayList<>();
@@ -116,6 +119,73 @@ public class LearningSession {
         status = next;
     }
 
+    /** 확인 대기 중에만 사용자가 내용을 고칠 수 있다(규칙 9, 12). */
+    public void requireEditable() {
+        if (status != LearningSessionStatus.AWAITING_CONFIRMATION) {
+            throw new IllegalStateException("학습 세션 %d은(는) %s 상태라 고칠 수 없습니다. 확인 대기 중에만 고칠 수 있습니다."
+                    .formatted(id, status));
+        }
+    }
+
+    public void setUnitExcluded(Long unitId, boolean excluded) {
+        requireEditable();
+        ReviewUnit unit = unit(unitId);
+        if (excluded) {
+            unit.exclude();
+        } else {
+            unit.include();
+        }
+    }
+
+    public void setItemExcluded(Long itemId, boolean excluded) {
+        requireEditable();
+        MemoryItem item = item(itemId);
+        if (excluded) {
+            item.exclude();
+        } else if (item.getUnit().isExcluded()) {
+            throw new IllegalStateException("기억 항목 %d이 속한 복습 단위가 제외되어 있습니다. 복습 단위를 먼저 다시 넣으세요.".formatted(itemId));
+        } else {
+            item.include();
+        }
+    }
+
+    /** 발화가 `meta`로 바뀌면 출처에서 뺀다(규칙 15). */
+    public void turnBecameMeta(int turn) {
+        requireEditable();
+        items().forEach(item -> item.removeSourceTurn(turn));
+    }
+
+    /**
+     * 빠진 발화가 {@code turn} 자리에 들어가 뒤 발화의 index가 1씩 밀렸다. 출처 index를 따라 옮기고,
+     * {@code sourceOf}에 든 기억 항목의 출처에 새 발화를 더한다.
+     */
+    public void turnInserted(int turn, List<Long> sourceOf) {
+        requireEditable();
+        items().forEach(item -> item.shiftSourceTurnsFrom(turn));
+        sourceOf.forEach(itemId -> item(itemId).addSourceTurn(turn));
+    }
+
+    /** 사용자가 확인을 마쳤다. 이후 내용은 고칠 수 없고 문제 생성이 열린다(규칙 12). */
+    public void confirm(Instant at) {
+        requireEditable();
+        moveTo(LearningSessionStatus.CONFIRMED);
+        confirmedAt = at;
+    }
+
+    public boolean isConfirmed() {
+        return status.compareTo(LearningSessionStatus.CONFIRMED) >= 0;
+    }
+
+    private ReviewUnit unit(Long unitId) {
+        return units.stream().filter(unit -> unit.getId().equals(unitId)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("학습 세션 %d에 복습 단위 %d이 없습니다.".formatted(id, unitId)));
+    }
+
+    private MemoryItem item(Long itemId) {
+        return items().stream().filter(item -> item.getId().equals(itemId)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("학습 세션 %d에 기억 항목 %d이 없습니다.".formatted(id, itemId)));
+    }
+
     public List<MemoryItem> items() {
         return units.stream().flatMap(unit -> unit.getItems().stream()).toList();
     }
@@ -142,6 +212,10 @@ public class LearningSession {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getConfirmedAt() {
+        return confirmedAt;
     }
 
     public List<ReviewUnit> getUnits() {

@@ -20,9 +20,14 @@ public class ConversationQueryService {
     /** 다른 컨텍스트가 근거 발화를 읽을 때 쓴다. 없으면 {@link IllegalArgumentException}. */
     @Transactional(readOnly = true)
     public ConversationEvidence evidence(Long conversationId) {
-        LearningConversation conversation = conversations.findById(conversationId)
-                .orElseThrow(() -> new IllegalArgumentException("학습 대화 없음: " + conversationId));
+        LearningConversation conversation = conversation(conversationId);
         return new ConversationEvidence(conversation.getFidelity(), conversation.userTurns());
+    }
+
+    /** 다른 컨텍스트가 대화 1건을 보여줄 때 쓴다. 없으면 {@link IllegalArgumentException}. */
+    @Transactional(readOnly = true)
+    public SavedSession find(Long conversationId) {
+        return conversation(conversationId).toSavedSession();
     }
 
     @Transactional(readOnly = true)
@@ -30,5 +35,10 @@ public class ConversationQueryService {
         return conversations.findAllByOrderByReceivedAtAscIdAsc().stream()
                 .map(LearningConversation::toSavedSession)
                 .toList();
+    }
+
+    private LearningConversation conversation(Long conversationId) {
+        return conversations.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("학습 대화 없음: " + conversationId));
     }
 }
