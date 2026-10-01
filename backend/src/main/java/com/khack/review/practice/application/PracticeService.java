@@ -4,10 +4,11 @@ import com.khack.review.analysis.application.SessionProgressService;
 import com.khack.review.analysis.domain.LearningSessionStatus;
 import com.khack.review.common.application.CurrentUser;
 import com.khack.review.memory.application.MemoryStateService;
+import com.khack.review.memory.domain.AttemptKind;
+import com.khack.review.memory.domain.SelfAssessment;
 import com.khack.review.practice.domain.AidExposure;
 import com.khack.review.practice.domain.AidExposureRepository;
 import com.khack.review.practice.domain.AidType;
-import com.khack.review.practice.domain.AttemptKind;
 import com.khack.review.practice.domain.AttemptRules;
 import com.khack.review.practice.domain.PracticeAttempt;
 import com.khack.review.practice.domain.PracticeAttemptRepository;
@@ -17,7 +18,6 @@ import com.khack.review.practice.domain.PracticeSession;
 import com.khack.review.practice.domain.PracticeSessionRepository;
 import com.khack.review.practice.domain.QuestionPresentation;
 import com.khack.review.practice.domain.QuestionPresentationRepository;
-import com.khack.review.practice.domain.SelfAssessment;
 import com.khack.review.question.application.QuestionQueryService;
 import com.khack.review.question.domain.Question;
 import com.khack.review.question.domain.QuestionStatus;
@@ -158,13 +158,13 @@ public class PracticeService {
         Instant now = clock.instant();
         AttemptRules.Classification classification = AttemptRules.classify(history(presentation),
                 Optional.ofNullable(presentation.getRecheckOfPresentationId()).map(this::history).orElse(null), now);
-        if (classification.kind().isEvaluated() && submission.selfAssessment() == null) {
+        if (AttemptRules.isEvaluated(classification.kind()) && submission.selfAssessment() == null) {
             throw new IllegalArgumentException("자기평가를 고르세요.");
         }
         PracticeAttempt.Answer answer = answer(questions.question(presentation.getQuestionId()), submission);
         PracticeAttempt saved = attempts.save(PracticeAttempt.of(presentation, classification, answer,
                 timing(submission, classification.timedFrom(), now)));
-        return new AttemptView(saved.getId(), saved.getKind(), saved.getKind().isEvaluated(), saved.getChoiceCorrect(),
+        return new AttemptView(saved.getId(), saved.getKind(), AttemptRules.isEvaluated(saved.getKind()), saved.getChoiceCorrect(),
                 saved.getResponseTimeMs());
     }
 

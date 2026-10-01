@@ -27,7 +27,7 @@ import com.khack.review.common.json.Json;
 import com.khack.review.memory.application.MemoryStateService;
 import com.khack.review.analysis.application.UnitReviewQuestions;
 import com.khack.review.practice.application.LearningGoalService;
-import com.khack.review.practice.domain.AttemptKind;
+import com.khack.review.memory.domain.AttemptKind;
 import com.khack.review.practice.domain.LearningGoal;
 import com.khack.review.practice.domain.PracticeAttempt;
 import com.khack.review.practice.domain.PracticeAttemptRepository;
@@ -35,7 +35,7 @@ import com.khack.review.practice.domain.PracticeSession;
 import com.khack.review.practice.domain.PracticeSessionRepository;
 import com.khack.review.practice.domain.QuestionPresentation;
 import com.khack.review.practice.domain.QuestionPresentationRepository;
-import com.khack.review.practice.domain.SelfAssessment;
+import com.khack.review.memory.domain.SelfAssessment;
 import com.khack.review.question.application.QuestionQualityQuestions;
 import com.khack.review.question.application.port.out.FakeQuestionGenerator;
 import java.net.URI;
@@ -205,15 +205,15 @@ class PracticeIT {
         String attemptsPath = "/api/practice/presentations/%d/attempts".formatted(firstId);
         assertThat(send("POST", attemptsPath, "{\"answer\":\"표준편차는 줄지 않는다\"}").statusCode())
                 .as("평가 대상 시도는 자기평가 필수").isEqualTo(400);
-        assertThat(send("POST", attemptsPath, "{\"answer\":\"   \",\"selfAssessment\":\"EASY\"}").statusCode()).isEqualTo(400);
+        assertThat(send("POST", attemptsPath, "{\"answer\":\"   \",\"selfAssessment\":\"RECALLED_EASILY\"}").statusCode()).isEqualTo(400);
         JsonNode unaided = ok("POST", attemptsPath,
-                "{\"answer\":\"  표준편차는 줄지 않는다\\n표준오차가 준다  \",\"selfAssessment\":\"EFFORTFUL\",\"responseTimeMs\":999999999,\"firstInputMs\":4000}");
-        assertThat(unaided.get("kind").asString()).isEqualTo("FIRST_UNAIDED");
+                "{\"answer\":\"  표준편차는 줄지 않는다\\n표준오차가 준다  \",\"selfAssessment\":\"RECALLED_WITH_EFFORT\",\"responseTimeMs\":999999999,\"firstInputMs\":4000}");
+        assertThat(unaided.get("kind").asString()).isEqualTo("FIRST_UNASSISTED");
         assertThat(unaided.get("evaluated").asBoolean()).isTrue();
         assertThat(unaided.get("correct").isNull()).as("서술형은 Jev가 판정").isTrue();
         PracticeAttempt firstAttempt = attempts.findById(unaided.get("attemptId").asLong()).orElseThrow();
         assertThat(firstAttempt.getAnswerText()).isEqualTo("표준편차는 줄지 않는다\n표준오차가 준다");
-        assertThat(firstAttempt.getSelfAssessment()).isEqualTo(SelfAssessment.EFFORTFUL);
+        assertThat(firstAttempt.getSelfAssessment()).isEqualTo(SelfAssessment.RECALLED_WITH_EFFORT);
         assertThat(firstAttempt.isInterpretationHelp()).isTrue();
         assertThat(firstAttempt.isPriorAidExposed()).isFalse();
         assertThat(firstAttempt.getServerElapsedMs()).isGreaterThanOrEqualTo(30_000);
@@ -222,12 +222,12 @@ class PracticeIT {
         assertThat(firstAttempt.getPredictedRetrievability()).isEqualTo(presented.getPredictedRetrievability());
         assertThat(firstAttempt.isSameDayRecheck()).isFalse();
 
-        assertThat(send("POST", attemptsPath, "{\"answer\":\"다시\",\"selfAssessment\":\"EASY\"}").statusCode())
+        assertThat(send("POST", attemptsPath, "{\"answer\":\"다시\",\"selfAssessment\":\"RECALLED_EASILY\"}").statusCode())
                 .as("도움 없이 두 번 답할 수 없음").isEqualTo(409);
         ok("POST", "/api/practice/presentations/%d/aids".formatted(firstId), "{\"type\":\"HINT\"}");
         clock.travel(Duration.ofSeconds(10));
         JsonNode aided = ok("POST", attemptsPath, "{\"answer\":\"표본이 커져도 표준편차는 그대로\",\"responseTimeMs\":8000}");
-        assertThat(aided.get("kind").asString()).isEqualTo("AFTER_AID");
+        assertThat(aided.get("kind").asString()).isEqualTo("ASSISTED_RETRY");
         assertThat(aided.get("evaluated").asBoolean()).isFalse();
         PracticeAttempt aidedAttempt = attempts.findById(aided.get("attemptId").asLong()).orElseThrow();
         assertThat(aidedAttempt.isPriorAidExposed()).isTrue();
@@ -242,9 +242,9 @@ class PracticeIT {
         assertThat(send("POST", "/api/practice/presentations/%d/aids".formatted(firstId), "{\"type\":\"HINT\"}").statusCode())
                 .as("지나간 제시").isEqualTo(409);
         String secondPath = "/api/practice/presentations/%d/attempts".formatted(secondId);
-        assertThat(send("POST", secondPath, "{\"choiceIndex\":9,\"selfAssessment\":\"EASY\"}").statusCode()).isEqualTo(400);
-        JsonNode choice = ok("POST", secondPath, "{\"choiceIndex\":0,\"selfAssessment\":\"EASY\"}");
-        assertThat(choice.get("kind").asString()).isEqualTo("FIRST_UNAIDED");
+        assertThat(send("POST", secondPath, "{\"choiceIndex\":9,\"selfAssessment\":\"RECALLED_EASILY\"}").statusCode()).isEqualTo(400);
+        JsonNode choice = ok("POST", secondPath, "{\"choiceIndex\":0,\"selfAssessment\":\"RECALLED_EASILY\"}");
+        assertThat(choice.get("kind").asString()).isEqualTo("FIRST_UNASSISTED");
         assertThat(choice.get("correct").asBoolean()).isTrue();
 
         // 같은 날 재확인(#20이 편성): 1번 문제를 큐 끝에 넣는다.
@@ -256,7 +256,7 @@ class PracticeIT {
         assertThat(recheck.get("sameDayRecheck").asBoolean()).isTrue();
         assertThat(recheck.get("questionId").asLong()).isEqualTo(presented.getQuestionId());
         JsonNode delayed = ok("POST", "/api/practice/presentations/%d/attempts".formatted(recheck.get("presentationId").asLong()),
-                "{\"answer\":\"표준편차는 줄지 않는다\",\"selfAssessment\":\"EASY\"}");
+                "{\"answer\":\"표준편차는 줄지 않는다\",\"selfAssessment\":\"RECALLED_EASILY\"}");
         assertThat(delayed.get("kind").asString()).isEqualTo(AttemptKind.DELAYED_RECHECK.name());
         assertThat(delayed.get("evaluated").asBoolean()).isTrue();
         PracticeAttempt delayedAttempt = attempts.findById(delayed.get("attemptId").asLong()).orElseThrow();

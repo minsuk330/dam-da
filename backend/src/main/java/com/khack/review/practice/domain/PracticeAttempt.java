@@ -1,5 +1,7 @@
 package com.khack.review.practice.domain;
 
+import com.khack.review.memory.domain.AttemptKind;
+import com.khack.review.memory.domain.SelfAssessment;
 import com.khack.review.question.domain.QuestionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

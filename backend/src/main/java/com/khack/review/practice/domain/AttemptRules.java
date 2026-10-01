@@ -1,5 +1,6 @@
 package com.khack.review.practice.domain;
 
+import com.khack.review.memory.domain.AttemptKind;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -45,7 +46,7 @@ public final class AttemptRules {
             throw new IllegalStateException("다시 답하려면 먼저 힌트나 설명을 보세요. 도움 없는 답은 제시마다 한 번만 받습니다.");
         }
         if (lastContentAid.isPresent()) {
-            return new Classification(AttemptKind.AFTER_AID, interpretation, true,
+            return new Classification(AttemptKind.ASSISTED_RETRY, interpretation, true,
                     Duration.between(lastContentAid.get(), submittedAt), lastContentAid.get());
         }
         if (recheckOf != null) {
@@ -55,7 +56,12 @@ public final class AttemptRules {
             return new Classification(AttemptKind.DELAYED_RECHECK, interpretation, originalAid.isPresent(),
                     Duration.between(prior, submittedAt), current.presentedAt());
         }
-        return new Classification(AttemptKind.FIRST_UNAIDED, interpretation, false, null, current.presentedAt());
+        return new Classification(AttemptKind.FIRST_UNASSISTED, interpretation, false, null, current.presentedAt());
+    }
+
+    /** FSRS 등급을 정하는 시도인가. 도움 후 재시도는 지식 상태 표시와 피드백에만 쓴다. */
+    public static boolean isEvaluated(AttemptKind kind) {
+        return kind != AttemptKind.ASSISTED_RETRY;
     }
 
     private static Optional<Instant> lastContentAid(History history) {

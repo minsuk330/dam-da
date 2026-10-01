@@ -3,6 +3,7 @@ package com.khack.review.practice.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.khack.review.memory.domain.AttemptKind;
 import com.khack.review.practice.domain.AttemptRules.Classification;
 import com.khack.review.practice.domain.AttemptRules.Exposure;
 import com.khack.review.practice.domain.AttemptRules.History;
@@ -27,8 +28,8 @@ class AttemptRulesTest {
     void firstAnswerWithoutAidIsTheFirstUnaidedAttempt() {
         Classification c = AttemptRules.classify(presented(0, List.of(), List.of()), null, at(20));
 
-        assertThat(c.kind()).isEqualTo(AttemptKind.FIRST_UNAIDED);
-        assertThat(c.kind().isEvaluated()).isTrue();
+        assertThat(c.kind()).isEqualTo(AttemptKind.FIRST_UNASSISTED);
+        assertThat(AttemptRules.isEvaluated(c.kind())).isTrue();
         assertThat(c.interpretationHelp()).isFalse();
         assertThat(c.priorAidExposed()).isFalse();
         assertThat(c.sincePrior()).isNull();
@@ -40,7 +41,7 @@ class AttemptRulesTest {
         Classification c = AttemptRules.classify(
                 presented(0, List.of(new Exposure(AidType.INTERPRETATION, at(5))), List.of()), null, at(20));
 
-        assertThat(c.kind()).isEqualTo(AttemptKind.FIRST_UNAIDED);
+        assertThat(c.kind()).isEqualTo(AttemptKind.FIRST_UNASSISTED);
         assertThat(c.interpretationHelp()).isTrue();
         assertThat(c.priorAidExposed()).isFalse();
     }
@@ -50,8 +51,8 @@ class AttemptRulesTest {
         Classification c = AttemptRules.classify(
                 presented(0, List.of(new Exposure(AidType.HINT, at(30))), List.of(at(20))), null, at(45));
 
-        assertThat(c.kind()).isEqualTo(AttemptKind.AFTER_AID);
-        assertThat(c.kind().isEvaluated()).isFalse();
+        assertThat(c.kind()).isEqualTo(AttemptKind.ASSISTED_RETRY);
+        assertThat(AttemptRules.isEvaluated(c.kind())).isFalse();
         assertThat(c.priorAidExposed()).isTrue();
         assertThat(c.sincePrior()).isEqualTo(Duration.ofSeconds(15));
         assertThat(c.timedFrom()).isEqualTo(at(30));
@@ -62,7 +63,7 @@ class AttemptRulesTest {
         Classification c = AttemptRules.classify(
                 presented(0, List.of(new Exposure(AidType.EXPLANATION, at(10))), List.of()), null, at(40));
 
-        assertThat(c.kind()).isEqualTo(AttemptKind.AFTER_AID);
+        assertThat(c.kind()).isEqualTo(AttemptKind.ASSISTED_RETRY);
     }
 
     @Test
@@ -83,7 +84,7 @@ class AttemptRulesTest {
         Classification c = AttemptRules.classify(presented(300, List.of(), List.of()), original, at(320));
 
         assertThat(c.kind()).isEqualTo(AttemptKind.DELAYED_RECHECK);
-        assertThat(c.kind().isEvaluated()).isTrue();
+        assertThat(AttemptRules.isEvaluated(c.kind())).isTrue();
         assertThat(c.priorAidExposed()).isTrue();
         assertThat(c.sincePrior()).as("마지막 내용 도움(설명)부터").isEqualTo(Duration.ofSeconds(260));
         assertThat(c.timedFrom()).isEqualTo(at(300));
@@ -105,6 +106,6 @@ class AttemptRulesTest {
         Classification c = AttemptRules.classify(presented(300, List.of(new Exposure(AidType.HINT, at(310))), List.of()),
                 presented(0, List.of(), List.of(at(20))), at(320));
 
-        assertThat(c.kind()).isEqualTo(AttemptKind.AFTER_AID);
+        assertThat(c.kind()).isEqualTo(AttemptKind.ASSISTED_RETRY);
     }
 }
