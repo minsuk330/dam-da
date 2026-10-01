@@ -3,12 +3,14 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDaily } from '@/api/daily';
+import { useChooseField } from '@/api/fields';
 import { useLearningSession } from '@/api/learning-sessions';
 import { gaugeOf, useFirstStudySummary, useSessionGauge, useTargetRetention, type UnitView } from '@/api/memory';
 import { useStartFirstStudy } from '@/api/practice';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
+import { FieldPicker } from '@/components/field-picker';
 import { Gauge, percent } from '@/components/gauge';
 import { Notice } from '@/components/notice';
 import { SkeletonScreen } from '@/components/skeleton';
@@ -27,6 +29,7 @@ export function SessionMemory({ id }: { id: number }) {
   const summary = useFirstStudySummary(id);
   const target = useTargetRetention(id);
   const start = useStartFirstStudy(id);
+  const chooseField = useChooseField(id);
   // 서버의 오늘. 다음 복습일이 지났는지 시간 이동 기준으로 판단한다.
   const serverToday = useDaily().data?.date;
 
@@ -77,6 +80,17 @@ export function SessionMemory({ id }: { id: number }) {
           목표 유지율 {percent(target)}%
           {summary.data?.nextReviewAt ? ` · ${nextReviewLabel(summary.data.nextReviewAt, serverToday)}` : ''}
         </ThemedText>
+        <FieldPicker
+          value={session.data.field}
+          busy={chooseField.isPending}
+          onChoose={(code) => chooseField.mutate(code)}
+          style={styles.field}
+        />
+        {chooseField.isError && (
+          <ThemedText variant="caption" tone="dangerInk">
+            분야를 바꾸지 못했어요. 다시 시도해 주세요.
+          </ThemedText>
+        )}
       </Card>
 
       {unfinished && (
@@ -159,6 +173,7 @@ function UnitCard({
 }
 
 const styles = StyleSheet.create({
+  field: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline, paddingTop: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   centerText: { textAlign: 'center' },
   content: { padding: spacing.xl, gap: spacing.xl },

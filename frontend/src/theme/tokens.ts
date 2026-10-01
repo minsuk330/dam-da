@@ -468,6 +468,43 @@ export const components = {
     "backgroundColor": "#2E5BE8",
     "size": 8
   },
+  "graph": {
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#3D4A6B",
+    "typography": {
+      "fontFamily": "SUIT-Medium",
+      "fontSize": 12,
+      "lineHeight": 17
+    },
+    "rounded": 28,
+    "height": 380
+  },
+  "graphEdge": {
+    "backgroundColor": "#BDCDFF",
+    "width": 1
+  },
+  "graphNodeField": {
+    "size": 36
+  },
+  "graphNodeSubfield": {
+    "size": 24
+  },
+  "graphNodeSession": {
+    "size": 16
+  },
+  "graphNodeUnit": {
+    "size": 10
+  },
+  "graphNodeGrowth": {
+    "size": 2
+  },
+  "graphNodeUnchecked": {
+    "backgroundColor": "#D4D7DE"
+  },
+  "graphNodeSelected": {
+    "backgroundColor": "#0B0C12",
+    "width": 2
+  },
   "tabBar": {
     "backgroundColor": "#DCE4FCB8",
     "rounded": 9999,
