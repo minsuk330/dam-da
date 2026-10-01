@@ -1,0 +1,139 @@
+# 학습 분야 분류표 (초안, 2026-10-02)
+#
+# 세션마다 주 소분류 1개를 붙인다. Jev가 2단계로 고른다.
+#   1단계: 대분류 12개 중 하나
+#   2단계: 고른 대분류의 소분류 중 하나
+# 신뢰도가 기준보다 낮으면 해당 대분류의 `<대분류>.etc`, 1단계부터 낮으면 `etc.etc`.
+# 사용자는 세션 확인 단계에서 바꿀 수 있다.
+#
+# - code: DB 저장값. 한 번 쓰면 바꾸지 않는다(이름만 바꿀 수 있음). 항목 삭제 대신 deprecated 표시.
+# - hint: Jev 선택지 설명. 헷갈리는 이웃 항목과 경계를 적는다.
+# - 페르소나(경영학과 2학년, 전공 무관) 기준으로 cs·biz를 가장 촘촘하게 둔다.
+
+version: 1
+fields:
+  - code: cs
+    label: 컴퓨터·IT
+    subfields:
+      - { code: cs.algo, label: 자료구조·알고리즘, hint: "정렬, 탐색, 그래프, 동적계획법, 시간복잡도, 코딩테스트" }
+      - { code: cs.os, label: 운영체제, hint: "프로세스, 스레드, 스케줄링, 동기화, 메모리 관리, 파일시스템" }
+      - { code: cs.db, label: 데이터베이스, hint: "SQL, 인덱스, 트랜잭션, 락, 정규화, NoSQL" }
+      - { code: cs.network, label: 네트워크, hint: "TCP/IP, HTTP, DNS, 라우팅, 소켓" }
+      - { code: cs.arch, label: 컴퓨터구조, hint: "CPU, 캐시, 명령어, 파이프라인, 논리회로" }
+      - { code: cs.lang, label: 프로그래밍 언어, hint: "특정 언어 문법·런타임(Java, Python, JS 등), 타입 시스템, 컴파일러" }
+      - { code: cs.se, label: 소프트웨어 설계·공학, hint: "객체지향, 디자인 패턴, 아키텍처, 테스트, 협업·Git" }
+      - { code: cs.backend, label: 웹·백엔드, hint: "서버 프레임워크, API 설계, 인증, 캐시, 메시지 큐" }
+      - { code: cs.frontend, label: 프론트엔드·모바일, hint: "HTML/CSS, React, 앱 개발, UI 상태 관리" }
+      - { code: cs.ai, label: AI·머신러닝, hint: "머신러닝, 딥러닝, LLM, 데이터 전처리. 통계 이론 자체는 math.stats" }
+      - { code: cs.data, label: 데이터 분석, hint: "엑셀·SQL·파이썬 분석, 시각화, 대시보드. 경영 의사결정용 분석 포함" }
+      - { code: cs.security, label: 보안, hint: "암호, 인증·인가 취약점, 해킹·방어" }
+      - { code: cs.infra, label: 클라우드·인프라, hint: "배포, 컨테이너, 쿠버네티스, CI/CD, 리눅스 운영" }
+      - { code: cs.etc, label: 기타(컴퓨터·IT) }
+
+  - code: biz
+    label: 경영·경제
+    subfields:
+      - { code: biz.accounting, label: 회계, hint: "재무회계, 원가·관리회계, 재무제표, 세무" }
+      - { code: biz.finance, label: 재무·투자, hint: "기업재무, 자본비용, 가치평가, 주식·채권, 파생상품" }
+      - { code: biz.marketing, label: 마케팅, hint: "STP, 4P, 소비자행동, 브랜드, 디지털 마케팅" }
+      - { code: biz.hr, label: 인사·조직, hint: "조직행동, 리더십, 동기부여, 인사관리" }
+      - { code: biz.strategy, label: 경영전략, hint: "경쟁전략, 산업분석, 5 Forces, 사업 모델, 창업" }
+      - { code: biz.operations, label: 생산·운영관리, hint: "공급망, 재고, 품질관리, 프로세스" }
+      - { code: biz.mis, label: 경영정보시스템, hint: "ERP, 정보시스템, 디지털 전환. 구현 기술 자체는 cs" }
+      - { code: biz.micro, label: 미시경제, hint: "수요·공급, 탄력성, 시장구조, 게임이론" }
+      - { code: biz.macro, label: 거시경제, hint: "GDP, 인플레이션, 통화·재정정책, 환율" }
+      - { code: biz.intl, label: 국제경영·무역, hint: "무역이론, 해외진출, 글로벌 경영" }
+      - { code: biz.etc, label: 기타(경영·경제) }
+
+  - code: math
+    label: 수학·통계
+    subfields:
+      - { code: math.calculus, label: 미적분, hint: "극한, 미분, 적분, 다변수, 미분방정식" }
+      - { code: math.linalg, label: 선형대수, hint: "행렬, 벡터공간, 고유값" }
+      - { code: math.discrete, label: 이산수학, hint: "논리, 집합, 조합, 그래프 이론" }
+      - { code: math.stats, label: 확률·통계, hint: "확률분포, 추정, 검정, 회귀분석" }
+      - { code: math.pure, label: 해석·대수, hint: "해석학, 추상대수, 위상" }
+      - { code: math.etc, label: 기타(수학·통계) }
+
+  - code: sci
+    label: 자연과학
+    subfields:
+      - { code: sci.physics, label: 물리 }
+      - { code: sci.chemistry, label: 화학 }
+      - { code: sci.biology, label: 생명과학 }
+      - { code: sci.earth, label: 지구·환경과학 }
+      - { code: sci.etc, label: 기타(자연과학) }
+
+  - code: eng
+    label: 공학
+    subfields:
+      - { code: eng.electrical, label: 전기·전자, hint: "회로, 신호처리, 반도체. 컴퓨터구조는 cs.arch" }
+      - { code: eng.mechanical, label: 기계 }
+      - { code: eng.chemical, label: 화공·재료 }
+      - { code: eng.civil, label: 건축·토목 }
+      - { code: eng.industrial, label: 산업공학, hint: "최적화, 경영과학, 시뮬레이션. 실무 운영관리는 biz.operations" }
+      - { code: eng.etc, label: 기타(공학) }
+
+  - code: hum
+    label: 인문
+    subfields:
+      - { code: hum.philosophy, label: 철학·윤리 }
+      - { code: hum.history, label: 역사 }
+      - { code: hum.literature, label: 문학 }
+      - { code: hum.linguistics, label: 언어학, hint: "언어 구조 연구. 특정 외국어 학습은 lang" }
+      - { code: hum.religion, label: 종교 }
+      - { code: hum.etc, label: 기타(인문) }
+
+  - code: soc
+    label: 사회과학
+    subfields:
+      - { code: soc.psychology, label: 심리학 }
+      - { code: soc.sociology, label: 사회학 }
+      - { code: soc.politics, label: 정치·국제관계 }
+      - { code: soc.media, label: 미디어·커뮤니케이션 }
+      - { code: soc.education, label: 교육학 }
+      - { code: soc.etc, label: 기타(사회과학) }
+
+  - code: law
+    label: 법·행정
+    subfields:
+      - { code: law.public, label: 헌법·행정법 }
+      - { code: law.civil, label: 민법·상법, hint: "계약, 회사법, 상거래" }
+      - { code: law.criminal, label: 형법 }
+      - { code: law.labor, label: 노동법 }
+      - { code: law.admin, label: 행정학·정책 }
+      - { code: law.etc, label: 기타(법·행정) }
+
+  - code: med
+    label: 의약·보건
+    subfields:
+      - { code: med.basic, label: 기초의학, hint: "해부, 생리, 병리" }
+      - { code: med.clinical, label: 임상의학 }
+      - { code: med.pharmacy, label: 약학 }
+      - { code: med.nursing, label: 간호 }
+      - { code: med.health, label: 보건·영양·운동 }
+      - { code: med.etc, label: 기타(의약·보건) }
+
+  - code: art
+    label: 예술·디자인
+    subfields:
+      - { code: art.visual, label: 시각·UX 디자인, hint: "그래픽, UI/UX, 타이포그래피" }
+      - { code: art.fine, label: 미술 }
+      - { code: art.music, label: 음악 }
+      - { code: art.film, label: 영상·영화 }
+      - { code: art.etc, label: 기타(예술·디자인) }
+
+  - code: lang
+    label: 외국어
+    subfields:
+      - { code: lang.english, label: 영어 }
+      - { code: lang.japanese, label: 일본어 }
+      - { code: lang.chinese, label: 중국어 }
+      - { code: lang.etc, label: 기타 외국어 }
+
+  - code: etc
+    label: 기타
+    subfields:
+      - { code: etc.career, label: 취업·자격증, hint: "면접, 자기소개서, 자격시험 준비 일반" }
+      - { code: etc.life, label: 생활·교양, hint: "시사, 상식, 재테크 입문, 생활 지식" }
+      - { code: etc.etc, label: 미분류 }
