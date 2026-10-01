@@ -21,6 +21,11 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # 시스템 기본 JDK가 21�
 ./gradlew test        # PR 전 필수. 실제 LLM 호출 없이 fake로 통과해야 한다
 ./gradlew benchmark   # 커넥터 저장 결과 채점. 서버(bootRun, DEV_TOOLS_ENABLED=true)가 떠 있어야 함. 다른 포트면 -Pserver=
 ./gradlew bootRun     # :8080
+
+cd frontend
+npm run build         # frontend/ 변경 PR 전 필수 (tsc -b + vite build)
+npm run lint
+npm run dev           # :5173, /api는 localhost:8080으로 proxy
 ```
 
 ## Hard 제약
