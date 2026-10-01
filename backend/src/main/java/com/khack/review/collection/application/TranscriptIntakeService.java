@@ -20,6 +20,8 @@ import com.khack.review.common.application.CurrentUser;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @Service
 public class TranscriptIntakeService {
+
+    private static final Logger log = LoggerFactory.getLogger(TranscriptIntakeService.class);
 
     /** 붙여넣기 원문 상한. 저장 컬럼(원문 JSON)보다 작게 둔다. */
     static final int MAX_PASTED_CHARS = 200_000;
@@ -58,7 +62,13 @@ public class TranscriptIntakeService {
 
     public SavedSession fromShareLink(String url) {
         String allowed = ShareLinkPolicy.requireAllowed(url);
-        ShareExtraction fetched = fetcher.fetch(allowed);
+        ShareExtraction fetched;
+        try {
+            fetched = fetcher.fetch(allowed);
+        } catch (RuntimeException e) {
+            log.warn("share link fetch failed: {}", allowed, e);
+            throw new ShareLinkUnavailableException(ShareStatus.UNREACHABLE);
+        }
         ShareStatus status = ShareStatus.classify(fetched);
         if (status != ShareStatus.OK || fetched.userTurnTexts().isEmpty()) {
             throw new ShareLinkUnavailableException(status == ShareStatus.OK ? ShareStatus.NO_TURNS : status);

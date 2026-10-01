@@ -37,6 +37,7 @@ class ConversationInputIT {
 
     static final List<String> FETCHED = new ArrayList<>();
     static ShareExtraction nextShare;
+    static RuntimeException fetchFailure;
 
     @TestConfiguration
     static class Fakes {
@@ -46,6 +47,9 @@ class ConversationInputIT {
         ShareLinkFetcher fakeShareLinkFetcher() {
             return url -> {
                 FETCHED.add(url);
+                if (fetchFailure != null) {
+                    throw fetchFailure;
+                }
                 return nextShare;
             };
         }
@@ -71,6 +75,7 @@ class ConversationInputIT {
     @BeforeEach
     void reset() {
         FETCHED.clear();
+        fetchFailure = null;
         extractor.willReturn(null);
         nextShare = new ShareExtraction("https://chatgpt.com/share/abc", 200, "경영통계", List.of(
                 new ShareTurn("user", "표준오차가 뭐야?"),
@@ -119,6 +124,18 @@ class ConversationInputIT {
         nextShare = new ShareExtraction("https://chatgpt.com/share/gone", 404, null, List.of());
 
         HttpResponse<String> response = post("/api/conversations/share-link", "{\"url\":\"https://chatgpt.com/share/gone\"}");
+
+        assertThat(response.statusCode()).isEqualTo(422);
+        JsonNode body = Json.MAPPER.readTree(response.body());
+        assertThat(body.get("code").asString()).isEqualTo("share_unavailable");
+        assertThat(body.get("fallback").asString()).isEqualTo("paste");
+    }
+
+    @Test
+    void fetchErrorsAlsoSuggestPasting() throws Exception {
+        fetchFailure = new RuntimeException("Timeout 45000ms exceeded");
+
+        HttpResponse<String> response = post("/api/conversations/share-link", "{\"url\":\"https://chatgpt.com/share/slow\"}");
 
         assertThat(response.statusCode()).isEqualTo(422);
         JsonNode body = Json.MAPPER.readTree(response.body());
