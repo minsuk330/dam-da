@@ -69,6 +69,16 @@ public class PracticeSession {
         completedAt = null;
     }
 
+    /** 이 제시를 다시 묻는 항목이 이미 큐에 있는가. 오늘 다시 묻기는 제시마다 한 번만 하므로 편성 전에 확인한다. */
+    public boolean hasRecheckOf(Long presentationId) {
+        return queue.stream().anyMatch(entry -> presentationId.equals(entry.getRecheckOfPresentationId()));
+    }
+
+    /** 오늘 다시 묻기로 큐에 넣은 항목 수. 하루 분량 상한 계산에 쓴다. */
+    public int recheckCount() {
+        return (int) queue.stream().filter(entry -> entry.getRecheckOfPresentationId() != null).count();
+    }
+
     private void enqueue(Long questionId, @Nullable Long recheckOf) {
         queue.add(new PracticeQueueEntry(queue.size(), questionId, recheckOf));
     }

@@ -71,6 +71,16 @@ review:
       # Jev 429·529 재시도 (첫 호출 포함)
       max-attempts: 3
       retry-delay: 1s
+    feedback:
+      # 다음 행동 선택(Jev choice) 신뢰도 기준 (docs/jev.md). 낮으면 상태 기계의 기본 행동을 쓴다
+      min-confidence: 0.5
+      # Jev 429·529 재시도 (첫 호출 포함)
+      max-attempts: 3
+      retry-delay: 1s
+      # 풀이 세션 하나에서 오늘 다시 묻기(첫 학습 확인 문제 포함)로 큐 끝에 넣을 수 있는 최대 개수 (하루 분량 상한)
+      relearn-max-per-session: 5
+      # 한 기억 항목에서 틀린 제시가 이만큼 쌓이면 반복 어려움으로 보고 선행 개념을 제안한다
+      repeated-difficulty-presentations: 2
   memory:
     # 기억 강도를 정하기 전의 기본 목표 유지율 (스펙 §6.4.7)
     default-retention: 0.9
