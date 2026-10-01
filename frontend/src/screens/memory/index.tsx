@@ -1,21 +1,27 @@
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { useLearningSessions } from '@/api/learning-sessions';
+import { useMemoryOverview } from '@/api/memory';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
-import { Gauge } from '@/components/gauge';
+import { Gauge, percent } from '@/components/gauge';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime, sessionStatusLabel } from '@/labels';
 import { colors, spacing } from '@/theme';
 
-import { sampleAverage, sampleRetrievability } from './sample-gauges';
+/** 학습을 시작한 세션은 세션 상세(게이지)로, 그 전 세션은 세션 확인으로 보낸다. */
+function open(session: { id: number; status: string }) {
+  const id = String(session.id);
+  if (session.status === 'IN_PROGRESS') router.push({ pathname: '/sessions/[id]/memory', params: { id } });
+  else router.push({ pathname: '/sessions/[id]', params: { id } });
+}
 
-/** 기억 탭: 학습 세션 목록과 세션별 기억 게이지 (스펙 §6.4.3). 게이지 값은 API 전까지 예시다. */
+/** 기억 탭: 학습 세션 목록과 세션별 기억 게이지 (스펙 §6.4.3). 색은 세션의 목표 유지율 기준이다. */
 export function Memory() {
-  const { data, isPending, isError, refetch } = useLearningSessions();
+  const overview = useMemoryOverview();
+  const { data, isPending, isError } = overview.sessions;
   const tabBarSpace = useTabBarSpace();
 
   if (isPending) {
@@ -29,7 +35,7 @@ export function Memory() {
     return (
       <View style={styles.center}>
         <ThemedText tone="dangerInk">학습 세션을 불러오지 못했어요.</ThemedText>
-        <Button variant="secondary" title="다시 시도" onPress={() => refetch()} />
+        <Button variant="secondary" title="다시 시도" onPress={overview.refetch} />
       </View>
     );
   }
@@ -50,52 +56,73 @@ export function Memory() {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={[styles.content, { paddingBottom: tabBarSpace }]}>
       <Card style={styles.summary}>
-        <View style={styles.row}>
-          <ThemedText variant="headline">전체 기억</ThemedText>
-          <Chip label="예시 값" />
-        </View>
-        <Gauge size="lg" value={sampleAverage(data)} />
+        <ThemedText variant="headline">전체 기억</ThemedText>
+        <Gauge size="lg" value={overview.average} target={overview.target} />
+        {overview.isError && (
+          <ThemedText variant="caption" tone="dangerInk">
+            일부 세션의 기억 상태를 불러오지 못했어요.
+          </ThemedText>
+        )}
         <ThemedText variant="caption" tone="inkSecondary">
           세션 {data.length}개 · 기억 항목 {data.reduce((sum, s) => sum + s.itemCount, 0)}개
         </ThemedText>
       </Card>
 
       <ThemedText variant="headline">학습 세션</ThemedText>
-      {data.map((session) => (
-        <Pressable
-          key={session.id}
-          accessibilityRole="link"
-          accessibilityLabel={`${session.topicHint ?? '주제 없음'}, ${sessionStatusLabel[session.status]}`}
-          onPress={() => router.push({ pathname: '/sessions/[id]', params: { id: String(session.id) } })}>
-          {({ pressed }) => (
-            <Card pressed={pressed} style={styles.card}>
-              <View style={styles.row}>
-                <ThemedText variant="headline" style={styles.title}>
-                  {session.topicHint ?? '주제 없음'}
+      {data.map((session) => {
+        const memory = overview.bySession.get(session.id);
+        return (
+          <Pressable
+            key={session.id}
+            accessibilityRole="link"
+            accessibilityLabel={`${session.topicHint ?? '주제 없음'}, ${sessionStatusLabel[session.status]}`}
+            onPress={() => open(session)}>
+            {({ pressed }) => (
+              <Card pressed={pressed} style={styles.card}>
+                <View style={styles.row}>
+                  <ThemedText variant="headline" style={styles.title}>
+                    {session.topicHint ?? '주제 없음'}
+                  </ThemedText>
+                  <Chip
+                    variant={session.status === 'AWAITING_CONFIRMATION' ? 'status' : 'soft'}
+                    label={sessionStatusLabel[session.status]}
+                  />
+                </View>
+                <ThemedText variant="caption" tone="inkMuted">
+                  {formatDateTime(session.createdAt)} · 복습 단위 {session.unitCount}개 · 기억 항목 {session.itemCount}개
                 </ThemedText>
-                <Chip
-                  variant={session.status === 'AWAITING_CONFIRMATION' ? 'status' : 'soft'}
-                  label={sessionStatusLabel[session.status]}
-                />
-              </View>
-              <ThemedText variant="caption" tone="inkMuted">
-                {formatDateTime(session.createdAt)} · 복습 단위 {session.unitCount}개 · 기억 항목 {session.itemCount}개
-              </ThemedText>
-              <Gauge value={sampleRetrievability(session)} />
-            </Card>
-          )}
-        </Pressable>
-      ))}
+                <Gauge value={memory?.value ?? null} target={memory?.target} />
+                {memory?.weakest && (
+                  <ThemedText variant="caption" tone="inkSecondary" numberOfLines={1}>
+                    가장 약한 항목 {percent(memory.weakest.value)}% · {memory.weakest.content}
+                  </ThemedText>
+                )}
+              </Card>
+            )}
+          </Pressable>
+        );
+      })}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    padding: spacing.xl,
+  },
   centerText: { textAlign: 'center' },
   content: { padding: spacing.xl, gap: spacing.md },
   summary: { gap: spacing.md, marginBottom: spacing.md },
   card: { gap: spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   title: { flexShrink: 1 },
 });

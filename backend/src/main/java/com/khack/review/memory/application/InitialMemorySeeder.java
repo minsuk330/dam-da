@@ -59,7 +59,7 @@ public class InitialMemorySeeder {
                 log.info("기억 항목 {}: 이미 등급이 있어 초기 평가를 건너뜀", item.memoryItemId());
                 continue;
             }
-            memory.review(confirmed.userId(), item.memoryItemId(), rating.get(), confirmed.conversationAt());
+            memory.seed(confirmed.userId(), item.memoryItemId(), rating.get(), confirmed.conversationAt());
             (rating.get() == Rating.AGAIN ? again : good).add(item.memoryItemId());
         }
         InitialMemoryStateSeeded seeded = new InitialMemoryStateSeeded(sessionId, List.copyOf(again), List.copyOf(good),

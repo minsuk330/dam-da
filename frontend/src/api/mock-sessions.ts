@@ -223,7 +223,7 @@ export const mockSessionApi = {
   strength(id: number): Schemas['Options'] {
     const itemCount = detail(id).units.flatMap((u) => u.items).filter((i) => i.status !== 'EXCLUDED').length
     return {
-      current: chosen[id]?.strength ?? null,
+      current: chosen[id]?.strength ?? (detail(id).status === 'IN_PROGRESS' ? 'APPLY' : null),
       itemCount,
       simulationDays: 30,
       options: STRENGTHS.map((s) => ({ ...s, dailyMinutes: s.dailyMinutes * Math.max(1, itemCount / 4) })),
@@ -236,6 +236,40 @@ export const mockSessionApi = {
     if (session.status !== 'CONFIRMED') throw new ApiError(409, '확인을 마친 뒤, 문제를 만들기 전에 고를 수 있어요.')
     chosen[id] = { goals, strength, at: Date.now() }
     return composition(goals)
+  },
+
+  /** 학습을 시작한 세션만 항목 R이 있다. 그 전 항목은 "아직 확인 전"이다. */
+  gauge(id: number): Schemas['SessionGauge'] {
+    return { sessionId: id, units: unitViews(detail(id)) }
+  },
+
+  /** 첫 학습 요약. 목표(실무 적용 0.9) 이상이면 확인한 항목, 아래면 도움이 필요했던 항목. */
+  summary(id: number): Schemas['Summary'] {
+    const session = detail(id)
+    const units = unitViews(session)
+    const items = units.flatMap((unit) =>
+      unit.items.map((item) => ({
+        memoryItemId: item.memoryItemId,
+        unitId: unit.unitId,
+        unitTitle: unit.title,
+        kind: item.kind,
+        content: item.content,
+        gauge: item.gauge,
+        nextReviewAt: item.gauge.retrievability === null ? null : daysLater(item.gauge.retrievability >= 0.9 ? 4 : 1),
+      })),
+    )
+    const checked = items.filter((i) => i.gauge.checked)
+    const nextReviewAt = checked.map((i) => i.nextReviewAt).filter((d): d is string => d !== null).sort()[0] ?? null
+    return {
+      sessionId: id,
+      completed: session.status === 'IN_PROGRESS',
+      completedAt: session.status === 'IN_PROGRESS' ? hoursAgo(1) : null,
+      confirmed: checked.filter((i) => (i.gauge.retrievability ?? 0) >= 0.9),
+      needsHelp: checked.filter((i) => (i.gauge.retrievability ?? 0) < 0.9),
+      notChecked: items.filter((i) => !i.gauge.checked),
+      nextReviewAt,
+      units,
+    }
   },
 
   firstStudy(id: number): Schemas['FirstStudy'] {
@@ -293,3 +327,46 @@ function composition(goals: Goal[]): Schemas['Composition'] {
 }
 
 const SAMPLE_HELD: Schemas['HeldSlot'][] = [{ position: 6, memoryItemId: 321, type: 'SHORT_ANSWER' }]
+
+const daysLater = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+
+// 학습을 시작한 세션의 항목별 예시 R. 하나는 목표 아래(복습할 때)로 둔다.
+const SAMPLE_R: Record<number, number> = { 111: 0.93, 112: 0.78 }
+
+function unitViews(session: Detail): Schemas['UnitView'][] {
+  const started = session.status === 'IN_PROGRESS'
+  return session.units
+    .filter((unit) => !unit.excluded)
+    .map((unit) => {
+      const items = unit.items
+        .filter((item) => item.status !== 'EXCLUDED')
+        .map((item) => {
+          const r = started ? (SAMPLE_R[item.id] ?? 0.95) : null
+          return {
+            memoryItemId: item.id,
+            kind: item.kind,
+            content: item.content,
+            gauge: { memoryItemId: item.id, checked: r !== null, retrievability: r, percent: r === null ? null : Math.round(r * 100) },
+          }
+        })
+      const checked = items.filter((i) => i.gauge.retrievability !== null)
+      const average = checked.length === 0 ? null : checked.reduce((sum, i) => sum + i.gauge.retrievability!, 0) / checked.length
+      const weakest = checked.reduce<(typeof checked)[number] | null>(
+        (low, i) => (low === null || i.gauge.retrievability! < low.gauge.retrievability! ? i : low),
+        null,
+      )
+      return {
+        unitId: unit.id,
+        title: unit.title,
+        items,
+        gauge: {
+          average,
+          averagePercent: average === null ? null : Math.round(average * 100),
+          checkedItems: checked.length,
+          totalItems: items.length,
+          weakestItemId: weakest?.memoryItemId ?? null,
+          weakestPercent: weakest?.gauge.percent ?? null,
+        },
+      }
+    })
+}
