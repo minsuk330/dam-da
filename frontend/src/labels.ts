@@ -1,4 +1,4 @@
-import type { Schemas } from './api/client'
+import type { Schemas } from '@/api/client'
 
 type Turn = Schemas['UserTurnResponse']
 type Detail = Schemas['ConversationDetailResponse']
