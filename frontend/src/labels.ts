@@ -74,3 +74,8 @@ export const questionTypeLabel: Record<Schemas['QuestionView']['type'], string> 
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
 }
+
+/** 다음 복습일처럼 날짜만 필요한 곳. 서버 시각(시간 이동)과 기기 시각이 다를 수 있어 "며칠 뒤" 대신 날짜로 쓴다. */
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
+}

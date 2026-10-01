@@ -34,7 +34,6 @@ import com.khack.review.practice.domain.PresentationFeedback;
 import com.khack.review.practice.domain.PresentationFeedbackRepository;
 import com.khack.review.practice.domain.QuestionPresentation;
 import com.khack.review.practice.domain.QuestionPresentationRepository;
-import com.khack.review.question.application.QuestionGenerationService;
 import com.khack.review.question.application.QuestionQueryService;
 import com.khack.review.question.domain.Question;
 import com.khack.review.question.domain.QuestionType;
@@ -51,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 단계적 피드백 (스펙 §7 5·6단계, §6.2, §6.4.8). 답한 제시의 시도 결과를 보고 다음 행동을 정해 실행한다.
@@ -61,7 +61,9 @@ import org.springframework.stereotype.Service;
  * 분류되게 하고(평가 제외), 오늘 다시 묻기는 큐 끝의 재확인 제시로 편성해 {@code DELAYED_RECHECK}로 평가되게 한다.
  * 확인 문제는 새 제시이므로 이전 답·힌트는 화면에 나오지 않는다. 큐 끝에 붙이므로 큐에 남은 다른 문제들 뒤에 나온다.
  *
- * <p>오래 걸리는 생성(LLM)·판정(Jev) 호출은 트랜잭션 밖에서 하고, 저장은 호출마다 짧게 한다.
+ * <p>오래 걸리는 생성(LLM)·판정(Jev)·재검사 호출은 트랜잭션 밖에서 먼저 하고, 그 결과로 도움 노출·재확인 편성·피드백 기록을
+ * 한 트랜잭션에서 저장한다. 트랜잭션은 풀이 세션 행을 잠그고 상태를 다시 읽어, 같은 제시에 동시에 온 요청이 도움을 두 번 기록하거나
+ * 재확인을 두 번 편성하지 않게 한다.
  */
 @Service
 public class FeedbackService {
@@ -78,20 +80,21 @@ public class FeedbackService {
     private final PresentationFeedbackRepository feedbacks;
     private final PracticeService practice;
     private final QuestionQueryService questions;
-    private final QuestionGenerationService questionGeneration;
+    private final QuestionRecheckService rechecks;
     private final LearningSessionQueryService sessions;
     private final ObjectProvider<FeedbackContentGenerator> generator;
     private final NextActionJudge judge;
     private final FeedbackPolicy policy;
     private final CurrentUser currentUser;
+    private final TransactionTemplate transaction;
     private final Clock clock;
 
     public FeedbackService(PracticeSessionRepository practices, QuestionPresentationRepository presentations,
             AidExposureRepository aids, PracticeAttemptRepository attempts, AnswerJudgmentRepository judgments, RatingPolicy ratingPolicy,
             PresentationFeedbackRepository feedbacks, PracticeService practice, QuestionQueryService questions,
-            QuestionGenerationService questionGeneration, LearningSessionQueryService sessions,
+            QuestionRecheckService rechecks, LearningSessionQueryService sessions,
             ObjectProvider<FeedbackContentGenerator> generator, NextActionJudge judge, FeedbackPolicy policy,
-            CurrentUser currentUser, Clock clock) {
+            CurrentUser currentUser, TransactionTemplate transaction, Clock clock) {
         this.practices = practices;
         this.presentations = presentations;
         this.aids = aids;
@@ -101,12 +104,13 @@ public class FeedbackService {
         this.feedbacks = feedbacks;
         this.practice = practice;
         this.questions = questions;
-        this.questionGeneration = questionGeneration;
+        this.rechecks = rechecks;
         this.sessions = sessions;
         this.generator = generator;
         this.judge = judge;
         this.policy = policy;
         this.currentUser = currentUser;
+        this.transaction = transaction;
         this.clock = clock;
     }
 
@@ -151,8 +155,8 @@ public class FeedbackService {
         }
         PracticeAttempt latestAttempt = history.getLast();
         List<AidExposure> exposures = aids.findByPresentationIdOrderByExposedAtAscIdAsc(presentationId);
-        PresentationFeedback feedback = feedbacks.findByPresentationId(presentationId)
-                .orElseGet(() -> new PresentationFeedback(presentationId, presentation.getUserId(), presentation.getMemoryItemId()));
+        boolean relearnQueued = feedbacks.findByPresentationId(presentationId).map(PresentationFeedback::isRelearnQueued)
+                .orElse(false);
         boolean hintShown = exposures.stream().anyMatch(a -> a.getType() == AidType.HINT);
         boolean explanationShown = exposures.stream().anyMatch(a -> a.getType() == AidType.EXPLANATION);
         boolean aidAfterLatest = exposures.stream()
@@ -160,7 +164,7 @@ public class FeedbackService {
         int wrongAttempts = (int) results.stream().filter(r -> r == AttemptOutcome.WRONG).count();
         FeedbackRules.State state = new FeedbackRules.State(session.getKind(), presentation.isSameDayRecheck(), latest,
                 hintShown || explanationShown, hintShown, explanationShown, aidAfterLatest,
-                feedback.isRelearnQueued() || session.hasRecheckOf(presentationId), relearnCapReached(session));
+                relearnQueued || session.hasRecheckOf(presentationId), relearnCapReached(session));
         FeedbackRules.Plan plan = FeedbackRules.plan(state);
 
         Question question = questions.question(presentation.getQuestionId());
@@ -170,59 +174,114 @@ public class FeedbackService {
                 state, difficultItems >= policy.repeatedDifficultyPresentations()), plan);
         log.info("피드백 제시 {}: {} ({}, {})", presentationId, choice.action(), choice.decidedBy(), choice.detail());
 
-        perform(choice.action(), presentation, session, history, question, feedback);
+        Prepared prepared = prepare(choice.action(), presentation, history, question);
 
         boolean hintBeforeLatest = exposures.stream().anyMatch(a -> a.getType() == AidType.HINT
                 && !a.getExposedAt().isAfter(latestAttempt.getSubmittedAt()));
         boolean explanationBeforeLatest = exposures.stream().anyMatch(a -> a.getType() == AidType.EXPLANATION
                 && !a.getExposedAt().isAfter(latestAttempt.getSubmittedAt()));
-        feedback.observe(FeedbackRules.path(latest, wrongAttempts, hintBeforeLatest, explanationBeforeLatest), wrongAttempts,
-                choice.action());
-        feedback = feedbacks.save(feedback);
+        FeedbackPath path = FeedbackRules.path(latest, wrongAttempts, hintBeforeLatest, explanationBeforeLatest);
+        Snapshot seen = new Snapshot(exposures.size(), relearnQueued || session.hasRecheckOf(presentationId));
+        Applied applied = transaction.execute(tx -> apply(choice.action(), prepared, presentation, latestAttempt, path,
+                wrongAttempts, seen));
+        if (!applied.applied()) {
+            log.info("피드백 제시 {}: 먼저 끝난 요청이 상태를 바꿔 {}을(를) 반영하지 않음", presentationId, choice.action());
+            return view(applied.feedback(), applied.feedback().getLastAction(), null, null);
+        }
+        PresentationFeedback feedback = applied.feedback();
         if (latest == AttemptOutcome.WRONG) {
             feedback = suggestPrerequisiteIfRepeated(feedback, presentation, question, history);
         }
         return view(feedback, choice.action(), choice.decidedBy(), choice.detail());
     }
 
-    private void perform(FeedbackAction action, QuestionPresentation presentation, PracticeSession session,
-            List<PracticeAttempt> history, Question question, PresentationFeedback feedback) {
-        switch (action) {
-            case GIVE_HINT -> {
-                FeedbackContent content = content(question, presentation, history, true);
-                practice.recordAid(presentation.getId(), AidType.HINT);
-                feedback.hintShown(content.text());
-            }
-            case EXPLAIN_CONCEPT -> {
-                FeedbackContent content = content(question, presentation, history, false);
-                practice.recordAid(presentation.getId(), AidType.EXPLANATION);
-                feedback.explanationShown(content.text(), content.evidenceTurns());
-                // 첫 학습은 설명 뒤에 확인 문제를 낸다. 매일 학습은 설명만 보여 주고 다시 묻기는 relearn_today가 한다.
-                if (session.getKind() == PracticeKind.FIRST_STUDY) {
-                    queueRelearn(session, presentation, question.getId(), feedback);
-                }
-            }
-            case RELEARN_TODAY -> queueRelearn(session, presentation, question.getId(), feedback);
+    /** 행동에 필요한 외부 호출 결과. 힌트·설명 본문, 오늘 다시 낼 문제(재검사로 고른 문제 포함). */
+    private record Prepared(@Nullable FeedbackContent content, @Nullable Long relearnQuestionId) {
+    }
+
+    /** 트랜잭션 밖에서 LLM(힌트·설명)과 재검사(LLM·Jev)를 부른다. 저장은 하지 않는다. */
+    private Prepared prepare(FeedbackAction action, QuestionPresentation presentation, List<PracticeAttempt> history,
+            Question question) {
+        return switch (action) {
+            case GIVE_HINT -> new Prepared(content(question, presentation, history, true), null);
+            case EXPLAIN_CONCEPT -> new Prepared(content(question, presentation, history, false), question.getId());
+            case RELEARN_TODAY -> new Prepared(null, question.getId());
             case GENERATE_VARIANT -> {
                 // 모호한 문제는 같은 문제를 다시 내지 않는다. 재검사해 쓸 수 있는 문제(수정·변형)로 오늘 안에 다시 확인한다.
-                Optional<Question> usable = questionGeneration.recheck(question.getId());
-                usable.ifPresentOrElse(q -> queueRelearn(session, presentation, q.getId(), feedback),
-                        () -> log.info("제시 {}: 쓸 수 있는 변형 문제가 없어 이 항목 출제를 보류", presentation.getId()));
+                // 답변 판정 직후 시작한 재검사가 있으면 그 결과를 쓰고(진행 중이면 기다림), 실패했으면 한 번 더 시도한다.
+                Optional<Long> usable = rechecks.recheck(question.getId(), presentation.getUserId(), presentation.getId(), true);
+                if (usable.isEmpty()) {
+                    log.info("제시 {}: 쓸 수 있는 변형 문제가 없어 이 항목 출제를 보류", presentation.getId());
+                }
+                yield new Prepared(null, usable.orElse(null));
+            }
+            default -> new Prepared(null, null);
+        };
+    }
+
+    /** 행동을 고를 때 본 상태. 잠근 뒤 다시 읽은 상태와 다르면 그 사이 다른 요청이 반영된 것이다. */
+    private record Snapshot(int aids, boolean relearnQueued) {
+    }
+
+    /** 저장 결과. {@code applied}가 거짓이면 먼저 끝난 요청 때문에 이 요청의 행동을 버렸고 {@code feedback}은 현재 기록이다. */
+    private record Applied(PresentationFeedback feedback, boolean applied) {
+    }
+
+    /**
+     * 한 트랜잭션에서 도움 노출·재확인 편성·피드백 기록을 저장한다. 풀이 세션 행을 잠근 뒤 다시 읽어, 행동을 고를 때 본 상태와
+     * 다르면(다른 요청이 도움을 기록했거나 재확인을 편성함) 이 요청의 행동은 버린다. 그래서 동시 요청은 서로 다른 행동을 골랐어도 한쪽만
+     * 반영된다. 같은 상태에서 이미 보여 준 도움(최신 시도 뒤 같은 종류)이나 이미 편성한 재확인도 반복하지 않는다.
+     */
+    private Applied apply(FeedbackAction action, Prepared prepared, QuestionPresentation presentation,
+            PracticeAttempt latestAttempt, @Nullable FeedbackPath path, int wrongAttempts, Snapshot seen) {
+        PracticeSession session = practices.findForUpdateById(presentation.getPracticeSessionId()).orElseThrow();
+        PresentationFeedback feedback = feedbacks.findByPresentationId(presentation.getId())
+                .orElseGet(() -> new PresentationFeedback(presentation.getId(), presentation.getUserId(), presentation.getMemoryItemId()));
+        List<AidExposure> exposures = aids.findByPresentationIdOrderByExposedAtAscIdAsc(presentation.getId());
+        Snapshot now = new Snapshot(exposures.size(), feedback.isRelearnQueued() || session.hasRecheckOf(presentation.getId()));
+        if (!now.equals(seen)) {
+            return new Applied(feedback, false);
+        }
+        switch (action) {
+            case GIVE_HINT -> {
+                if (!shownAfter(exposures, AidType.HINT, latestAttempt)) {
+                    practice.recordAid(presentation.getId(), AidType.HINT);
+                    feedback.hintShown(prepared.content().text());
+                }
+            }
+            case EXPLAIN_CONCEPT -> {
+                if (!shownAfter(exposures, AidType.EXPLANATION, latestAttempt)) {
+                    practice.recordAid(presentation.getId(), AidType.EXPLANATION);
+                    feedback.explanationShown(prepared.content().text(), prepared.content().evidenceTurns());
+                }
+                // 첫 학습은 설명 뒤에 확인 문제를 낸다. 매일 학습은 설명만 보여 주고 다시 묻기는 relearn_today가 한다.
+                if (session.getKind() == PracticeKind.FIRST_STUDY) {
+                    queueRelearn(session, presentation, prepared.relearnQuestionId(), feedback);
+                }
+            }
+            case RELEARN_TODAY, GENERATE_VARIANT -> {
+                if (prepared.relearnQuestionId() != null) {
+                    queueRelearn(session, presentation, prepared.relearnQuestionId(), feedback);
+                }
             }
             default -> {
             }
         }
+        feedback.observe(path, wrongAttempts, action);
+        return new Applied(feedbacks.save(feedback), true);
     }
 
-    /** 오늘 큐 끝에 다시 넣는다. 제시마다 한 번이고, 풀이 세션의 하루 분량 상한을 넘으면 넣지 않는다. */
-    private void queueRelearn(PracticeSession stale, QuestionPresentation presentation, Long questionId,
+    private static boolean shownAfter(List<AidExposure> exposures, AidType type, PracticeAttempt latestAttempt) {
+        return exposures.stream().anyMatch(a -> a.getType() == type && a.getExposedAt().isAfter(latestAttempt.getSubmittedAt()));
+    }
+
+    /** 오늘 큐 끝에 다시 넣는다. 제시마다 한 번이고, 풀이 세션의 하루 분량 상한을 넘으면 넣지 않는다. 잠근 세션에 쓴다. */
+    private void queueRelearn(PracticeSession session, QuestionPresentation presentation, Long questionId,
             PresentationFeedback feedback) {
-        PracticeSession session = practices.findById(stale.getId()).orElseThrow();
         if (feedback.isRelearnQueued() || session.hasRecheckOf(presentation.getId()) || relearnCapReached(session)) {
             return;
         }
         session.enqueueRecheck(questionId, presentation.getId());
-        practices.save(session);
         feedback.relearnQueued();
     }
 
