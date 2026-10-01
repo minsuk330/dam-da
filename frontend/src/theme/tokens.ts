@@ -405,6 +405,32 @@ export const components = {
     "backgroundColor": "#E2E7FA",
     "rounded": 9999
   },
+  "chart": {
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#646B88",
+    "typography": {
+      "fontFamily": "SUIT-Medium",
+      "fontSize": 12,
+      "lineHeight": 17
+    },
+    "height": 168
+  },
+  "chartLine": {
+    "backgroundColor": "#2E5BE8",
+    "width": 2
+  },
+  "chartLineContext": {
+    "backgroundColor": "#646B88",
+    "width": 2
+  },
+  "chartGrid": {
+    "backgroundColor": "#E2E7FA",
+    "width": 1
+  },
+  "chartMarker": {
+    "backgroundColor": "#2E5BE8",
+    "size": 8
+  },
   "tabBar": {
     "backgroundColor": "#DCE4FCB8",
     "rounded": 9999,

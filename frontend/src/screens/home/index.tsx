@@ -17,7 +17,7 @@ import { ThemedText } from '@/components/themed-text';
 import { formatDateTime } from '@/labels';
 import { colors, components, spacing } from '@/theme';
 
-import { StatCard } from './stat-card';
+import { StatCard } from '@/components/stat-card';
 
 const today = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
 
