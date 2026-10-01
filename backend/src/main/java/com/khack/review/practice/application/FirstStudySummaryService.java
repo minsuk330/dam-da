@@ -15,7 +15,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,8 +88,8 @@ public class FirstStudySummaryService {
             unitViews.add(new MemoryGaugeService.UnitView(unit.unitId(), unit.title(),
                     MemoryGaugeService.unitGauge(itemViews.stream().map(MemoryGaugeService.ItemView::gauge).toList()), itemViews));
         }
-        Instant next = java.util.stream.Stream.of(confirmed, needsHelp, notChecked).flatMap(List::stream)
-                .map(SummaryItem::nextReviewAt).filter(java.util.Objects::nonNull).min(Comparator.naturalOrder()).orElse(null);
+        Instant next = Stream.of(confirmed, needsHelp, notChecked).flatMap(List::stream)
+                .map(SummaryItem::nextReviewAt).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElse(null);
         return new Summary(sessionId, completedAt != null, completedAt, confirmed, needsHelp, notChecked, next, unitViews);
     }
 
