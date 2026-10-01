@@ -28,14 +28,14 @@ class ConversationController {
 
     @GetMapping
     List<ConversationSummaryResponse> list() {
-        return conversations.list().stream()
+        return conversations.mine().stream()
                 .map(c -> ConversationSummaryResponse.from(c, sessions.sessionIdOf(c.id()).orElse(null)))
                 .toList();
     }
 
     @GetMapping("/{id}")
     ConversationDetailResponse get(@PathVariable String id) {
-        return conversations.findBySessionId(id)
+        return conversations.findMineBySessionId(id)
                 .map(c -> ConversationDetailResponse.from(c, sessions.sessionIdOf(c.id()).orElse(null)))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }

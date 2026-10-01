@@ -3,6 +3,7 @@ package com.khack.review.collection.application;
 import com.khack.review.collection.domain.LearningConversation;
 import com.khack.review.collection.domain.LearningConversationRepository;
 import com.khack.review.collection.domain.SavedSession;
+import com.khack.review.common.application.CurrentUser;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -13,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConversationQueryService {
 
     private final LearningConversationRepository conversations;
+    private final CurrentUser currentUser;
 
-    public ConversationQueryService(LearningConversationRepository conversations) {
+    public ConversationQueryService(LearningConversationRepository conversations, CurrentUser currentUser) {
         this.conversations = conversations;
+        this.currentUser = currentUser;
     }
 
     /** 다른 컨텍스트가 근거 발화를 읽을 때 쓴다. 없으면 {@link IllegalArgumentException}. */
@@ -31,17 +34,26 @@ public class ConversationQueryService {
         return conversation(conversationId).toSavedSession();
     }
 
+    /** 지금 사용자의 대화. 앱의 받은 대화 화면이 쓴다. */
     @Transactional(readOnly = true)
-    public List<SavedSession> list() {
+    public List<SavedSession> mine() {
+        return conversations.findAllByUserIdOrderByReceivedAtAscIdAsc(currentUser.id()).stream()
+                .map(LearningConversation::toSavedSession)
+                .toList();
+    }
+
+    /** 개발 도구 전용: 모든 사용자의 대화(세션 뷰어, 벤치마크). 앱 API에서 쓰지 않는다. */
+    @Transactional(readOnly = true)
+    public List<SavedSession> all() {
         return conversations.findAllByOrderByReceivedAtAscIdAsc().stream()
                 .map(LearningConversation::toSavedSession)
                 .toList();
     }
 
-    /** 외부 ID(sessionId)로 찾는다. 앱의 받은 대화 화면이 쓴다. */
+    /** 외부 ID(sessionId)로 지금 사용자의 대화를 찾는다. 남의 대화는 없는 것과 같다. */
     @Transactional(readOnly = true)
-    public Optional<SavedSession> findBySessionId(String sessionId) {
-        return conversations.findBySessionId(sessionId).map(LearningConversation::toSavedSession);
+    public Optional<SavedSession> findMineBySessionId(String sessionId) {
+        return conversations.findBySessionIdAndUserId(sessionId, currentUser.id()).map(LearningConversation::toSavedSession);
     }
 
     /** 외부 ID(sessionId)의 내부 대화 ID. 다른 컨텍스트는 내부 ID로 참조한다. */
