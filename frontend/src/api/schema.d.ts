@@ -11,9 +11,41 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list"];
+        get: operations["list_2"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conversations/paste": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["paste"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conversations/share-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["shareLink"];
         delete?: never;
         options?: never;
         head?: never;
@@ -36,10 +68,213 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning-sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning-sessions/{sessionId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning-sessions/{sessionId}/items/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["item"];
+        trace?: never;
+    };
+    "/api/learning-sessions/{sessionId}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["insertTurn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning-sessions/{sessionId}/turns/{index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["editTurn"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning-sessions/{sessionId}/units/{unitId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["unit"];
+        trace?: never;
+    };
+    "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["readAll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{sessionId}/learning-goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["options_1"];
+        put: operations["choose_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{sessionId}/memory-strength": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["options"];
+        put: operations["choose"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ChooseRequest: {
+            /** @enum {string} */
+            strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
+        };
+        Composition: {
+            goals: components["schemas"]["GoalSummary"][];
+            /** Format: int32 */
+            maxQuestions: number;
+            questions: components["schemas"]["PlannedQuestion"][];
+            unplannedItemIds: number[];
+        };
         ConfusionPointResponse: {
             /** Format: int32 */
             turn: number;
@@ -74,17 +309,191 @@ export interface components {
             /** Format: int32 */
             warningCount: number;
         };
+        ExclusionRequest: {
+            excluded: boolean;
+        };
+        GoalSummary: {
+            /** Format: int32 */
+            candidates: number;
+            /** @enum {string} */
+            goal: "KEY_RECALL" | "PRINCIPLE" | "DISTINGUISH" | "CONDITION" | "APPLY_CASE" | "CORRECT_MISCONCEPTION" | "EXPLAIN_OWN_WORDS";
+            /** Format: int32 */
+            planned: number;
+            reason: string | null;
+        };
+        GoalView: {
+            description: string;
+            /** @enum {string} */
+            goal: "KEY_RECALL" | "PRINCIPLE" | "DISTINGUISH" | "CONDITION" | "APPLY_CASE" | "CORRECT_MISCONCEPTION" | "EXPLAIN_OWN_WORDS";
+            label: string;
+            /** Format: int32 */
+            number: number;
+        };
+        IntakeResponse: {
+            conversationId: string;
+            inputPath: string;
+            /** Format: int32 */
+            reviewUnitCount: number;
+            /** Format: int32 */
+            userTurnCount: number;
+            warnings: string[];
+        };
+        Item: {
+            content: string;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            kind: "FACT" | "WARNING" | "PRACTICE" | "CONFUSION";
+            sourceTurns: number[];
+            /** @enum {string} */
+            status: "NEW" | "ACTIVE" | "EXCLUDED";
+        };
         KeyPointResponse: {
             /** @enum {string} */
             kind: "fact" | "warning" | "practice";
             point: string;
             turns: number[];
         };
+        LearningSessionDetail: {
+            /** Format: date-time */
+            confirmedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            fidelity: string;
+            /** Format: int64 */
+            id: number;
+            inputPath: string;
+            /** @enum {string} */
+            status: "RECEIVED" | "REVIEWING" | "AWAITING_CONFIRMATION" | "CONFIRMED" | "QUESTIONS_READY" | "IN_PROGRESS";
+            topicHint: string | null;
+            turns: components["schemas"]["Turn"][];
+            units: components["schemas"]["Unit"][];
+            warnings: string[];
+        };
+        LearningSessionSummary: {
+            /** Format: date-time */
+            createdAt: string;
+            fidelity: string;
+            /** Format: int64 */
+            id: number;
+            inputPath: string;
+            /** Format: int32 */
+            itemCount: number;
+            /** @enum {string} */
+            status: "RECEIVED" | "REVIEWING" | "AWAITING_CONFIRMATION" | "CONFIRMED" | "QUESTIONS_READY" | "IN_PROGRESS";
+            topicHint: string | null;
+            /** Format: int32 */
+            unitCount: number;
+        };
+        NewTurnRequest: {
+            /** Format: int32 */
+            afterIndex: number;
+            /** @enum {string|null} */
+            aiVerdict: "confirmed" | "partial" | "corrected" | "not_applicable" | null;
+            correction: string | null;
+            /** @enum {string} */
+            intent: "info_request" | "rephrase_request" | "understanding_check" | "restatement" | "challenge" | "meta";
+            sourceOf: number[] | null;
+            text: string;
+        };
+        NotificationView: {
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            id: number;
+            read: boolean;
+            /** Format: int64 */
+            targetId: number;
+            title: string;
+            type: string;
+        };
+        NotificationsView: {
+            items: components["schemas"]["NotificationView"][];
+            /** Format: int64 */
+            unreadCount: number;
+        };
+        Option: {
+            /** Format: double */
+            dailyMinutes: number;
+            /** Format: double */
+            desiredRetention: number;
+            label: string;
+            /** Format: int32 */
+            maxQuestionLevel: number;
+            /** Format: int32 */
+            reviewsInPeriod: number;
+            /** @enum {string} */
+            strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
+        };
+        Options: {
+            /** @enum {string} */
+            current: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
+            /** Format: int32 */
+            itemCount: number;
+            options: components["schemas"]["Option"][];
+            /** Format: int32 */
+            simulationDays: number;
+        };
+        OptionsView: {
+            available: components["schemas"]["GoalView"][];
+            /** Format: int32 */
+            maxSelected: number;
+            plan: components["schemas"]["Composition"];
+            saved: boolean;
+            selected: ("KEY_RECALL" | "PRINCIPLE" | "DISTINGUISH" | "CONDITION" | "APPLY_CASE" | "CORRECT_MISCONCEPTION" | "EXPLAIN_OWN_WORDS")[];
+        };
+        PasteRequest: {
+            text: string;
+        };
+        PlannedQuestion: {
+            /** @enum {string} */
+            goal: "KEY_RECALL" | "PRINCIPLE" | "DISTINGUISH" | "CONDITION" | "APPLY_CASE" | "CORRECT_MISCONCEPTION" | "EXPLAIN_OWN_WORDS";
+            /** Format: int64 */
+            memoryItemId: number;
+            /** Format: int64 */
+            relatedItemId: number | null;
+            /** @enum {string} */
+            type: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
+        };
         ReviewUnitResponse: {
             confusionPoints: components["schemas"]["ConfusionPointResponse"][];
             evidenceTurns: number[];
             keyPoints: components["schemas"]["KeyPointResponse"][];
             title: string;
+        };
+        ShareLinkRequest: {
+            url: string;
+        };
+        Turn: {
+            /** @enum {string|null} */
+            aiVerdict: "confirmed" | "partial" | "corrected" | "not_applicable" | null;
+            correction: string | null;
+            /** Format: int32 */
+            index: number;
+            /** @enum {string} */
+            intent: "info_request" | "rephrase_request" | "understanding_check" | "restatement" | "challenge" | "meta";
+            quotedText: string | null;
+            text: string;
+        };
+        TurnRequest: {
+            /** @enum {string|null} */
+            aiVerdict: "confirmed" | "partial" | "corrected" | "not_applicable" | null;
+            correction: string | null;
+            /** @enum {string} */
+            intent: "info_request" | "rephrase_request" | "understanding_check" | "restatement" | "challenge" | "meta";
+            text: string;
+        };
+        Unit: {
+            evidenceTurns: number[];
+            excluded: boolean;
+            /** Format: int64 */
+            id: number;
+            items: components["schemas"]["Item"][];
+            title: string;
+            /** @enum {string} */
+            verdict: "PENDING" | "APPROVED" | "HELD" | "REJECTED" | "UNAVAILABLE";
+            verdictReason: string | null;
         };
         UserTurnResponse: {
             /** @enum {string} */
@@ -106,7 +515,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    list: {
+    list_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -122,6 +531,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversationSummaryResponse"][];
+                };
+            };
+        };
+    };
+    paste: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeResponse"];
+                };
+            };
+        };
+    };
+    shareLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeResponse"];
                 };
             };
         };
@@ -145,6 +602,329 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ConversationDetailResponse"];
                 };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionSummary"][];
+                };
+            };
+        };
+    };
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionDetail"];
+                };
+            };
+        };
+    };
+    confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionDetail"];
+                };
+            };
+        };
+    };
+    item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+                itemId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionDetail"];
+                };
+            };
+        };
+    };
+    insertTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTurnRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionDetail"];
+                };
+            };
+        };
+    };
+    editTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TurnRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionDetail"];
+                };
+            };
+        };
+    };
+    unit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+                unitId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionDetail"];
+                };
+            };
+        };
+    };
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsView"];
+                };
+            };
+        };
+    };
+    readAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    options_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OptionsView"];
+                };
+            };
+        };
+    };
+    choose_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChooseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Composition"];
+                };
+            };
+        };
+    };
+    options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Options"];
+                };
+            };
+        };
+    };
+    choose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChooseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

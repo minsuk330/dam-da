@@ -107,6 +107,11 @@ public final class SessionValidator {
         for (int c = 0; c < confusions.size(); c++) {
             int turn = confusions.get(c).turn();
             String where = at + ".confusionPoints[%d].turn=%d".formatted(c, turn);
+            String belief = confusions.get(c).userBelief();
+            if (belief == null || belief.isBlank()) {
+                warnings.add(at + ".confusionPoints[%d].userBelief: 비어 있습니다. 사용자가 믿었던 내용이 없어 이 헷갈린 지점은 기억 항목으로 만들지 않습니다."
+                        .formatted(c));
+            }
             UserTurn t = byIndex.get(turn);
             if (t == null) {
                 errors.add(where + ": userTurns에 없는 발화입니다. userTurns의 index만 참조하세요.");

@@ -27,7 +27,7 @@ class ConversationController {
 
     @GetMapping("/{id}")
     ConversationDetailResponse get(@PathVariable String id) {
-        return conversations.find(id)
+        return conversations.findBySessionId(id)
                 .map(ConversationDetailResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }

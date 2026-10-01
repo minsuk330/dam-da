@@ -63,4 +63,4 @@ server/ai 두 영역은 `port/out`에서 만난다.
 ## 임시 상태
 
 - 학습 대화의 복습 단위·경고는 `learning_conversation` 테이블에 커넥터가 보낸 JSON 모양 그대로 보관한다. 분석 컨텍스트(#6)가 엔티티로 옮긴다.
-- 커넥터 스키마 검증(`SessionValidator`)은 스펙 §9.2상 analysis 소관이지만, analysis 코드가 생길 때까지 `collection/`에 둔다.
+- 커넥터 스키마 검증(`SessionValidator`)은 `collection/`에 둔다. 구조 오류는 저장 전에 입구에서 거부해야 하고, analysis로 옮기면 두 컨텍스트가 서로를 참조하게 된다. analysis는 검증을 통과해 저장된 대화의 `ConversationSubmitted` 이벤트를 받아 학습 세션을 만든다.

@@ -18,7 +18,7 @@ spring:
     openai:
       api-key: ${OPENAI_API_KEY:}
       chat:
-        model: ${OPENAI_MODEL:gpt-5-mini}
+        model: ${OPENAI_MODEL:gpt-6-luna}
     mcp:
       server:
         name: review-connector
@@ -50,6 +50,28 @@ review:
     token: ${DEV_TOOLS_TOKEN:}
   demo-user:
     name: 지원
+  analysis:
+    # 복습 단위 검수 기준 (docs/jev.md). 실제 판정 분포를 보고 맞춘다.
+    min-confidence: 0.5
+    # 커넥터 입력(model_transcribed)은 기준을 더 높게 잡는다(스펙 §7.3).
+    min-confidence-transcribed: 0.6
+    # 복습 가치(noul) 확률이 이 구간이면 보류
+    hold-band-low: 0.3
+    hold-band-high: 0.7
+    # 근거 연결 점수(0~1 환산) 통과 기준
+    min-evidence-fit: 0.5
+    # 429·529 재시도 (첫 호출 포함)
+    max-attempts: 3
+    retry-delay: 1s
+  practice:
+    # 첫 학습 문제 상한 (스펙 §7.8)
+    first-study-max-questions: 12
+  memory:
+    # 기억 강도를 정하기 전의 기본 목표 유지율 (스펙 §6.4.7)
+    default-retention: 0.9
+    # 기억 강도별 예상 하루 부담 시뮬레이션 기간과 복습 1회 예상 시간(분)
+    simulation-days: 30
+    minutes-per-review: 0.75
   jev:
     api-key: ${TYPESAFE_API_KEY:}
     base-url: https://api.typesafe.ai

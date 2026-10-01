@@ -18,6 +18,19 @@ public class ConversationQueryService {
         this.conversations = conversations;
     }
 
+    /** 다른 컨텍스트가 근거 발화를 읽을 때 쓴다. 없으면 {@link IllegalArgumentException}. */
+    @Transactional(readOnly = true)
+    public ConversationEvidence evidence(Long conversationId) {
+        LearningConversation conversation = conversation(conversationId);
+        return new ConversationEvidence(conversation.getFidelity(), conversation.userTurns());
+    }
+
+    /** 다른 컨텍스트가 대화 1건을 보여줄 때 쓴다. 없으면 {@link IllegalArgumentException}. */
+    @Transactional(readOnly = true)
+    public SavedSession find(Long conversationId) {
+        return conversation(conversationId).toSavedSession();
+    }
+
     @Transactional(readOnly = true)
     public List<SavedSession> list() {
         return conversations.findAllByOrderByReceivedAtAscIdAsc().stream()
@@ -25,8 +38,14 @@ public class ConversationQueryService {
                 .toList();
     }
 
+    /** 외부 ID(sessionId)로 찾는다. 앱의 받은 대화 화면이 쓴다. */
     @Transactional(readOnly = true)
-    public Optional<SavedSession> find(String sessionId) {
+    public Optional<SavedSession> findBySessionId(String sessionId) {
         return conversations.findBySessionId(sessionId).map(LearningConversation::toSavedSession);
+    }
+
+    private LearningConversation conversation(Long conversationId) {
+        return conversations.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("학습 대화 없음: " + conversationId));
     }
 }
