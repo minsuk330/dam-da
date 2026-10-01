@@ -100,7 +100,7 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
         onPress={() =>
           start.mutate(undefined, {
             onSuccess: (practice) =>
-              router.push({ pathname: '/review', params: { practiceId: String(practice.practiceId) } }),
+              router.push({ pathname: '/review', params: { practiceId: String(practice.practiceId), sessionId: String(sessionId) } }),
           })
         }
       />

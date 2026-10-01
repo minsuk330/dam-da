@@ -1,12 +1,16 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { Schemas } from '@/api/client';
+import { useFirstStudySummary, useTargetRetention } from '@/api/memory';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
+import { Gauge, percent } from '@/components/gauge';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
+import { formatDate } from '@/labels';
 import { colors, components, spacing } from '@/theme';
 
 /**
@@ -27,19 +31,12 @@ export const pathLabel: Record<Path, string> = {
 
 export type ItemResult = { questionId: number; stem: string; path: Path };
 
-// 다음 복습 일정은 FSRS가 계산한다. 첫 학습 요약 API 연결(#58) 전까지 경로별 예시 값.
-const SAMPLE_NEXT: Record<Path, string> = {
-  independent: '4일 뒤',
-  afterHint: '2일 뒤',
-  afterExplanation: '내일',
-  repeatedWrong: '오늘 한 번 더',
-  held: '다음 학습에서',
-};
-
-/** 학습 완료: 확인한 항목, 도움이 필요했던 항목, 다음 복습 일정. */
-export function ReviewComplete({ results }: { results: ItemResult[] }) {
+/**
+ * 학습 완료: 풀이 경로 집계와, 세션이 있으면 첫 학습 요약(확인한 항목·도움이 필요했던 항목·다음 복습 일정·단위 게이지).
+ * 요약은 서버가 FSRS로 계산한 값이다.
+ */
+export function ReviewComplete({ results, sessionId }: { results: ItemResult[]; sessionId: number | null }) {
   const insets = useSafeAreaInsets();
-  const helped = results.filter((r) => r.path !== 'independent');
 
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing['3xl'] }]}>
@@ -50,59 +47,138 @@ export function ReviewComplete({ results }: { results: ItemResult[] }) {
         <ThemedText variant="display" style={styles.center}>
           학습을 마쳤어요
         </ThemedText>
-        <ThemedText variant="subhead" tone="inkSecondary" style={styles.center}>
-          {results.length}문제를 풀었어요
-        </ThemedText>
+        {results.length > 0 && (
+          <ThemedText variant="subhead" tone="inkSecondary" style={styles.center}>
+            {results.length}문제를 풀었어요
+          </ThemedText>
+        )}
       </View>
 
-      <View style={styles.paths}>
-        {COUNTED.map((path) => (
-          <Card key={path} variant={path === 'independent' ? 'lavender' : 'surface'} style={styles.pathCard}>
-            <ThemedText variant="stat">{results.filter((r) => r.path === path).length}</ThemedText>
-            <ThemedText variant="caption" tone="inkSecondary">
-              {pathLabel[path]}
-            </ThemedText>
-          </Card>
-        ))}
-      </View>
-
-      {helped.length > 0 && (
-        <View style={styles.section}>
-          <ThemedText variant="title">도움이 필요했던 항목</ThemedText>
-          <Card style={styles.schedule}>
-            {helped.map(({ questionId, stem, path }, i) => (
-              <View key={questionId} style={[styles.item, i > 0 && styles.divided]}>
-                <View style={styles.itemHeader}>
-                  <Chip label={pathLabel[path]} />
-                </View>
-                <ThemedText variant="subhead">{stem}</ThemedText>
-              </View>
-            ))}
-          </Card>
+      {/* 이미 끝난 풀이를 다시 열면 이번 풀이 기록이 없으므로 경로 집계는 숨기고 요약만 보여준다. */}
+      {results.length > 0 && (
+        <View style={styles.paths}>
+          {COUNTED.map((path) => (
+            <Card key={path} variant={path === 'independent' ? 'lavender' : 'surface'} style={styles.pathCard}>
+              <ThemedText variant="stat">{results.filter((r) => r.path === path).length}</ThemedText>
+              <ThemedText variant="caption" tone="inkSecondary">
+                {pathLabel[path]}
+              </ThemedText>
+            </Card>
+          ))}
         </View>
       )}
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <ThemedText variant="title">다음 복습</ThemedText>
-          <Chip label="예시 값" />
-        </View>
-        <Card style={styles.schedule}>
-          {results.map(({ questionId, stem, path }) => (
-            <View key={questionId} style={styles.scheduleRow}>
-              <ThemedText variant="subhead" numberOfLines={1} style={styles.scheduleText}>
-                {stem}
-              </ThemedText>
-              <ThemedText variant="subhead" tone="primaryInk">
-                {SAMPLE_NEXT[path]}
-              </ThemedText>
-            </View>
-          ))}
-        </Card>
-      </View>
+      {sessionId !== null ? <SessionSummary sessionId={sessionId} /> : <HelpedQuestions results={results} />}
 
       <Button title="홈으로" onPress={() => router.navigate('/')} />
     </ScrollView>
+  );
+}
+
+type SummaryItem = Schemas['SummaryItem'];
+
+function SessionSummary({ sessionId }: { sessionId: number }) {
+  const { data, isPending, isError, refetch } = useFirstStudySummary(sessionId);
+  const target = useTargetRetention(sessionId);
+
+  if (isPending) return <ActivityIndicator color={colors.primary} />;
+  if (isError) {
+    return (
+      <View style={styles.section}>
+        <ThemedText tone="dangerInk">학습 요약을 불러오지 못했어요.</ThemedText>
+        <Button variant="secondary" title="다시 시도" onPress={() => refetch()} />
+      </View>
+    );
+  }
+
+  return (
+    <>
+      {data.nextReviewAt && (
+        <Card variant="lavender" style={styles.next}>
+          <ThemedText variant="caption" tone="inkSecondary">
+            다음 복습
+          </ThemedText>
+          <ThemedText variant="title">{formatDate(data.nextReviewAt)}</ThemedText>
+        </Card>
+      )}
+
+      <ItemList title="도움이 필요했던 항목" items={data.needsHelp} target={target} />
+      <ItemList title="확인한 항목" items={data.confirmed} target={target} />
+      {data.notChecked.length > 0 && (
+        <ThemedText variant="caption" tone="inkMuted">
+          아직 풀어 보지 않은 항목 {data.notChecked.length}개는 다음 학습에서 확인해요.
+        </ThemedText>
+      )}
+
+      {data.units.length > 0 && (
+        <View style={styles.section}>
+          <ThemedText variant="title">지금 내 기억</ThemedText>
+          <Card style={styles.list}>
+            {data.units.map((unit) => (
+              <Gauge key={unit.unitId} label={unit.title} value={unit.gauge.average} target={target} />
+            ))}
+          </Card>
+          <Button
+            variant="secondary"
+            title="기억 상태 자세히 보기"
+            onPress={() => router.push({ pathname: '/sessions/[id]/memory', params: { id: String(sessionId) } })}
+          />
+        </View>
+      )}
+    </>
+  );
+}
+
+function ItemList({ title, items, target }: { title: string; items: SummaryItem[]; target: number }) {
+  if (items.length === 0) return null;
+  return (
+    <View style={styles.section}>
+      <ThemedText variant="title">{title}</ThemedText>
+      <Card style={styles.list}>
+        {items.map((item, i) => (
+          <View key={item.memoryItemId} style={[styles.item, i > 0 && styles.divided]}>
+            <ThemedText variant="caption" tone="inkMuted">
+              {item.unitTitle}
+            </ThemedText>
+            <ThemedText variant="subhead">{item.content}</ThemedText>
+            <View style={styles.itemFooter}>
+              {item.gauge.retrievability !== null && (
+                <Chip
+                  variant={item.gauge.retrievability >= target ? 'soft' : 'warning'}
+                  label={`지금 ${percent(item.gauge.retrievability)}%`}
+                />
+              )}
+              {item.nextReviewAt && (
+                <ThemedText variant="caption" tone="primaryInk">
+                  다음 복습 {formatDate(item.nextReviewAt)}
+                </ThemedText>
+              )}
+            </View>
+          </View>
+        ))}
+      </Card>
+    </View>
+  );
+}
+
+/** 세션이 없는 풀이(매일 학습 연결 전)는 문제 단위로 도움이 필요했던 문제만 보여준다. */
+function HelpedQuestions({ results }: { results: ItemResult[] }) {
+  const helped = results.filter((r) => r.path !== 'independent');
+  if (helped.length === 0) return null;
+  return (
+    <View style={styles.section}>
+      <ThemedText variant="title">도움이 필요했던 문제</ThemedText>
+      <Card style={styles.list}>
+        {helped.map(({ questionId, stem, path }, i) => (
+          <View key={questionId} style={[styles.item, i > 0 && styles.divided]}>
+            <View style={styles.itemFooter}>
+              <Chip label={pathLabel[path]} />
+            </View>
+            <ThemedText variant="subhead">{stem}</ThemedText>
+          </View>
+        ))}
+      </Card>
+    </View>
   );
 }
 
@@ -120,12 +196,10 @@ const styles = StyleSheet.create({
   },
   paths: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   pathCard: { flexBasis: '47%', flexGrow: 1, gap: spacing.xs },
+  next: { gap: spacing.xs },
   section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  list: { gap: spacing.lg },
   item: { gap: spacing.sm },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline, paddingTop: spacing.lg },
-  itemHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  schedule: { gap: spacing.lg },
-  scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  scheduleText: { flex: 1 },
+  itemFooter: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

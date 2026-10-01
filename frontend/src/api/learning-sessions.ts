@@ -120,15 +120,16 @@ export function useLearningGoals(id: number, enabled: boolean) {
 }
 
 /** 기억 강도 선택지와 예상 하루 부담(스펙 §6.4.7). `current`는 고르기 전이면 null이다. */
+export const memoryStrengthQuery = (id: number) => ({
+  queryKey: ['memory-strength', id],
+  queryFn: async () =>
+    mockEnabled
+      ? mockCall(() => mockSessionApi.strength(id))
+      : unwrap(await api.GET('/api/sessions/{sessionId}/memory-strength', { params: { path: { sessionId: id } } })),
+})
+
 export function useMemoryStrength(id: number, enabled: boolean) {
-  return useQuery({
-    enabled,
-    queryKey: ['memory-strength', id],
-    queryFn: async () =>
-      mockEnabled
-        ? mockCall(() => mockSessionApi.strength(id))
-        : unwrap(await api.GET('/api/sessions/{sessionId}/memory-strength', { params: { path: { sessionId: id } } })),
-  })
+  return useQuery({ ...memoryStrengthQuery(id), enabled })
 }
 
 /** 학습 목표와 기억 강도를 함께 저장한다. 저장하면 서버가 첫 학습 문제 생성을 시작한다. */

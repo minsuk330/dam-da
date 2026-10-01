@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useConversations } from '@/api/conversations';
-import { useLearningSessions } from '@/api/learning-sessions';
+import { useMemoryOverview } from '@/api/memory';
 import { useMarkNotificationRead, useNotifications } from '@/api/notifications';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
@@ -12,7 +12,6 @@ import { Icon } from '@/components/icon';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime } from '@/labels';
-import { sampleAverage, sampleWeakest } from '@/screens/memory/sample-gauges';
 import { colors, components, spacing } from '@/theme';
 
 import { sampleStreak, sampleToday } from './sample-today';
@@ -159,10 +158,11 @@ function SessionReadyBanner() {
   );
 }
 
-/** 기억 게이지 요약: 확인된 세션의 평균과 가장 약한 세션. 값은 게이지 API(이슈 #21) 전까지 예시다. */
+/** 기억 게이지 요약: 학습한 세션들의 평균과 가장 약한 세션. 색은 목표 유지율 기준이다. */
 function MemorySummary() {
-  const { data, isPending, isError } = useLearningSessions();
-  const weakest = data ? sampleWeakest(data) : null;
+  const overview = useMemoryOverview();
+  const { data, isPending, isError } = overview.sessions;
+  const { weakest } = overview;
 
   return (
     <View style={styles.section}>
@@ -182,17 +182,19 @@ function MemorySummary() {
         {data?.length === 0 && <ThemedText tone="inkMuted">대화를 추가하면 얼마나 기억하는지 보여드려요.</ThemedText>}
         {data && data.length > 0 && (
           <>
-            <Gauge size="lg" value={sampleAverage(data)} />
+            <Gauge size="lg" value={overview.average} target={overview.target} />
             {weakest && (
               <View style={styles.weakest}>
                 <Chip label="가장 약함" />
                 <ThemedText variant="subhead" tone="inkSecondary" numberOfLines={1} style={styles.weakestText}>
-                  {weakest.session.topicHint ?? '주제 없음'} {percent(weakest.value)}%
+                  {weakest.session.topicHint ?? '주제 없음'} {percent(weakest.value ?? 0)}%
                 </ThemedText>
               </View>
             )}
             <ThemedText variant="caption" tone="inkMuted">
-              예시 값이에요. 복습하면 다시 올라가요.
+              {overview.average === null
+                ? '첫 학습을 하면 얼마나 기억하는지 보여드려요.'
+                : '시간이 지나면 떨어지고, 복습하면 다시 올라가요.'}
             </ThemedText>
           </>
         )}
