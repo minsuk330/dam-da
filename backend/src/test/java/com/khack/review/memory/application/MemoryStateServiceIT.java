@@ -9,6 +9,8 @@ import com.khack.review.memory.domain.FsrsParametersRepository;
 import com.khack.review.memory.domain.FsrsSchedulers;
 import com.khack.review.memory.domain.MemoryStateRepository;
 import com.khack.review.memory.domain.ParameterSource;
+import com.khack.review.memory.domain.RatingPolicy;
+import com.khack.review.question.domain.QuestionType;
 import io.github.openspacedrepetition.Rating;
 import io.github.openspacedrepetition.State;
 import java.time.Clock;
@@ -84,5 +86,30 @@ class MemoryStateServiceIT {
         assertThat(weekLater).isLessThan(now);
         assertThat(second.retrievabilityBefore()).hasValueSatisfying(r -> assertThat(r).isEqualTo(weekLater));
         assertThat(second.due()).isAfter(clock.instant());
+    }
+
+    @Autowired
+    RatingPolicy ratingPolicy;
+
+    @Test
+    void holdsAreCountedWithoutAnFsrsStateChange() {
+        long item = ITEM_IDS.incrementAndGet();
+
+        MemoryStateService.HoldResult first = memory.hold(currentUser.id(), item);
+        MemoryStateService.HoldResult second = memory.hold(currentUser.id(), item);
+
+        assertThat(first.autoQuestionsPaused()).isFalse();
+        assertThat(second.consecutiveHolds()).isEqualTo(2);
+        assertThat(second.autoQuestionsPaused()).isTrue();
+        assertThat(memory.isReviewed(item)).isFalse();
+        assertThat(memory.nextReviewAt(item)).isEmpty();
+    }
+
+    @Test
+    void ratingPolicyIsBoundFromConfiguration() {
+        assertThat(ratingPolicy.minConfidence()).isEqualTo(0.6);
+        assertThat(ratingPolicy.referenceTimes()).containsEntry(
+                QuestionType.SHORT_ANSWER, Duration.ofSeconds(40));
+        assertThat(ratingPolicy.easyMaxTimeRatio()).isEqualTo(1.5);
     }
 }
