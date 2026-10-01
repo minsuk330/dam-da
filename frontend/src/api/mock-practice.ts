@@ -285,6 +285,7 @@ export const mockPracticeApi = {
       },
       rating: !evaluated || held ? null : outcome === 'CORRECT' ? (submission.selfAssessment === 'RECALLED_EASILY' ? 'GOOD' : 'HARD') : 'AGAIN',
       holdReason: evaluated && held ? 'LOW_CONFIDENCE' : null,
+      outcome,
     }
   },
 

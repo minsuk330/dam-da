@@ -548,6 +548,7 @@ class FeedbackIT {
 
         JsonNode held = answerJudged(p1, WRONG_TEXT, "AMBIGUOUS");
         assertThat(held.get("holdReason").asString()).isEqualTo("UNABLE_TO_JUDGE");
+        assertThat(held.get("outcome").asString()).isEqualTo("QUESTION_AMBIGUOUS");
 
         // 피드백을 요청하지 않아도 판정 직후 재검사한다. 떨어지면 폐기하고 변형 문제를 만든다.
         QuestionRecheck recheck = awaitRecheck(q1);
@@ -646,6 +647,8 @@ class FeedbackIT {
         JsonNode first = nextPresentation(practiceId);
         long p1 = first.get("presentationId").asLong();
         JsonNode a1 = answerJudged(p1, WRONG_TEXT, "UNCERTAIN");
+        // 제출 응답의 결과는 피드백이 받는 결과와 같다. 앱은 피드백을 기다리지 않고 이 값으로 먼저 보여 준다.
+        assertThat(a1.get("outcome").asString()).isEqualTo("UNCERTAIN");
 
         JsonNode view = decide(p1);
 
@@ -676,6 +679,7 @@ class FeedbackIT {
         JsonNode first = nextPresentation(practiceId);
         long p1 = first.get("presentationId").asLong();
         JsonNode a1 = answerJudged(p1, WRONG_TEXT, "WRONG");
+        assertThat(a1.get("outcome").asString()).isEqualTo("WRONG");
         generator.willFail(new FeedbackGenerationException("timeout"));
 
         JsonNode view = decide(p1);

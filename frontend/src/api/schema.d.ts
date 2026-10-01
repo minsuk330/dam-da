@@ -558,6 +558,8 @@ export interface components {
             judgment: components["schemas"]["JudgmentView"];
             /** @enum {string} */
             kind: "FIRST_UNASSISTED" | "ASSISTED_RETRY" | "DELAYED_RECHECK";
+            /** @enum {string} */
+            outcome: "CORRECT" | "WRONG" | "UNCERTAIN" | "QUESTION_AMBIGUOUS";
             /** @enum {string|null} */
             rating: "AGAIN" | "HARD" | "GOOD" | "EASY" | null;
             /** Format: int64 */
