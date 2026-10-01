@@ -35,6 +35,9 @@ review:
     token: ${DEV_TOOLS_TOKEN:}
   demo-user:
     name: 지원
+  memory:
+    # 기억 강도를 정하기 전의 기본 목표 유지율 (스펙 §6.4.7)
+    default-retention: 0.9
   jev:
     api-key: ${TYPESAFE_API_KEY:}
     base-url: https://api.typesafe.ai
