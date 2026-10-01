@@ -204,6 +204,20 @@ components:
     backgroundColor: "{colors.field}"
     textColor: "{colors.field-placeholder}"
     typography: "{typography.body}"
+  gauge:
+    backgroundColor: "{colors.primary-tint}"
+    rounded: "{rounded.full}"
+    height: 8px
+  gauge-large:
+    backgroundColor: "{colors.primary-tint}"
+    rounded: "{rounded.full}"
+    height: 12px
+  gauge-fill:
+    backgroundColor: "{colors.primary}"
+    rounded: "{rounded.full}"
+  gauge-unchecked:
+    backgroundColor: "{colors.outline}"
+    rounded: "{rounded.full}"
   tab-bar:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink-muted}"
@@ -275,7 +289,12 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
 - **강조 카드**: primary 바탕 흰 글자, 오른쪽 아래 원형 이동 버튼. 화면당 하나.
 - **입력창**: `field` 바탕, 오른쪽 끝 원형 primary 보내기 버튼.
 - **탭바**: 하단 고정, 불투명 흰 바탕. 아이콘만, 활성 탭은 `inverse` 원.
-- **진행 막대·게이지**: 레퍼런스에 없다. 필요해지면 primary 채움 + `primary-tint` 트랙으로 정하고 이 문서에 추가한다.
+- **기억 게이지** (스펙 §6.4.3, 레퍼런스에 없어 추가): 지금 떠올릴 확률 R을 보여주는 가로 막대.
+  - 트랙 `primary-tint`, 채움 `primary`(`gauge-fill`), 알약형. 기본 높이 8(`gauge`, 목록 행·복습 단위), 큰 높이 12(`gauge-large`, 세션 요약·완료 화면).
+  - 막대 위에 라벨과 퍼센트를 글자로 함께 쓴다("지금 기억할 확률 72%"). 막대 길이만으로 값을 전달하지 않는다. 글자는 막대가 아니라 카드 위에 있으므로 `ThemedText`로 쓴다: 기본은 `caption`·`ink-secondary`, 큰 게이지는 `subhead`·`ink`, 확인 전은 `caption`·`ink-muted`.
+  - 값이 낮다고 색을 바꾸지 않는다. 약한 항목은 "가장 약한 항목" 같은 글자로 알린다.
+  - 아직 등급이 없는 항목은 0%가 아니다. 채움 없이 `gauge-unchecked` 트랙(`outline`)과 "아직 확인 전" 글자로 구분한다.
+  - 진행 막대(풀이 진행도)가 필요하면 같은 토큰을 쓴다.
 
 ## Do's and Don'ts
 

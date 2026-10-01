@@ -294,6 +294,24 @@ export const components = {
       "lineHeight": 25
     }
   },
+  "gauge": {
+    "backgroundColor": "#D6E1FF",
+    "rounded": 9999,
+    "height": 8
+  },
+  "gaugeLarge": {
+    "backgroundColor": "#D6E1FF",
+    "rounded": 9999,
+    "height": 12
+  },
+  "gaugeFill": {
+    "backgroundColor": "#2E5BE8",
+    "rounded": 9999
+  },
+  "gaugeUnchecked": {
+    "backgroundColor": "#E2E7FA",
+    "rounded": 9999
+  },
   "tabBar": {
     "backgroundColor": "#FFFFFF",
     "textColor": "#646B88"

@@ -228,6 +228,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions/{sessionId}/first-study": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["firstStudy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions/{sessionId}/learning-goals": {
         parameters: {
             query?: never;
@@ -312,6 +328,15 @@ export interface components {
         ExclusionRequest: {
             excluded: boolean;
         };
+        FirstStudy: {
+            generating: boolean;
+            held: components["schemas"]["HeldSlot"][];
+            /** Format: int32 */
+            planned: number;
+            questions: components["schemas"]["QuestionView"][];
+            /** @enum {string} */
+            sessionStatus: "RECEIVED" | "REVIEWING" | "AWAITING_CONFIRMATION" | "CONFIRMED" | "QUESTIONS_READY" | "IN_PROGRESS";
+        };
         GoalSummary: {
             /** Format: int32 */
             candidates: number;
@@ -328,6 +353,14 @@ export interface components {
             label: string;
             /** Format: int32 */
             number: number;
+        };
+        HeldSlot: {
+            /** Format: int64 */
+            memoryItemId: number;
+            /** Format: int32 */
+            position: number;
+            /** @enum {string} */
+            type: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
         };
         IntakeResponse: {
             conversationId: string;
@@ -453,6 +486,19 @@ export interface components {
             memoryItemId: number;
             /** Format: int64 */
             relatedItemId: number | null;
+            /** @enum {string} */
+            type: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
+        };
+        QuestionView: {
+            choices: string[];
+            learningGoal: string;
+            /** Format: int64 */
+            memoryItemId: number;
+            /** Format: int32 */
+            position: number;
+            /** Format: int64 */
+            questionId: number;
+            stem: string;
             /** @enum {string} */
             type: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
         };
@@ -831,6 +877,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    firstStudy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FirstStudy"];
+                };
             };
         };
     };

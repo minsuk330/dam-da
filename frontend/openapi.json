@@ -407,6 +407,33 @@
         "tags" : [ "notification-controller" ]
       }
     },
+    "/api/sessions/{sessionId}/first-study" : {
+      "get" : {
+        "operationId" : "firstStudy",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FirstStudy"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "first-study-controller" ]
+      }
+    },
     "/api/sessions/{sessionId}/learning-goals" : {
       "get" : {
         "operationId" : "options_1",
@@ -666,6 +693,35 @@
         },
         "required" : [ "excluded" ]
       },
+      "FirstStudy" : {
+        "type" : "object",
+        "properties" : {
+          "generating" : {
+            "type" : "boolean"
+          },
+          "held" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/HeldSlot"
+            }
+          },
+          "planned" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/QuestionView"
+            }
+          },
+          "sessionStatus" : {
+            "type" : "string",
+            "enum" : [ "RECEIVED", "REVIEWING", "AWAITING_CONFIRMATION", "CONFIRMED", "QUESTIONS_READY", "IN_PROGRESS" ]
+          }
+        },
+        "required" : [ "generating", "held", "planned", "questions", "sessionStatus" ]
+      },
       "GoalSummary" : {
         "type" : "object",
         "properties" : {
@@ -706,6 +762,24 @@
           }
         },
         "required" : [ "description", "goal", "label", "number" ]
+      },
+      "HeldSlot" : {
+        "type" : "object",
+        "properties" : {
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          }
+        },
+        "required" : [ "memoryItemId", "position", "type" ]
       },
       "IntakeResponse" : {
         "type" : "object",
@@ -1054,6 +1128,40 @@
           }
         },
         "required" : [ "goal", "memoryItemId", "relatedItemId", "type" ]
+      },
+      "QuestionView" : {
+        "type" : "object",
+        "properties" : {
+          "choices" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "learningGoal" : {
+            "type" : "string"
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "questionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "stem" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          }
+        },
+        "required" : [ "choices", "learningGoal", "memoryItemId", "position", "questionId", "stem", "type" ]
       },
       "ReviewUnitResponse" : {
         "type" : "object",
