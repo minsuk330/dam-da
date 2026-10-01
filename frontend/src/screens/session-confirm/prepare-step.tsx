@@ -77,7 +77,7 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
         </View>
         <ThemedText variant="caption" tone="inkSecondary">
           {held > 0
-            ? `보류된 ${held}개는 품질 검사를 통과하지 못해 이번 학습에서 빠졌어요.`
+            ? `보류된 ${held}개(${data.held.map((h) => questionTypeLabel[h.type]).join(', ')})는 품질 검사를 통과하지 못해 이번 첫 학습에서 빠졌어요. 검사를 통과한 문제만 풀어요.`
             : '모든 문제가 품질 검사를 통과했어요.'}
         </ThemedText>
       </Card>

@@ -91,7 +91,7 @@ export function Home() {
 
 /**
  * 레퍼런스 홈 헤더: 왼쪽 원형 메뉴 버튼 + 서비스명, 오른쪽 원형 알림 버튼 + 프로필.
- * 메뉴 화면이 없어 메뉴는 받은 학습 대화 목록으로, 알림은 알림 목록(#61) 전까지 읽지 않은 최신 세션으로 보낸다.
+ * 메뉴 화면이 없어 메뉴는 받은 학습 대화 목록으로 보낸다. 알림은 알림 목록으로 간다.
  */
 function HomeHeader() {
   const { data } = useNotifications();
@@ -112,11 +112,7 @@ function HomeHeader() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={unread ? '알림, 새 알림 있음' : '알림'}
-        onPress={() =>
-          unread
-            ? router.push({ pathname: '/sessions/[id]', params: { id: String(unread.targetId) } })
-            : router.navigate('/memory')
-        }
+        onPress={() => router.push('/notifications')}
         style={({ pressed }) => [styles.circleButton, pressed && styles.circlePressed]}>
         <Icon name="bell" />
         {unread && <View style={styles.unreadDot} />}
