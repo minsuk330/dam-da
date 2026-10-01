@@ -10,6 +10,7 @@ import com.khack.review.collection.domain.SavedSession;
 import com.khack.review.collection.domain.UserTurn;
 import com.khack.review.common.application.CurrentUser;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +35,7 @@ public class LearningSessionQueryService {
         return sessions.findAllByUserIdOrderByCreatedAtDescIdDesc(currentUser.id()).stream()
                 .map(session -> {
                     SavedSession conversation = conversations.find(session.getConversationId());
-                    return new LearningSessionSummary(session.getId(), session.getStatus(), session.getTopicHint(),
+                    return new LearningSessionSummary(session.getId(), conversation.id(), session.getStatus(), session.getTopicHint(),
                             conversation.source(), conversation.transcription(), session.getCreatedAt(),
                             session.getUnits().size(), session.items().size());
                 })
@@ -46,7 +47,7 @@ public class LearningSessionQueryService {
         LearningSession session = owned(sessionId);
         SavedSession conversation = conversations.find(session.getConversationId());
         List<UserTurn> turns = conversation.userTurns();
-        return new LearningSessionDetail(session.getId(), session.getStatus(), session.getTopicHint(),
+        return new LearningSessionDetail(session.getId(), conversation.id(), session.getStatus(), session.getTopicHint(),
                 conversation.source(), conversation.transcription(), session.getCreatedAt(), session.getConfirmedAt(),
                 turns.stream().map(turn -> new LearningSessionDetail.Turn(turn.index(), turn.text(), turn.quotedText(),
                         turn.intent(), turn.aiVerdict(), turn.correction())).toList(),
@@ -65,6 +66,15 @@ public class LearningSessionQueryService {
     }
 
     /** 현재 사용자의 세션 엔티티. 같은 컨텍스트의 서비스만 쓴다. 남의 세션은 없는 것으로 취급한다. */
+    /** 대화(외부 ID)에서 만든 학습 세션. 아직 없거나 다른 사용자의 것이면 비어 있다. */
+    @Transactional(readOnly = true)
+    public Optional<Long> sessionIdOf(String conversationId) {
+        return conversations.idOf(conversationId)
+                .flatMap(sessions::findByConversationId)
+                .filter(session -> session.getUserId().equals(currentUser.id()))
+                .map(LearningSession::getId);
+    }
+
     public LearningSession owned(Long sessionId) {
         return sessions.findById(sessionId)
                 .filter(session -> session.getUserId().equals(currentUser.id()))

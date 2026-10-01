@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
 
-import { components, spacing } from '@/theme';
+import { components, opacity, spacing } from '@/theme';
 
 const variants = {
   primary: components.buttonPrimary,
@@ -41,7 +41,7 @@ export function Button({
           alignItems: 'center',
           justifyContent: 'center',
           paddingHorizontal: spacing['2xl'],
-          opacity: disabled ? 0.4 : 1,
+          opacity: disabled ? opacity.disabled : 1,
         },
         style,
       ]}>

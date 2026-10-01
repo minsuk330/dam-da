@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
  * @param misreadConfidence  `misread` 신뢰도(0~1). 없으면 0
  * @param guessSuspected     정답이지만 추측이 의심되는가(예: 읽기 어려운 시간 안에 고른 객관식 정답)
  * @param responseTime       답변 제출까지 걸린 시간. 모르면 null이고, 그러면 Easy를 주지 않는다
- * @param transcribedEvidence 판정에 쓴 대화 근거가 모델이 옮겨 적은 것(`model_transcribed`)인가. 그러면 행 1·2에 더 높은 기준을 쓴다(스펙 §7.3)
+ * @param evidenceTranscribed 판정에 쓴 대화 근거가 모델이 옮겨 적은 것(`model_transcribed`)인가. 그러면 행 1·2에 더 높은 기준을 쓴다(스펙 §7.3)
  */
 public record RatingInput(
         AttemptKind attempt,
@@ -24,7 +24,7 @@ public record RatingInput(
         SelfAssessment selfAssessment,
         QuestionType questionType,
         @Nullable Duration responseTime,
-        boolean transcribedEvidence) {
+        boolean evidenceTranscribed) {
 
     /** 원문 근거({@code verbatim})로 판정한 입력. */
     public RatingInput(AttemptKind attempt, AnswerVerdict verdict, double verdictConfidence, boolean misread,

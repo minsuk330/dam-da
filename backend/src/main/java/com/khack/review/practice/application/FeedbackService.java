@@ -337,7 +337,7 @@ public class FeedbackService {
         }
         RatingInput input = new RatingInput(AttemptKind.FIRST_UNASSISTED, judgment.getVerdict(), judgment.getVerdictConfidence(),
                 judgment.isMisread(), judgment.getMisreadConfidence() == null ? 0 : judgment.getMisreadConfidence(), false,
-                attempt.getSelfAssessment(), attempt.getQuestionType(), null, judgment.isTranscribedEvidence());
+                attempt.getSelfAssessment(), attempt.getQuestionType(), null, judgment.isEvidenceTranscribed());
         if (ratingPolicy.decide(input) instanceof RatingDecision.Held held) {
             return held.reason() == HoldReason.LOW_CONFIDENCE ? AttemptOutcome.UNCERTAIN : AttemptOutcome.QUESTION_AMBIGUOUS;
         }

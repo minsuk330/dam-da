@@ -16,6 +16,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record LearningSessionDetail(
         Long id,
+        String conversationId,
         LearningSessionStatus status,
         @Nullable String topicHint,
         String inputPath,

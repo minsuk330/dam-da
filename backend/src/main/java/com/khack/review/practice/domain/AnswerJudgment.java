@@ -193,6 +193,11 @@ public class AnswerJudgment {
         return judgment;
     }
 
+    /** 정답 기준의 근거 대화가 모델이 옮겨 적은 것인가. 등급 변환이 더 높은 신뢰도 기준을 쓴다. */
+    public boolean isEvidenceTranscribed() {
+        return "model_transcribed".equals(evidenceFidelity);
+    }
+
     /** 오개념 재발: 대화에서 믿었던 틀린 내용을 다시 주장했다. */
     public boolean isMisconceptionRecurred() {
         return Boolean.TRUE.equals(repeatsUserBelief);
@@ -246,11 +251,6 @@ public class AnswerJudgment {
     /** 확률이 애매해 확정하지 않은 이유. */
     public List<String> getAmbiguousReasons() {
         return ambiguousReasons == null ? List.of() : List.of(ambiguousReasons.split(","));
-    }
-
-    /** 판정에 쓴 대화 근거가 모델이 옮겨 적은 것인가. 그러면 등급 변환이 더 높은 신뢰도 기준을 쓴다(스펙 §7.3). */
-    public boolean isTranscribedEvidence() {
-        return "model_transcribed".equals(evidenceFidelity);
     }
 
     public boolean isOmission() {

@@ -30,31 +30,28 @@ export function Home() {
     <ScrollView
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg, paddingBottom: tabBarSpace }]}>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <ThemedText variant="caption" tone="inkMuted">
-            {today.format(new Date())}
-          </ThemedText>
-          <ThemedText variant="headline">지원님, 안녕하세요</ThemedText>
-        </View>
-        <View accessibilityLabel="프로필: 지원" style={styles.avatar}>
-          <ThemedText variant="headline" tone="primaryInk">
-            지
-          </ThemedText>
-        </View>
-      </View>
+      <HomeHeader />
 
       <SessionReadyBanner />
 
       <View style={styles.titleRow}>
-        <ThemedText variant="display" style={styles.title}>
-          오늘 학습할{'\n'}지식이 있어요
-        </ThemedText>
+        <View style={styles.title}>
+          <ThemedText variant="caption" tone="inkMuted">
+            {today.format(new Date())} · 지원님
+          </ThemedText>
+          <ThemedText variant="display">오늘 학습할{'\n'}지식이 있어요</ThemedText>
+        </View>
         <Chip variant="status" label={`${totalCount}문제`} style={styles.titleChip} />
       </View>
 
       <View style={styles.stats}>
-        <StatCard variant="lavender" icon="clock" value={String(sampleToday.minutes)} unit="분" label="오늘 예상 학습 시간" />
+        <StatCard
+          variant="lavender"
+          icon="clock"
+          value={String(sampleToday.minutes)}
+          unit="분"
+          label="오늘 예상 학습 시간"
+        />
         <StatCard
           variant="surface"
           icon="zap"
@@ -67,27 +64,65 @@ export function Home() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="오늘의 학습 시작하기"
-        onPress={() => router.push('/review')}
-        style={({ pressed }) => pressed && styles.pressed}>
-        <Card variant="hero" style={styles.hero}>
-          <View style={styles.heroText}>
-            <ThemedText variant="title" tone="onPrimary">
-              오늘의 학습{'\n'}시작하기
-            </ThemedText>
-            <ThemedText variant="subhead" tone="onPrimary">
-              복습 {sampleToday.reviewCount} · 새 항목 {sampleToday.newCount} · 약 {sampleToday.minutes}분
-            </ThemedText>
-          </View>
-          <View style={styles.heroArrow}>
-            <Icon name="arrow-up-right" size={22} color={colors.primary} />
-          </View>
-        </Card>
+        onPress={() => router.push('/review')}>
+        {({ pressed }) => (
+          <Card variant="hero" pressed={pressed} style={styles.hero}>
+            <View style={styles.heroText}>
+              <ThemedText variant="title" tone="onPrimary">
+                오늘의 학습{'\n'}시작하기
+              </ThemedText>
+              <ThemedText variant="subhead" tone="onPrimary">
+                복습 {sampleToday.reviewCount} · 새 항목 {sampleToday.newCount} · 약 {sampleToday.minutes}분
+              </ThemedText>
+            </View>
+            <View style={styles.heroArrow}>
+              <Icon name="arrow-up-right" size="lg" color={colors.primary} />
+            </View>
+          </Card>
+        )}
       </Pressable>
 
       <MemorySummary />
 
       <RecentConversations />
     </ScrollView>
+  );
+}
+
+/**
+ * 레퍼런스 홈 헤더: 왼쪽 원형 메뉴 버튼 + 서비스명, 오른쪽 원형 알림 버튼 + 프로필.
+ * 메뉴 화면이 없어 메뉴는 받은 학습 대화 목록으로 보낸다. 알림은 알림 목록으로 간다.
+ */
+function HomeHeader() {
+  const { data } = useNotifications();
+  const unread = data?.items.find((n) => !n.read && n.type === 'SESSION_READY');
+
+  return (
+    <View style={styles.header}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="메뉴: 받은 학습 대화"
+        onPress={() => router.push('/conversations')}
+        style={({ pressed }) => [styles.circleButton, pressed && styles.circlePressed]}>
+        <Icon name="menu" />
+      </Pressable>
+      <ThemedText variant="headline" numberOfLines={1} style={styles.brand}>
+        AI Learning Companion
+      </ThemedText>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={unread ? '알림, 새 알림 있음' : '알림'}
+        onPress={() => router.push('/notifications')}
+        style={({ pressed }) => [styles.circleButton, pressed && styles.circlePressed]}>
+        <Icon name="bell" />
+        {unread && <View style={styles.unreadDot} />}
+      </Pressable>
+      <View accessibilityLabel="프로필: 지원" style={styles.avatar}>
+        <ThemedText variant="headline" tone="primaryInk">
+          지
+        </ThemedText>
+      </View>
+    </View>
   );
 }
 
@@ -109,7 +144,7 @@ function SessionReadyBanner() {
       }}
       style={({ pressed }) => [styles.row, styles.banner, pressed && styles.rowPressed]}>
       <View style={[styles.rowIcon, styles.bannerIcon]}>
-        <Icon name="bell" size={18} color={colors.onPrimary} />
+        <Icon name="bell" size="md" color={colors.onPrimary} />
       </View>
       <View style={styles.rowText}>
         <ThemedText variant="headline" numberOfLines={2}>
@@ -119,7 +154,7 @@ function SessionReadyBanner() {
           {latest.body}
         </ThemedText>
       </View>
-      <Icon name="chevron-right" size={18} color={colors.inkMuted} />
+      <Icon name="chevron-right" size="md" color={colors.inkMuted} />
     </Pressable>
   );
 }
@@ -195,7 +230,7 @@ function RecentConversations() {
           onPress={() => router.push({ pathname: '/conversations/[id]', params: { id: c.id } })}
           style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
           <View style={styles.rowIcon}>
-            <Icon name="book-open" size={18} color={colors.primaryInk} />
+            <Icon name="book-open" size="md" color={colors.primaryInk} />
           </View>
           <View style={styles.rowText}>
             <ThemedText variant="headline" numberOfLines={1}>
@@ -206,7 +241,7 @@ function RecentConversations() {
             </ThemedText>
           </View>
           {c.warningCount > 0 && <View accessibilityLabel={`경고 ${c.warningCount}`} style={styles.warningDot} />}
-          <Icon name="chevron-right" size={18} color={colors.inkMuted} />
+          <Icon name="chevron-right" size="md" color={colors.inkMuted} />
         </Pressable>
       ))}
     </View>
@@ -216,8 +251,26 @@ function RecentConversations() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
   content: { paddingHorizontal: spacing.xl, gap: spacing['2xl'] },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerText: { gap: 2 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  brand: { flex: 1, marginLeft: spacing.sm },
+  circleButton: {
+    width: components.iconButton.size,
+    height: components.iconButton.size,
+    borderRadius: components.iconButton.rounded,
+    backgroundColor: components.iconButton.backgroundColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circlePressed: { backgroundColor: components.cardPressed.backgroundColor },
+  unreadDot: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    width: components.warningMark.size,
+    height: components.warningMark.size,
+    borderRadius: components.warningMark.size,
+    backgroundColor: colors.danger,
+  },
   avatar: {
     width: components.iconButton.size,
     height: components.iconButton.size,
@@ -227,10 +280,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
-  title: { flex: 1 },
+  title: { flex: 1, gap: spacing.xs },
   titleChip: { marginTop: spacing.sm },
   stats: { flexDirection: 'row', gap: spacing.md },
-  hero: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', minHeight: 156 },
+  hero: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    minHeight: components.cardHero.height,
+  },
   heroText: { gap: spacing.sm, flex: 1 },
   heroArrow: {
     width: components.iconButton.size,
@@ -240,7 +298,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pressed: { opacity: 0.9 },
   section: { gap: spacing.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   memoryCard: { gap: spacing.md },
@@ -255,18 +312,18 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     padding: spacing.lg,
   },
-  rowPressed: { backgroundColor: colors.surfaceSoft },
+  rowPressed: { backgroundColor: components.cardPressed.backgroundColor },
   banner: { borderWidth: components.answerOptionOutline.width, borderColor: colors.primaryTint },
   rowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: components.iconButton.rounded,
-    backgroundColor: colors.primaryTint,
+    width: components.iconCircle.size,
+    height: components.iconCircle.size,
+    borderRadius: components.iconCircle.rounded,
+    backgroundColor: components.iconCircle.backgroundColor,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bannerIcon: { backgroundColor: colors.primary },
-  rowText: { flex: 1, gap: 2 },
+  rowText: { flex: 1, gap: spacing['2xs'] },
   warningDot: {
     width: components.warningMark.size,
     height: components.warningMark.size,

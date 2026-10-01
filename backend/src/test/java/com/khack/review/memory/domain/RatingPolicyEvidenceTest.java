@@ -32,7 +32,7 @@ class RatingPolicyEvidenceTest {
     }
 
     @Test
-    void transcribedEvidenceNeedsAHigherConfidence() {
+    void evidenceTranscribedNeedsAHigherConfidence() {
         assertThat(POLICY.decide(input(AnswerVerdict.MET, 0.82, false, 0, false))).isInstanceOf(RatingDecision.Rated.class);
         assertThat(POLICY.decide(input(AnswerVerdict.MET, 0.82, false, 0, true)))
                 .isEqualTo(new RatingDecision.Held(HoldReason.LOW_CONFIDENCE, 1, RatingPolicy.VERSION));

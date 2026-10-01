@@ -47,7 +47,7 @@ export function ReviewComplete({ results }: { results: ItemResult[] }) {
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing['3xl'] }]}>
       <View style={styles.hero}>
         <View style={styles.doneIcon}>
-          <Icon name="check" size={32} color={colors.onPrimary} />
+          <Icon name="check" size="xl" color={colors.onPrimary} />
         </View>
         <ThemedText variant="display" style={styles.center}>
           오늘 학습을 마쳤어요
@@ -71,17 +71,19 @@ export function ReviewComplete({ results }: { results: ItemResult[] }) {
       {helped.length > 0 && (
         <View style={styles.section}>
           <ThemedText variant="title">도움이 필요했던 항목</ThemedText>
-          {helped.map(({ question, path }) => (
-            <Card key={question.id} style={styles.item}>
-              <View style={styles.itemHeader}>
-                <Chip label={pathLabel[path]} />
-                <ThemedText variant="caption" tone="inkMuted">
-                  {question.unitTitle}
-                </ThemedText>
+          <Card style={styles.schedule}>
+            {helped.map(({ question, path }, i) => (
+              <View key={question.id} style={[styles.item, i > 0 && styles.divided]}>
+                <View style={styles.itemHeader}>
+                  <Chip label={pathLabel[path]} />
+                  <ThemedText variant="caption" tone="inkMuted">
+                    {question.unitTitle}
+                  </ThemedText>
+                </View>
+                <ThemedText variant="subhead">{question.answerText}</ThemedText>
               </View>
-              <ThemedText variant="subhead">{question.answerText}</ThemedText>
-            </Card>
-          ))}
+            ))}
+          </Card>
         </View>
       )}
 
@@ -123,10 +125,10 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.xl },
   center: { textAlign: 'center' },
   doneIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: components.iconButton.rounded,
-    backgroundColor: colors.primary,
+    width: components.doneMark.size,
+    height: components.doneMark.size,
+    borderRadius: components.doneMark.rounded,
+    backgroundColor: components.doneMark.backgroundColor,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -135,6 +137,7 @@ const styles = StyleSheet.create({
   section: { gap: spacing.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   item: { gap: spacing.sm },
+  divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline, paddingTop: spacing.lg },
   itemHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   schedule: { gap: spacing.lg },
   scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

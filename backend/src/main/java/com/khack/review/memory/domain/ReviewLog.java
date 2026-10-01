@@ -135,7 +135,7 @@ public class ReviewLog {
                     throw new IllegalArgumentException("평가 대상이 아닌 시도는 복습 기록을 남기지 않습니다.");
         }
         log.policyVersion = decision.policyVersion();
-        log.evidenceTranscribed = input.transcribedEvidence();
+        log.evidenceTranscribed = input.evidenceTranscribed();
         log.appliedMinConfidence = appliedMinConfidence;
         log.userId = context.userId();
         log.memoryItemId = context.memoryItemId();

@@ -142,9 +142,9 @@ class AnswerJudgmentTest {
         AnswerJudgment transcribed = byJev(AnswerVerdict.MET, 0.1, 0.1, misreadAnswer(0.1), null, 0.1, "model_transcribed");
         AnswerJudgment verbatim = byJev(AnswerVerdict.MET, 0.1, 0.1, misreadAnswer(0.1), null, 0.1, "verbatim");
 
-        assertThat(transcribed.isTranscribedEvidence()).isTrue();
+        assertThat(transcribed.isEvidenceTranscribed()).isTrue();
         assertThat(transcribed.getEvidenceFidelity()).isEqualTo("model_transcribed");
-        assertThat(verbatim.isTranscribedEvidence()).isFalse();
+        assertThat(verbatim.isEvidenceTranscribed()).isFalse();
     }
 
     @Test

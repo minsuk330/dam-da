@@ -399,11 +399,11 @@ class PracticeIT {
         long sessionId = readySession(LearningGoal.CORRECT_MISCONCEPTION, LearningGoal.CONDITION);
         long practiceId = ok("POST", "/api/sessions/%d/first-study/practice".formatted(sessionId), null).get("practiceId").asLong();
 
-        // 판정 신뢰도가 기준(0.6) 미만 → 행 1 보류
+        // 커넥터 입력(model_transcribed)이라 기준이 0.7: 원문 기준(0.6)이면 통과할 0.65도 행 1 보류
         JsonNode first = ok("GET", "/api/practice/%d/next".formatted(practiceId), null).get("presentation");
         QuestionPresentation firstPresented = presentations.findById(first.get("presentationId").asLong()).orElseThrow();
         var reviewedBefore = memory.lastReviewedAt(firstPresented.getMemoryItemId());
-        jev.answers.add(judged("met", 0.4, 0.05, 0.05, 0.05));
+        jev.answers.add(judged("met", 0.65, 0.05, 0.05, 0.05));
         JsonNode lowConfidence = ok("POST", "/api/practice/presentations/%d/attempts".formatted(first.get("presentationId").asLong()),
                 "{\"answer\":\"표준편차는 그대로다\",\"selfAssessment\":\"RECALLED_EASILY\"}");
         assertThat(lowConfidence.get("rating").isNull()).isTrue();

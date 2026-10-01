@@ -6,6 +6,7 @@ import com.khack.review.question.domain.QuestionType;
 import io.github.openspacedrepetition.Rating;
 import java.time.Duration;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -89,6 +90,24 @@ class RatingPolicyTest {
         };
 
         assertThat(POLICY.decide(input)).isEqualTo(new RatingDecision.Rated(rating, row, RatingPolicy.VERSION));
+    }
+
+    @Test
+    void evidenceTranscribedNeedsHigherConfidence() {
+        RatingPolicy policy = new RatingPolicy(0.6, 0.7,
+                Map.of(QuestionType.SHORT_ANSWER, Duration.ofSeconds(40)), 1.5);
+        RatingInput verbatim = input(AnswerVerdict.MET, 0.65, false, 0, false, SelfAssessment.RECALLED_WITH_EFFORT);
+        RatingInput transcribed = new RatingInput(verbatim.attempt(), verbatim.verdict(), verbatim.verdictConfidence(),
+                verbatim.misread(), verbatim.misreadConfidence(), verbatim.guessSuspected(), verbatim.selfAssessment(),
+                verbatim.questionType(), verbatim.responseTime(), true);
+
+        assertThat(describe(policy.decide(verbatim))).as("원문 대화: 0.65 ≥ 0.6").isEqualTo("HARD");
+        assertThat(describe(policy.decide(transcribed))).as("옮겨 적은 대화: 0.65 < 0.7").isEqualTo("HOLD:LOW_CONFIDENCE");
+
+        RatingInput misreadTranscribed = new RatingInput(AttemptKind.FIRST_UNASSISTED, AnswerVerdict.NOT_MET, 0.9, true, 0.65,
+                false, SelfAssessment.RECALLED_EASILY, QuestionType.SHORT_ANSWER, Duration.ofSeconds(10), true);
+        assertThat(describe(policy.decide(misreadTranscribed))).as("misread 확인도 같은 기준: 0.65 < 0.7 → Again")
+                .isEqualTo("AGAIN");
     }
 
     static RatingInput input(AnswerVerdict verdict, double confidence, boolean misread, double misreadConfidence, boolean guess,

@@ -241,7 +241,7 @@ public class PracticeService {
                 && judgment.getVerdict() == AnswerVerdict.MET && responseTime.compareTo(multipleChoiceGuessTime) < 0;
         RatingInput input = new RatingInput(attempt.getKind(), judgment.getVerdict(), judgment.getVerdictConfidence(),
                 judgment.isMisread(), judgment.getMisreadConfidence() == null ? 0 : judgment.getMisreadConfidence(),
-                guessSuspected, attempt.getSelfAssessment(), attempt.getQuestionType(), responseTime, judgment.isTranscribedEvidence());
+                guessSuspected, attempt.getSelfAssessment(), attempt.getQuestionType(), responseTime, judgment.isEvidenceTranscribed());
         List<String> failures = judgment.getJudgedBy() == JudgedBy.CODE ? null : Stream.of(
                         judgment.isOmission() ? "omission" : null,
                         judgment.isContradiction() ? "contradiction" : null,

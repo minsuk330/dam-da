@@ -44,6 +44,12 @@ public class ConversationQueryService {
         return conversations.findBySessionId(sessionId).map(LearningConversation::toSavedSession);
     }
 
+    /** 외부 ID(sessionId)의 내부 대화 ID. 다른 컨텍스트는 내부 ID로 참조한다. */
+    @Transactional(readOnly = true)
+    public Optional<Long> idOf(String sessionId) {
+        return conversations.findBySessionId(sessionId).map(LearningConversation::getId);
+    }
+
     private LearningConversation conversation(Long conversationId) {
         return conversations.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("학습 대화 없음: " + conversationId));

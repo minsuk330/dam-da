@@ -29,9 +29,9 @@ public record RatingPolicy(double minConfidence, double minConfidenceTranscribed
 
     /**
      * 변환표나 해석을 바꾸면 올린다. 풀이 기록에 함께 남겨 정책별 영향을 비교한다.
-     * 2: `misread`를 신뢰도가 있는 선택형 판정으로 읽고, 모델이 옮겨 적은 근거에는 별도 기준을 쓴다.
+     * 2: 모델이 옮겨 적은 근거에 별도 기준(#68). 3: `misread`를 신뢰도가 있는 선택형 판정으로 읽고 기준을 0.80/0.85로 올린다.
      */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
 
     public RatingPolicy {
         if (minConfidenceTranscribed < minConfidence) {
@@ -46,8 +46,8 @@ public record RatingPolicy(double minConfidence, double minConfidenceTranscribed
     }
 
     /** 행 1·2에 적용하는 신뢰도 기준. */
-    public double minConfidenceFor(boolean transcribedEvidence) {
-        return transcribedEvidence ? minConfidenceTranscribed : minConfidence;
+    public double minConfidenceFor(boolean evidenceTranscribed) {
+        return evidenceTranscribed ? minConfidenceTranscribed : minConfidence;
     }
 
     public RatingDecision decide(RatingInput input) {
@@ -57,7 +57,7 @@ public record RatingPolicy(double minConfidence, double minConfidenceTranscribed
         if (input.verdict() == AnswerVerdict.UNABLE_TO_JUDGE) {
             return held(HoldReason.UNABLE_TO_JUDGE, 1);
         }
-        double minConfidence = minConfidenceFor(input.transcribedEvidence());
+        double minConfidence = minConfidenceFor(input.evidenceTranscribed());
         if (input.verdictConfidence() < minConfidence) {
             return held(HoldReason.LOW_CONFIDENCE, 1);
         }
