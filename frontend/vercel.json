@@ -4,11 +4,7 @@
   "buildCommand": "EXPO_PUBLIC_API_MOCK=false npx expo export -p web",
   "outputDirectory": "dist",
   "rewrites": [
-<<<<<<< HEAD
-    { "source": "/api/:path*", "destination": "https://hack.refit-100.site/api/:path*" },
-=======
     { "source": "/api/(.*)", "destination": "https://hack.refit-100.site/api/$1" },
->>>>>>> origin/main
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
