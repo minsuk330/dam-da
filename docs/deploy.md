@@ -91,7 +91,7 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 
 ### 로그인
 
-- `.env`에 `PUBLIC_SERVER_URL`, `APP_URL`(Vercel 주소), `AUTH_SIGNING_KEY`, `GOOGLE_*`, `KAKAO_*`를 넣는다. `AUTH_SIGNING_KEY`가 비면 재시작할 때마다 모두 로그아웃된다.
+- `.env`에 `PUBLIC_SERVER_URL`, `APP_URL`(Vercel 주소), `AUTH_SIGNING_KEY`, `GOOGLE_*`, `KAKAO_*`를 넣는다. `AUTH_SIGNING_KEY`가 비면 재시작할 때마다 모두 로그아웃된다. 키는 PKCS#8 DER이어야 한다(`openssl genpkey ... | openssl pkcs8 -topk8 -nocrypt -outform DER | base64 | tr -d '\n'`). OpenSSL 3.0.x의 `genpkey -outform DER`는 PKCS#1로 내보내 기동이 실패한다(`Unable to decode key`).
 - 구글 Cloud Console·Kakao Developers의 redirect URI에 `https://hack.refit-100.site/login/oauth2/code/google`, `.../kakao`를 추가한다.
 - `DEV_TOOLS_ENABLED=true`면 앱에 "데모 계정으로 시작"이 열린다(`POST /api/auth/demo`). 누구나 데모 사용자로 들어올 수 있으므로 시연 기간에만 켠다.
 
