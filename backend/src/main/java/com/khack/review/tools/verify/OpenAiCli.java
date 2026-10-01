@@ -38,7 +38,7 @@ public final class OpenAiCli {
         OpenAiChatModel chatModel = OpenAiChatModel.builder()
                 .options(OpenAiChatOptions.builder().apiKey(apiKey).model(model()).build())
                 .build();
-        return new OpenAiLlmAdapter(ChatClient.builder(chatModel));
+        return new OpenAiLlmAdapter(ChatClient.builder(chatModel), "none");
     }
 
     /** {@code --out <file>}이 있으면 UTF-8 파일로, 없으면 표준 출력으로 낸다. 콘솔에서 한글이 깨질 때 파일로 받는다. */

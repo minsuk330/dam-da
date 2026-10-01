@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 class NextActionJudgeTest {
 
-    static final FeedbackPolicy POLICY = new FeedbackPolicy(0.5, 3, Duration.ofSeconds(1), 5, 2);
+    static final FeedbackPolicy POLICY = new FeedbackPolicy(0.5, 3, Duration.ofSeconds(1), 5, 2, Duration.ofSeconds(4));
 
     static final NextActionState STATE = new NextActionState(PracticeKind.FIRST_STUDY, false, QuestionType.SHORT_ANSWER,
             "표준오차란?", AttemptOutcome.WRONG, List.of(new NextActionState.Step(AttemptKind.FIRST_UNASSISTED, AttemptOutcome.WRONG)),

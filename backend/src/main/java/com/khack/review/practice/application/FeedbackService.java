@@ -14,6 +14,7 @@ import com.khack.review.practice.application.NextActionJudge.DecidedBy;
 import com.khack.review.practice.application.port.out.FeedbackContent;
 import com.khack.review.practice.application.port.out.FeedbackContentGenerator;
 import com.khack.review.practice.application.port.out.FeedbackContentRequest;
+import com.khack.review.practice.application.port.out.FeedbackGenerationException;
 import com.khack.review.practice.application.port.out.PrerequisiteSuggestion;
 import com.khack.review.practice.domain.AidExposure;
 import com.khack.review.practice.domain.AidExposureRepository;
@@ -42,6 +43,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -49,6 +56,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -91,13 +99,15 @@ public class FeedbackService {
     private final CurrentUser currentUser;
     private final TransactionTemplate transaction;
     private final Clock clock;
+    private final Executor generation;
 
     public FeedbackService(PracticeSessionRepository practices, QuestionPresentationRepository presentations,
             AidExposureRepository aids, PracticeAttemptRepository attempts, AnswerJudgmentRepository judgments, RatingPolicy ratingPolicy,
             PresentationFeedbackRepository feedbacks, PracticeService practice, QuestionQueryService questions,
             QuestionRecheckService rechecks, LearningSessionQueryService sessions,
             ObjectProvider<FeedbackContentGenerator> generator, NextActionJudge judge, FeedbackPolicy policy,
-            CurrentUser currentUser, TransactionTemplate transaction, Clock clock) {
+            CurrentUser currentUser, TransactionTemplate transaction, Clock clock,
+            @Qualifier("applicationTaskExecutor") Executor generation) {
         this.practices = practices;
         this.presentations = presentations;
         this.aids = aids;
@@ -115,6 +125,7 @@ public class FeedbackService {
         this.currentUser = currentUser;
         this.transaction = transaction;
         this.clock = clock;
+        this.generation = generation;
     }
 
     public record Prerequisite(String concept, String reason) {
@@ -346,7 +357,8 @@ public class FeedbackService {
             return feedback;
         }
         try {
-            PrerequisiteSuggestion suggestion = available.prerequisite(request(question, presentation, history, null));
+            FeedbackContentRequest request = request(question, presentation, history, null);
+            PrerequisiteSuggestion suggestion = withinLimit(() -> available.prerequisite(request));
             feedback.suggestPrerequisite(suggestion.concept(), suggestion.reason());
             return feedbacks.save(feedback);
         } catch (RuntimeException e) {
@@ -362,7 +374,7 @@ public class FeedbackService {
             try {
                 FeedbackContentRequest request = request(question, presentation, history,
                         hint ? question.getHint() : question.getExplanation());
-                return hint ? available.hint(request) : available.explanation(request);
+                return withinLimit(() -> hint ? available.hint(request) : available.explanation(request));
             } catch (RuntimeException e) {
                 log.warn("{} 생성 실패, 문제에 저장된 기본 {}으로 대신함: {}", hint ? "힌트" : "개념 설명", hint ? "힌트" : "설명", e.getMessage());
             }
@@ -372,6 +384,28 @@ public class FeedbackService {
             return new FeedbackContent(stored, question.getEvidenceTurns());
         }
         return new FeedbackContent(hint ? GENERIC_HINT : question.getModelAnswer(), question.getEvidenceTurns());
+    }
+
+    /**
+     * 생성(LLM)을 시간 상한까지만 기다린다. 학습자가 답을 내고 기다리는 자리라, 넘으면 실패로 보고 호출한 쪽이 저장된 기본 본문을 쓴다.
+     * 늦게 끝난 생성 결과는 버린다.
+     */
+    private <T> T withinLimit(Supplier<T> generate) {
+        CompletableFuture<T> future = CompletableFuture.supplyAsync(generate, generation);
+        try {
+            return future.get(policy.contentTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            throw new FeedbackGenerationException("생성이 시간 상한 %s을 넘었습니다.".formatted(policy.contentTimeout()), e);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException failure) {
+                throw failure;
+            }
+            throw new FeedbackGenerationException("생성에 실패했습니다: " + e.getCause(), e.getCause());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new FeedbackGenerationException("생성을 기다리다 중단됐습니다.", e);
+        }
     }
 
     private FeedbackContentRequest request(Question question, QuestionPresentation presentation, List<PracticeAttempt> history,

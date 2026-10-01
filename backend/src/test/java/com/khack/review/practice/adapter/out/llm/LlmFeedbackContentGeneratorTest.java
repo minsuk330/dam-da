@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.khack.review.analysis.domain.MemoryItemKind;
 import com.khack.review.common.application.port.out.FakeLlmPort;
+import com.khack.review.common.application.port.out.LlmPort;
 import com.khack.review.practice.adapter.out.llm.LlmFeedbackContentGenerator.Generated;
 import com.khack.review.practice.adapter.out.llm.LlmFeedbackContentGenerator.GeneratedPrerequisite;
 import com.khack.review.practice.application.port.out.FeedbackContent;
@@ -47,6 +48,8 @@ class LlmFeedbackContentGeneratorTest {
         assertThat(hint.evidenceTurns()).as("요청에 없던 9번은 버리고 중복도 없앤다").containsExactly(2);
         FakeLlmPort.Call call = llm.calls().get(0);
         assertThat(call.systemPrompt()).isEqualTo(FeedbackPrompt.HINT);
+        // 학습자가 기다리는 자리라 추론을 최소로 부른다.
+        assertThat(call.reasoning()).isEqualTo(LlmPort.Reasoning.MINIMAL);
         assertThat(call.userPrompt())
                 .contains("\"kind\":\"confusion\"", "\"userBelief\":\"" + BELIEF + "\"", "\"correction\":\"" + CORRECTION + "\"")
                 .contains("\"previousAnswers\":[\"틀린 곳 없다\"]", "\"storedText\":\"락을 거는 시점을 떠올려 보세요.\"", "\"aiVerdict\":\"corrected\"");

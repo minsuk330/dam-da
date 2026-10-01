@@ -6,8 +6,20 @@ package com.khack.review.common.application.port.out;
  */
 public interface LlmPort {
 
+	/**
+	 * 모델이 답하기 전에 하는 추론의 양. 학습자가 화면에서 기다리는 짧은 생성(힌트·설명)은 {@link #MINIMAL}로 지연을 줄이고,
+	 * 품질이 중요한 생성(문제·추출)은 {@link #DEFAULT}로 모델 기본값을 쓴다.
+	 */
+	enum Reasoning {
+		DEFAULT, MINIMAL
+	}
+
 	String generate(String systemPrompt, String userPrompt);
 
-	<T> T generate(String systemPrompt, String userPrompt, Class<T> responseType);
+	default <T> T generate(String systemPrompt, String userPrompt, Class<T> responseType) {
+		return generate(systemPrompt, userPrompt, responseType, Reasoning.DEFAULT);
+	}
+
+	<T> T generate(String systemPrompt, String userPrompt, Class<T> responseType, Reasoning reasoning);
 
 }

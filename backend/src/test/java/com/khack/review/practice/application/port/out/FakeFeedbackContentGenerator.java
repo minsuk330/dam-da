@@ -1,5 +1,6 @@
 package com.khack.review.practice.application.port.out;
 
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -20,6 +21,7 @@ public class FakeFeedbackContentGenerator implements FeedbackContentGenerator {
     private final List<FeedbackContentRequest> prerequisites = new CopyOnWriteArrayList<>();
     private final Deque<RuntimeException> failures = new ArrayDeque<>();
     private volatile String explanationText;
+    private volatile Duration delay = Duration.ZERO;
 
     /** 다음 호출(종류 무관)들이 순서대로 던질 예외. 다 쓰면 기본 동작. */
     public synchronized FakeFeedbackContentGenerator willFail(RuntimeException... failures) {
@@ -31,6 +33,12 @@ public class FakeFeedbackContentGenerator implements FeedbackContentGenerator {
     /** 이후 설명 본문을 이 값으로 고정한다. {@code clear()}로 기본 동작으로 돌아간다. */
     public FakeFeedbackContentGenerator willExplain(String text) {
         explanationText = text;
+        return this;
+    }
+
+    /** 이후 호출마다 이만큼 늦게 답한다(느린 LLM). {@code clear()}로 돌아간다. */
+    public FakeFeedbackContentGenerator willDelay(Duration delay) {
+        this.delay = delay;
         return this;
     }
 
@@ -52,6 +60,7 @@ public class FakeFeedbackContentGenerator implements FeedbackContentGenerator {
         prerequisites.clear();
         failures.clear();
         explanationText = null;
+        delay = Duration.ZERO;
     }
 
     @Override
@@ -79,12 +88,23 @@ public class FakeFeedbackContentGenerator implements FeedbackContentGenerator {
         return new PrerequisiteSuggestion("선행: " + request.itemContent(), "반복해서 틀린 항목");
     }
 
-    private synchronized void failIfRequested() {
-        RuntimeException failure = failures.poll();
+    private void failIfRequested() {
+        if (!delay.isZero()) {
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        RuntimeException failure;
+        synchronized (this) {
+            failure = failures.poll();
+        }
         if (failure != null) {
             throw failure;
         }
     }
+
 
     private static List<Integer> turns(FeedbackContentRequest request) {
         return request.evidence().stream().map(FeedbackContentRequest.EvidenceTurn::index).toList();
