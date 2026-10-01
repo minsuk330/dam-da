@@ -84,7 +84,10 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 
 ### Claude 커넥터
 
-커넥터 URL은 `https://hack.refit-100.site/mcp`다. 커넥터 OAuth(#96) 전까지는 인증이 없어 URL을 아는 사람은 데모 사용자에게 학습 대화를 저장할 수 있다. 데모 기간에는 URL을 공개하지 않는다.
+커넥터 URL은 `https://hack.refit-100.site/mcp`다(OAuth Client ID/Secret 칸은 비운다). Claude에서 "연결"을 누르면 로그인 창(`/login`, 앱과 같은 구글·카카오 계정) → 연결 승인(`/connect/consent`)을 거쳐 연결된다(스펙 §7.9, MCP OAuth 2.1). 저장한 대화는 로그인한 사용자 계정에 들어간다.
+
+- 토큰 서명 키가 `AUTH_SIGNING_KEY`로 고정되어 있어야 재시작 뒤에도 연결이 유지된다. 클라이언트와 갱신 토큰(30일)은 DB(`connector_client`, `connector_authorization`)에 있다.
+- `PUBLIC_SERVER_URL`이 실제 공개 주소와 같아야 한다(토큰 `iss`와 메타데이터에 쓰인다).
 
 ### 로그인
 

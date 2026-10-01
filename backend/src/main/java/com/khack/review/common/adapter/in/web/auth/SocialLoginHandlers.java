@@ -22,6 +22,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * <ul>
  *   <li>로그인이 필요해 중간에 멈춘 요청이 있으면(커넥터 연결 승인, #96) 그 요청으로 돌아간다.</li>
  *   <li>앱에서 시작한 로그인이면 {@code {app-url}/auth/callback?code=…}로 보낸다. 앱이 코드를 토큰으로 바꾼다.</li>
+ *   <li>실패하면 커넥터 연결 중에는 로그인 화면({@code /login?error})으로, 앱 로그인이면 {@code callback?error=login_failed}로 보낸다.</li>
  * </ul>
  * 돌아갈 앱 주소는 설정값으로만 정한다(요청 값으로 정하지 않아 열린 리다이렉트를 막는다).
  */
@@ -56,6 +57,10 @@ public class SocialLoginHandlers implements AuthenticationSuccessHandler, Authen
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
             throws IOException {
         log.warn("소셜 로그인 실패: {}", exception.getMessage());
+        if (requestCache.getRequest(request, response) != null) {
+            response.sendRedirect(request.getContextPath() + "/login?error");
+            return;
+        }
         response.sendRedirect(UriComponentsBuilder.fromUriString(callbackUrl).queryParam("error", "login_failed").build().toUriString());
     }
 }
