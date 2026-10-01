@@ -47,5 +47,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  valueRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end', gap: spacing.xs },
+  valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
 });
