@@ -111,6 +111,42 @@
         "tags" : [ "conversation-controller" ]
       }
     },
+    "/api/daily" : {
+      "get" : {
+        "operationId" : "today",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DailyView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-practice-controller" ]
+      }
+    },
+    "/api/daily/start" : {
+      "post" : {
+        "operationId" : "start",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DailyView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-practice-controller" ]
+      }
+    },
     "/api/learning-sessions" : {
       "get" : {
         "operationId" : "list_1",
@@ -929,6 +965,59 @@
         },
         "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
       },
+      "DailyView" : {
+        "type" : "object",
+        "properties" : {
+          "carriedOver" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "completed" : {
+            "type" : "boolean"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "estimatedSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemView"
+            }
+          },
+          "newCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "practiceId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "reviewCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "started" : {
+            "type" : "boolean"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unavailable" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        },
+        "required" : [ "carriedOver", "completed", "date", "estimatedSeconds", "items", "newCount", "practiceId", "reviewCount", "started", "total", "unavailable" ]
+      },
       "ExclusionRequest" : {
         "type" : "object",
         "properties" : {
@@ -1110,22 +1199,42 @@
       "ItemView" : {
         "type" : "object",
         "properties" : {
-          "content" : {
-            "type" : "string"
+          "estimatedSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "gauge" : {
-            "$ref" : "#/components/schemas/ItemGauge"
+          "held" : {
+            "type" : "boolean"
           },
           "kind" : {
             "type" : "string",
             "enum" : [ "FACT", "WARNING", "PRACTICE", "CONFUSION" ]
           },
+          "learningSessionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "memoryItemId" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "questionType" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          },
+          "relearnToday" : {
+            "type" : "boolean"
+          },
+          "retrievability" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "REVIEW", "NEW" ]
           }
         },
-        "required" : [ "content", "gauge", "kind", "memoryItemId" ]
+        "required" : [ "estimatedSeconds", "held", "kind", "learningSessionId", "memoryItemId", "questionType", "relearnToday", "retrievability", "source" ]
       },
       "JudgmentView" : {
         "type" : "object",

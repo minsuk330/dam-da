@@ -68,6 +68,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["today"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/daily/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning-sessions": {
         parameters: {
             query?: never;
@@ -448,6 +480,26 @@ export interface components {
             /** Format: int32 */
             warningCount: number;
         };
+        DailyView: {
+            /** Format: int32 */
+            carriedOver: number;
+            completed: boolean;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            estimatedSeconds: number;
+            items: components["schemas"]["ItemView"][];
+            /** Format: int32 */
+            newCount: number;
+            /** Format: int64 */
+            practiceId: number | null;
+            /** Format: int32 */
+            reviewCount: number;
+            started: boolean;
+            /** Format: int32 */
+            total: number;
+            unavailable: number[];
+        };
         ExclusionRequest: {
             excluded: boolean;
         };
@@ -516,12 +568,22 @@ export interface components {
             retrievability: number | null;
         };
         ItemView: {
-            content: string;
-            gauge: components["schemas"]["ItemGauge"];
+            /** Format: int64 */
+            estimatedSeconds: number;
+            held: boolean;
             /** @enum {string} */
             kind: "FACT" | "WARNING" | "PRACTICE" | "CONFUSION";
             /** Format: int64 */
+            learningSessionId: number;
+            /** Format: int64 */
             memoryItemId: number;
+            /** @enum {string} */
+            questionType: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
+            relearnToday: boolean;
+            /** Format: double */
+            retrievability: number | null;
+            /** @enum {string} */
+            source: "REVIEW" | "NEW";
         };
         JudgmentView: {
             judged: boolean;
@@ -890,6 +952,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversationDetailResponse"];
+                };
+            };
+        };
+    };
+    today: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyView"];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyView"];
                 };
             };
         };

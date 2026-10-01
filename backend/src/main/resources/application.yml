@@ -92,6 +92,23 @@ review:
     # 기억 강도별 예상 하루 부담 시뮬레이션 기간과 복습 1회 예상 시간(분)
     simulation-days: 30
     minutes-per-review: 0.75
+    # 매일 학습 큐 (스펙 §6.4.4, §6.4.6). 문제 유형별 소요 시간은 아래 rating.reference-times를 쓴다
+    daily:
+      # 하루 시간 예산 (문제 유형별 기준 시간의 합)
+      budget: 5m
+      # 신규 항목 하루 상한
+      max-new-items: 3
+      # 우선순위 = (1 - R) x 가중치. 헷갈린 지점 > warning > fact·practice
+      weights:
+        CONFUSION: 3.0
+        WARNING: 2.0
+        FACT: 1.0
+        PRACTICE: 1.0
+      # 보류 항목의 최소 긴급도(보류는 기억 상태를 바꾸지 않아 R이 높을 수 있다)
+      held-min-urgency: 0.5
+      # 안정도 사다리 경계 (S, 일). 초기안
+      ladder-level2-min-stability-days: 3
+      ladder-level3-min-stability-days: 14
     rating:
       # 등급 변환표 행 1·2의 판정 신뢰도 기준 (스펙 §6.4.5)
       min-confidence: 0.6
