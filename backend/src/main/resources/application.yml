@@ -85,6 +85,13 @@ review:
     # 429·529 재시도 (첫 호출 포함)
     max-attempts: 3
     retry-delay: 1s
+    # 학습 분야 라벨 (스펙 §7.10). 기준은 sessionFieldCheck의 실제 분포로 맞춘다
+    field:
+      auto-classify: true
+      # choice 신뢰도 기준. 1단계가 낮으면 미분류(etc.etc), 2단계가 낮으면 <대분류>.etc
+      min-confidence: 0.5
+      max-attempts: 3
+      retry-delay: 1s
   question:
     # 문제 품질 검사 기준 (docs/jev.md). 실제 판정 분포를 보고 맞춘다.
     min-grounded: 0.7

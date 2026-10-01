@@ -178,6 +178,32 @@ class LearningSessionApiIT {
     }
 
     @Test
+    void userPicksAFieldFromTheTaxonomy() throws Exception {
+        long id = savedAndReviewed();
+
+        JsonNode taxonomy = send("GET", "/api/fields", null, 200);
+        assertThat(taxonomy).hasSize(12);
+        assertThat(taxonomy.get(0).get("code").asString()).isEqualTo("cs");
+        assertThat(taxonomy.get(0).get("subfields").valueStream().map(f -> f.get("code").asString())).contains("cs.db", "cs.etc");
+
+        JsonNode detail = send("GET", "/api/learning-sessions/" + id, null, 200);
+        assertThat(detail.get("field").isNull()).as("자동 판정은 테스트에서 꺼져 있다").isTrue();
+
+        detail = send("PUT", "/api/learning-sessions/%d/field".formatted(id), "{\"code\":\"cs.db\"}", 200);
+        assertThat(detail.get("field").get("code").asString()).isEqualTo("cs.db");
+        assertThat(detail.get("field").get("label").asString()).isEqualTo("데이터베이스");
+        assertThat(detail.get("field").get("fieldCode").asString()).isEqualTo("cs");
+        assertThat(detail.get("field").get("source").asString()).isEqualTo("USER");
+
+        JsonNode list = send("GET", "/api/learning-sessions", null, 200);
+        assertThat(list.valueStream().filter(s -> s.get("id").asLong() == id).findFirst())
+                .hasValueSatisfying(s -> assertThat(s.get("field").get("code").asString()).isEqualTo("cs.db"));
+
+        send("PUT", "/api/learning-sessions/%d/field".formatted(id), "{\"code\":\"cs\"}", 400);
+        send("PUT", "/api/learning-sessions/999999/field", "{\"code\":\"cs.db\"}", 404);
+    }
+
+    @Test
     void unknownSessionIsNotFound() throws Exception {
         send("GET", "/api/learning-sessions/999999", null, 404);
     }

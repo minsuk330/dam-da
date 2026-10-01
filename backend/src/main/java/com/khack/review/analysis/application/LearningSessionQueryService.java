@@ -10,6 +10,7 @@ import com.khack.review.collection.domain.SavedSession;
 import com.khack.review.collection.domain.UserTurn;
 import com.khack.review.common.application.CurrentUser;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,23 +22,27 @@ public class LearningSessionQueryService {
     private final LearningSessionRepository sessions;
     private final ConversationQueryService conversations;
     private final CurrentUser currentUser;
+    private final FieldLabels fieldLabels;
 
     public LearningSessionQueryService(LearningSessionRepository sessions, ConversationQueryService conversations,
-            CurrentUser currentUser) {
+            CurrentUser currentUser, FieldLabels fieldLabels) {
         this.sessions = sessions;
         this.conversations = conversations;
         this.currentUser = currentUser;
+        this.fieldLabels = fieldLabels;
     }
 
     /** 최근 것부터. */
     @Transactional(readOnly = true)
     public List<LearningSessionSummary> list() {
-        return sessions.findAllByUserIdOrderByCreatedAtDescIdDesc(currentUser.id()).stream()
+        List<LearningSession> owned = sessions.findAllByUserIdOrderByCreatedAtDescIdDesc(currentUser.id());
+        Map<Long, FieldLabel> labels = fieldLabels.of(owned.stream().map(LearningSession::getId).toList());
+        return owned.stream()
                 .map(session -> {
                     SavedSession conversation = conversations.find(session.getConversationId());
                     return new LearningSessionSummary(session.getId(), conversation.id(), session.getStatus(), session.getTopicHint(),
                             conversation.source(), conversation.transcription(), session.getCreatedAt(),
-                            session.getUnits().size(), session.items().size());
+                            session.getUnits().size(), session.items().size(), labels.get(session.getId()));
                 })
                 .toList();
     }
@@ -67,6 +72,7 @@ public class LearningSessionQueryService {
         List<UserTurn> turns = conversation.userTurns();
         return new LearningSessionDetail(session.getId(), conversation.id(), session.getStatus(), session.getTopicHint(),
                 conversation.source(), conversation.transcription(), session.getCreatedAt(), session.getConfirmedAt(),
+                fieldLabels.of(session.getId()).orElse(null),
                 turns.stream().map(turn -> new LearningSessionDetail.Turn(turn.index(), turn.text(), turn.quotedText(),
                         turn.intent(), turn.aiVerdict(), turn.correction())).toList(),
                 session.getUnits().stream().map(LearningSessionQueryService::unit).toList(),

@@ -95,6 +95,15 @@ JevAnswer.Choice misread = r.choice(AnswerJudgeQuestions.MISREAD);   // misread 
 - 2026-10-02 측정(`./gradlew -q nextActionCheck`, 표본 8개): 자리표시 문구는 기대와 3/8 일치(신뢰도 0.39~0.55가 많아 기본 행동으로 물러남, 매일 학습의 첫 오답을 0.86으로 설명으로 고름) → 원칙을 넣은 뒤 8/8 일치, 신뢰도 0.63~0.99.
 - 2026-10-02 재측정(#90 반영, 표본 7개): 첫 학습 도움 후 정답 표본 2개를 빼고(Jev에 오지 않음) 매일 학습 설명 후 정답(여러 번 틀려 온 항목)을 넣었다. 3회 모두 7/7 일치, 최저 신뢰도 0.56~0.64. `ADVANCE` 설명을 "스스로 맞혔을 때"만 남기자 다시 묻기 상한 표본이 0.34~0.41로 기준 아래로 떨어져, "설명을 아직 보지 않았으면 고르지 않는다"를 더했다.
 
+## 학습 분야 판정 (스펙 §7.10)
+
+질문 정의는 `analysis/application/SessionFieldQuestions`(ai 소유), 호출과 신뢰도 기준 적용은 `SessionFieldClassifier`(server 소유), 분류표는 `backend/src/main/resources/field-taxonomy.yml`이다.
+
+- 2단계 choice: 1단계 `field`(대분류 12개, 선택지 설명 = 대분류 이름 + 소분류 이름들), 2단계 `subfield`(고른 대분류의 소분류, 선택지 설명 = 이름 + `hint`). 선택지 키는 분류표 코드다.
+- 상태는 `SessionFieldState`(`topic`, `unitTitles`, 2단계에서만 `field`).
+- `review.analysis.field.min-confidence`(0.5)보다 신뢰도가 낮으면 1단계는 `etc.etc`, 2단계는 `<대분류>.etc`. 호출·해석 실패도 같은 값으로 두고 세션 흐름을 막지 않는다. 고른 소분류가 1단계 대분류 밖이면 `<대분류>.etc`.
+- 2026-10-02 측정(`./gradlew -q sessionFieldCheck`, 표본 15개): 15/15 일치. 신뢰도는 대부분 0.98~1.00이고, 경계 표본(엑셀 분석 → `cs.data`)의 1단계만 0.54로 기준 근처였다.
+
 ## 힌트·개념 설명 생성 (스펙 §7 5단계)
 
 Jev가 아니라 LLM이 만든다. 포트는 `practice/application/port/out/FeedbackContentGenerator`, 구현은 `practice/adapter/out/llm/LlmFeedbackContentGenerator`와 `FeedbackPrompt`(ai 소유)다.
