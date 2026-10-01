@@ -64,11 +64,13 @@ public class QuestionGenerationService {
     private final Clock clock;
     private final TransactionTemplate transaction;
     private final ExecutorService units;
+    private final ExecutorService judges;
 
     public QuestionGenerationService(ObjectProvider<QuestionGenerator> generator, QuestionQualityJudge judge,
             QuestionQualityPolicy policy, QuestionRepository questions, LearningSessionQueryService sessions,
             SessionProgressService progress, Clock clock, TransactionTemplate transaction,
-            @Value("${review.question.parallel-units:4}") int parallelUnits) {
+            @Value("${review.question.parallel-units:4}") int parallelUnits,
+            @Value("${review.question.parallel-judges:8}") int parallelJudges) {
         this.generator = generator;
         this.judge = judge;
         this.policy = policy;
@@ -78,8 +80,14 @@ public class QuestionGenerationService {
         this.clock = clock;
         this.transaction = transaction;
         AtomicInteger thread = new AtomicInteger();
-        this.units = Executors.newFixedThreadPool(Math.max(1, parallelUnits), task -> {
-            Thread t = new Thread(task, "qgen-" + thread.incrementAndGet());
+        this.units = pool(parallelUnits, "qgen-", thread);
+        // 단위 작업이 검사를 맡기고 기다리므로 단위 풀과 따로 둔다(같은 풀이면 단위가 풀을 다 차지할 때 검사가 돌지 못한다).
+        this.judges = pool(parallelJudges, "qjudge-", thread);
+    }
+
+    private static ExecutorService pool(int size, String prefix, AtomicInteger thread) {
+        return Executors.newFixedThreadPool(Math.max(1, size), task -> {
+            Thread t = new Thread(task, prefix + thread.incrementAndGet());
             t.setDaemon(true);
             return t;
         });
@@ -88,6 +96,7 @@ public class QuestionGenerationService {
     @PreDestroy
     void shutdown() {
         units.shutdownNow();
+        judges.shutdownNow();
     }
 
     /**
@@ -209,6 +218,7 @@ public class QuestionGenerationService {
         for (int round = 1; round <= policy.maxGenerations() && !pending.isEmpty() && current.getAsBoolean(); round++) {
             Map<String, UnitQuestionResult.TargetResult> results = request(available, context, unitId, pending, tried, round);
             List<Slot> next = new ArrayList<>();
+            Map<Long, List<Slot>> byItem = new LinkedHashMap<>();
             for (Slot slot : pending) {
                 UnitQuestionResult.TargetResult result = results.get(slot.targetId());
                 if (result == null || result.question() == null) {
@@ -217,7 +227,14 @@ public class QuestionGenerationService {
                     next.add(slot);
                     continue;
                 }
-                Question decided = saveAndJudge(context, slot, result.question(), round, current);
+                byItem.computeIfAbsent(slot.spec().memoryItemId(), item -> new ArrayList<>()).add(slot);
+            }
+            Map<String, Question> decidedBySlot = judgeByItem(context, byItem, results, round, current);
+            for (Slot slot : pending) {
+                Question decided = decidedBySlot.get(slot.targetId());
+                if (decided == null) {
+                    continue;
+                }
                 if (decided.getStatus() == QuestionStatus.APPROVED) {
                     outcome.put(slot.targetId(), Optional.of(decided));
                 } else {
@@ -228,6 +245,32 @@ public class QuestionGenerationService {
             pending = next;
         }
         return outcome;
+    }
+
+    /**
+     * 생성된 문제들을 저장하고 품질 검사한다. 기억 항목이 다른 문제끼리는 동시에 검사하고, 같은 항목의 문제는 차례로 검사한다.
+     * 중복 검사는 같은 항목의 승인 문제와 비교하므로, 같은 항목을 동시에 검사하면 서로를 보지 못해 중복이 통과할 수 있다.
+     */
+    private Map<String, Question> judgeByItem(Context context, Map<Long, List<Slot>> byItem,
+            Map<String, UnitQuestionResult.TargetResult> results, int round, BooleanSupplier current) {
+        List<CompletableFuture<Map<String, Question>>> work = byItem.values().stream()
+                .map(group -> CompletableFuture.supplyAsync(() -> {
+                    Map<String, Question> decided = new LinkedHashMap<>();
+                    for (Slot slot : group) {
+                        decided.put(slot.targetId(), saveAndJudge(context, slot, results.get(slot.targetId()).question(), round, current));
+                    }
+                    return decided;
+                }, judges))
+                .toList();
+        Map<String, Question> decided = new HashMap<>();
+        for (CompletableFuture<Map<String, Question>> group : work) {
+            try {
+                decided.putAll(group.join());
+            } catch (CompletionException e) {
+                throw e.getCause() instanceof RuntimeException runtime ? runtime : e;
+            }
+        }
+        return decided;
     }
 
     private Map<String, UnitQuestionResult.TargetResult> request(QuestionGenerator available, Context context, Long unitId,
