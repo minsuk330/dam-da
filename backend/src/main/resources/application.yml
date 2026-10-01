@@ -76,6 +76,7 @@ review:
     default-retention: 0.9
     # 기억 강도별 예상 하루 부담 시뮬레이션 기간과 복습 1회 예상 시간(분)
     simulation-days: 30
+    minutes-per-review: 0.75
     # 매일 학습 큐 (스펙 §6.4.4, §6.4.6). 문제 유형별 소요 시간은 아래 rating.reference-times를 쓴다
     daily:
       # 하루 시간 예산 (문제 유형별 기준 시간의 합)
@@ -93,7 +94,6 @@ review:
       # 안정도 사다리 경계 (S, 일). 초기안
       ladder-level2-min-stability-days: 3
       ladder-level3-min-stability-days: 14
-    minutes-per-review: 0.75
     rating:
       # 등급 변환표 행 1·2의 판정 신뢰도 기준 (스펙 §6.4.5)
       min-confidence: 0.6
