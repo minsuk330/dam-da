@@ -97,8 +97,10 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 
 ## 프론트엔드 (Vercel)
 
-- Root Directory: `frontend`. 빌드 설정은 `frontend/vercel.json`(`npx expo export -p web` → `dist`).
-- 환경 변수: `EXPO_PUBLIC_API_MOCK=false`. `EXPO_PUBLIC_API_URL`은 넣지 않는다(비우면 같은 출처 `/api`를 부른다).
+- 프로젝트 `khack-frontend`가 GitHub `minsuk330/ku-hack`에 연결돼 있다. `main`에 merge되면 production, 다른 브랜치·PR은 preview로 자동 배포된다. `frontend/`가 바뀌지 않은 커밋은 `ignoreCommand`로 빌드를 건너뛴다.
+- Root Directory: `frontend`. 빌드 설정은 `frontend/vercel.json`(`EXPO_PUBLIC_API_MOCK=false npx expo export -p web` → `dist`). mock 끄기는 빌드 명령에 들어 있어 Vercel 환경 변수로 넣지 않아도 된다.
+- `EXPO_PUBLIC_API_URL`은 넣지 않는다(비우면 같은 출처 `/api`를 부른다).
+- 손으로 배포할 때는 레포 루트에서 `vercel deploy`를 실행한다(Root Directory가 `frontend`라 `frontend/`에서 실행하면 경로가 겹친다).
 - `frontend/vercel.json` rewrites가 `/api/**`를 `https://hack.refit-100.site/api/**`로 넘긴다. 같은 출처라 백엔드 CORS는 열지 않는다(`CORS_ALLOWED_ORIGINS=`).
 
 ## 배포 확인 순서
