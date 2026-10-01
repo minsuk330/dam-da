@@ -158,3 +158,11 @@
 - 커넥터:
 - 공유 링크:
 - spec 반영 필요 사항:
+
+## 4. 데모 흐름과 DB 점검 (2026-10-02)
+
+- **데모 시나리오 통합 테스트** (`DemoScenarioIT`, LLM·Jev 가짜): 커넥터 저장 → 검수 → 학습 내용 도착 알림 → 확인(초기 평가 Again 2·Good 1·없음 1) → 학습 목표 → 문제 준비 → 첫 학습(모두 정답, Again 없음) → 완료 요약 → 30일 시간 이동(확인한 항목 게이지 모두 하락) → 매일 학습 알림 "오늘의 학습 · 약 N분" → 매일 학습 완료 → 푼 항목 게이지 회복 → 연속 1일. 앱이 부르는 API 순서대로 통과.
+- **Postgres 17 실제 기동** (main `e7704cb` 기준, 임시 컨테이너):
+  - 빈 DB: DDL 오류 없이 기동, 목록·알림·오늘의 학습·연속 일수·설정·복습 기록 내보내기 API 200.
+  - 데모 DB(5433) 복사본(학습 세션 2, 기억 상태 4): DDL 오류 없이 기동, 위 API와 세션 상세·기억 게이지·첫 학습·완료 요약·학습 목표 API 200. 원본은 읽기(pg_dump)만 했다.
+  - 데모 DB가 이미 최신 스키마라 "옛 스키마 + 행 있음"은 정적으로 확인했다: 기존 테이블에 나중에 붙은 NOT NULL 컬럼(`review_unit.verdict`, `memory_state.consecutive_holds`·`auto_questions_paused`, `first_study_plan.generation`)은 모두 `@ColumnDefault`가 있어 `ddl-auto: update`로 기존 행이 채워진다. 그 밖의 새 컬럼은 null 허용이거나 새 테이블이다.
