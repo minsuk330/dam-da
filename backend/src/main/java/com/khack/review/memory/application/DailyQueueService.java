@@ -57,12 +57,13 @@ public class DailyQueueService {
     private final FsrsParametersService parameters;
     private final RatingPolicyProperties rating;
     private final DailyQueueProperties properties;
+    private final StudySettingsService studySettings;
     private final Clock clock;
     private final ApplicationEventPublisher events;
 
     public DailyQueueService(SessionItemsQuery sessionItems, MemoryStateRepository states, ReviewLogRepository logs,
             SessionMemorySettingsRepository settings, FsrsParametersService parameters, RatingPolicyProperties rating,
-            DailyQueueProperties properties, Clock clock, ApplicationEventPublisher events) {
+            DailyQueueProperties properties, Clock clock, ApplicationEventPublisher events, StudySettingsService studySettings) {
         this.sessionItems = sessionItems;
         this.states = states;
         this.logs = logs;
@@ -70,6 +71,7 @@ public class DailyQueueService {
         this.parameters = parameters;
         this.rating = rating;
         this.properties = properties;
+        this.studySettings = studySettings;
         this.clock = clock;
         this.events = events;
     }
@@ -154,6 +156,6 @@ public class DailyQueueService {
                     retrievability, retention, held, relearn.contains(item.memoryItemId()),
                     ladder.typeFor(state == null ? null : state.getStability(), item.kind(), maxLevel), avoid));
         }
-        return new DailyQueue(today, DailyQueuePlanner.plan(reviews, news, servedUnits, properties.policy(rating.referenceTimes())));
+        return new DailyQueue(today, DailyQueuePlanner.plan(reviews, news, servedUnits, properties.policy(rating.referenceTimes(), studySettings.budget(userId))));
     }
 }
