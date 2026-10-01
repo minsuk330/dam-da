@@ -17,6 +17,7 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * 복습 단위: 하나의 개념 또는 기술 (스펙 §8.3). 기억 상태는 소속 기억 항목별로 관리한다.
@@ -43,8 +44,10 @@ public class ReviewUnit {
     @Column(nullable = false)
     private boolean excluded;
 
+    /** DB 기본값은 이 컬럼이 생기기 전 행을 PENDING으로 채우기 위한 것이다(ddl-auto: update). */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @ColumnDefault("'PENDING'")
     private ReviewUnitVerdict verdict = ReviewUnitVerdict.PENDING;
 
     /** 검수 결과의 이유. 확인 화면과 디버깅용이다. */
