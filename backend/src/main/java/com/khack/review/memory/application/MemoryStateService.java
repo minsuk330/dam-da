@@ -73,6 +73,12 @@ public class MemoryStateService {
         }
     }
 
+    /** 등급을 한 번이라도 받았는가. 기억 강도만 정해 둔 상태 행은 아직 받지 않은 것이다. */
+    @Transactional(readOnly = true)
+    public boolean isReviewed(Long memoryItemId) {
+        return states.findByMemoryItemId(memoryItemId).filter(state -> state.getLastReview() != null).isPresent();
+    }
+
     /** 지금 떠올릴 수 있는 확률 R. 아직 등급을 받은 적 없는 항목이면 비어 있다("아직 확인 전"). */
     @Transactional(readOnly = true)
     public Optional<Double> retrievability(Long memoryItemId) {
