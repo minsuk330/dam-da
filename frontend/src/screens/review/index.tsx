@@ -287,12 +287,12 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
           </View>
         )}
 
-        {error && phase.kind !== 'result' && <Notice tone="danger">{error}</Notice>}
-
         {result && <ResultView result={result} recheck={recheck} retried={result.attempt.kind === 'ASSISTED_RETRY'} />}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.xl }]}>
+        {/* 제출·불러오기 실패는 누른 버튼 바로 위에 둔다. 스크롤 아래에 있으면 긴 문제에서 보이지 않는다. */}
+        {error && phase.kind !== 'result' && <Notice tone="danger">{error}</Notice>}
         {answering && (
           <Button title="제출" disabled={!canSubmit} loading={phase.kind === 'checking'} onPress={check} />
         )}

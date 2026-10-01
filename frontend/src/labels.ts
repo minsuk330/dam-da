@@ -80,6 +80,17 @@ export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
 }
 
+/**
+ * 다음 복습일 한 줄. 서버의 오늘(`DailyView.date`, 시간 이동 반영)이 그날이거나 지났으면 복습할 차례라고 쓴다.
+ * 서버의 오늘을 모르면(아직 못 불러왔으면) 날짜만 쓴다. 기기 날짜는 시간 이동과 달라 비교에 쓰지 않는다.
+ */
+export function nextReviewLabel(iso: string, serverToday: string | undefined): string {
+  const date = new Date(iso)
+  const day = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  if (serverToday !== undefined && day <= serverToday) return '복습할 때가 됐어요'
+  return `다음 복습 ${formatDate(iso)}`
+}
+
 /** 지금 쓰는 기억 모델과 개인화 진행도 한 줄. 불러오기 전이면 화면 설명을 보여준다. */
 export function memoryModelStatus(model: Schemas['MemoryModel'] | undefined): string {
   if (!model) return '망각 곡선과 기억 유지 기간'
