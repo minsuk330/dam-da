@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
@@ -46,8 +47,8 @@ public class FsrsParametersService implements ApplicationRunner {
         defaults();
     }
 
-    /** 매개변수 묶음 하나. 옵티마이저가 비교 기준으로 읽는다. */
-    public record ParameterSet(int version, ParameterSource source, double[] weights) {
+    /** 매개변수 묶음 하나. {@code validation}은 옵티마이저 검증 결과 JSON이며 기본값은 null이다. */
+    public record ParameterSet(int version, ParameterSource source, double[] weights, @Nullable String validation) {
     }
 
     @Transactional
@@ -100,7 +101,7 @@ public class FsrsParametersService implements ApplicationRunner {
     }
 
     private static ParameterSet toSet(FsrsParameters set) {
-        return new ParameterSet(set.getVersion(), set.getSource(), set.weights());
+        return new ParameterSet(set.getVersion(), set.getSource(), set.weights(), set.getValidation());
     }
 
     private FsrsParameters defaults() {

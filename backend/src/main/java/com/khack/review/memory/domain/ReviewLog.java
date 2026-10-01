@@ -115,7 +115,36 @@ public class ReviewLog {
     /** 이 시도에 적용한 행 1·2의 신뢰도 기준(출처별). 이 기록 이전의 행은 null이다. */
     private Double appliedMinConfidence;
 
+    /** 합성 기록 사용자(개발 도구)의 등급 기록에 붙이는 정책 버전. 실제 정책 버전은 1부터다. */
+    public static final int SYNTHETIC_POLICY_VERSION = 0;
+
     protected ReviewLog() {
+    }
+
+    /**
+     * 합성 기록 사용자(개발 도구, 개인화 시연용)의 등급 기록. 실제 풀이가 없으므로 판정·정책 값은 고정값이고
+     * {@code policyVersion}을 {@value #SYNTHETIC_POLICY_VERSION}으로 표시한다. 기본 매개변수로 반영했다고 기록한다.
+     */
+    public static ReviewLog synthetic(Long userId, Long memoryItemId, Long attemptId, Rating rating, Instant reviewedAt,
+            @Nullable Double elapsedDays, long responseTimeMs, int parametersVersion) {
+        ReviewLog log = new ReviewLog();
+        log.userId = userId;
+        log.memoryItemId = memoryItemId;
+        log.questionId = 0L;
+        log.attemptId = attemptId;
+        log.questionType = QuestionType.SHORT_ANSWER;
+        log.reviewedAt = reviewedAt;
+        log.elapsedDays = elapsedDays;
+        log.rating = rating;
+        log.policyRow = 0;
+        log.policyVersion = SYNTHETIC_POLICY_VERSION;
+        log.parametersVersion = parametersVersion;
+        log.attemptKind = AttemptKind.FIRST_UNASSISTED;
+        log.verdict = rating == Rating.AGAIN ? AnswerVerdict.NOT_MET : AnswerVerdict.MET;
+        log.verdictConfidence = 1.0;
+        log.selfAssessment = SelfAssessment.RECALLED_WITH_EFFORT;
+        log.responseTimeMs = responseTimeMs;
+        return log;
     }
 
     /** 등급 또는 보류 결정을 남긴다. 평가 대상이 아닌 시도({@link RatingDecision.NotEvaluated})는 기록하지 않는다. */

@@ -113,6 +113,9 @@ export const mockFirstStudyQuestions: QuestionView[] = QUESTIONS.map(
   }),
 )
 
+/** 매일 학습 큐(객관식·단답·사례 판단). */
+const DAILY_QUESTIONS = [901, 903, 904]
+
 type Outcome = 'CORRECT' | 'WRONG' | 'UNCERTAIN'
 
 type PresentationState = {
@@ -130,7 +133,9 @@ type PresentationState = {
 
 type Practice = {
   id: number
-  sessionId: number
+  kind: Schemas['PracticeView']['kind']
+  /** 매일 학습은 세션에 묶이지 않는다. */
+  sessionId: number | null
   queue: { questionId: number; recheckOf: number | null }[]
   presentations: PresentationState[]
   completed: boolean
@@ -142,7 +147,7 @@ let nextId = 1
 const normalize = (text: string) => text.replace(/\s+/g, '').toLowerCase()
 
 function view(p: Practice): Schemas['PracticeView'] {
-  return { practiceId: p.id, kind: 'FIRST_STUDY', learningSessionId: p.sessionId, total: p.queue.length, completed: p.completed }
+  return { practiceId: p.id, kind: p.kind, learningSessionId: p.sessionId, total: p.queue.length, completed: p.completed }
 }
 
 function practiceOf(id: number): Practice {
@@ -189,6 +194,7 @@ export const mockPracticeApi = {
     if (existing) return view(existing)
     const practice: Practice = {
       id: nextId++,
+      kind: 'FIRST_STUDY',
       sessionId,
       queue: QUESTIONS.map((q) => ({ questionId: q.questionId, recheckOf: null })),
       presentations: [],
@@ -196,6 +202,28 @@ export const mockPracticeApi = {
     }
     practices[practice.id] = practice
     return view(practice)
+  },
+
+  /** 오늘의 매일 학습 풀이. 이미 시작했으면 그 풀이를 준다. 복습 2문제 + 새 항목 1문제를 흉내 낸다. */
+  startDaily(): Schemas['PracticeView'] {
+    const existing = Object.values(practices).find((p) => p.kind === 'DAILY')
+    if (existing) return view(existing)
+    const practice: Practice = {
+      id: nextId++,
+      kind: 'DAILY',
+      sessionId: null,
+      queue: DAILY_QUESTIONS.map((questionId) => ({ questionId, recheckOf: null })),
+      presentations: [],
+      completed: false,
+    }
+    practices[practice.id] = practice
+    return view(practice)
+  },
+
+  /** 매일 학습 풀이(시작했으면). */
+  daily(): Schemas['PracticeView'] | null {
+    const existing = Object.values(practices).find((p) => p.kind === 'DAILY')
+    return existing ? view(existing) : null
   },
 
   next(practiceId: number): Next {
@@ -270,9 +298,15 @@ export const mockPracticeApi = {
     if (latest === 'UNCERTAIN') action = 'REQUEST_CONFIRMATION'
     else if (latest === 'CORRECT' || recheck || state.explanationShown) action = 'ADVANCE'
     else if (state.aidAfterLatest) action = 'RETRY'
+    // 매일 학습은 힌트·확인 문제 대신 그날 큐 끝에 한 번 더 낸다.
+    else if (practice.kind === 'DAILY') action = state.relearnQueued ? 'EXPLAIN_CONCEPT' : 'RELEARN_TODAY'
     else action = state.hintShown ? 'EXPLAIN_CONCEPT' : 'GIVE_HINT'
 
-    if (action === 'GIVE_HINT') {
+    if (action === 'RELEARN_TODAY') {
+      practice.queue.push({ questionId: state.question.questionId, recheckOf: presentationId })
+      state.relearnQueued = true
+      fb.recheckQueued = true
+    } else if (action === 'GIVE_HINT') {
       state.hintShown = true
       state.aidAfterLatest = true
       fb.hint = state.question.hint
@@ -281,7 +315,7 @@ export const mockPracticeApi = {
       state.aidAfterLatest = true
       fb.explanation = state.question.explanation
       fb.evidenceTurns = state.question.evidenceTurns
-      if (!state.relearnQueued) {
+      if (!state.relearnQueued && practice.kind === 'FIRST_STUDY') {
         practice.queue.push({ questionId: state.question.questionId, recheckOf: presentationId })
         state.relearnQueued = true
         fb.recheckQueued = true

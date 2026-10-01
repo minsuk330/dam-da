@@ -30,9 +30,12 @@ import com.khack.review.memory.application.ReviewRecordService;
 import com.khack.review.memory.domain.AnswerVerdict;
 import com.khack.review.memory.domain.AttemptKind;
 import com.khack.review.memory.domain.DailyQueueBuilt;
+import com.khack.review.memory.domain.NewItems;
 import com.khack.review.memory.domain.RatingInput;
 import com.khack.review.memory.domain.ReviewContext;
 import com.khack.review.memory.domain.SelfAssessment;
+import com.khack.review.practice.domain.PracticeSession;
+import com.khack.review.practice.domain.PracticeSessionRepository;
 import com.khack.review.question.domain.QuestionRepository;
 import com.khack.review.question.domain.QuestionType;
 import java.net.URI;
@@ -128,6 +131,9 @@ class DailyPracticeIT {
     TimeTravelClock clock;
 
     @Autowired
+    PracticeSessionRepository practices;
+
+    @Autowired
     Built built;
 
     @Autowired
@@ -167,7 +173,15 @@ class DailyPracticeIT {
         return new KeyPoint(text, List.of(turn), FactKind.warning);
     }
 
+    /** 확인하고 첫 학습까지 끝낸 세션. 첫 풀이가 없는 항목은 첫 학습 상한으로 다루지 못한 항목처럼 신규 후보가 된다. */
     private long confirmedSession(SessionInput input) {
+        long id = confirmedOnly(input);
+        firstStudy(id, true);
+        return id;
+    }
+
+    /** 확인만 한 세션(학습 목표 선택·첫 학습 전). */
+    private long confirmedOnly(SessionInput input) {
         SavedSession saved = intake.intake(input);
         Long conversationId = conversations.findAll().stream()
                 .filter(c -> c.getSessionId().equals(saved.id())).findFirst().orElseThrow().getId();
@@ -179,6 +193,29 @@ class DailyPracticeIT {
         }
         confirmation.confirm(id);
         return id;
+    }
+
+    /** 세션의 첫 학습 풀이를 만든다(문제 없이). {@code done}이면 끝낸 것으로 한다. */
+    private PracticeSession firstStudy(long sessionId, boolean done) {
+        PracticeSession practice = PracticeSession.firstStudy(currentUser.id(), sessionId, List.of(), clock.instant());
+        if (done) {
+            practice.complete(clock.instant());
+        }
+        return practices.save(practice);
+    }
+
+    private static NewItems allNewAs(QuestionType type) {
+        return new NewItems() {
+            @Override
+            public boolean admits(Long sessionId) {
+                return true;
+            }
+
+            @Override
+            public QuestionType typeFor(Long sessionId, Long memoryItemId, MemoryItemKind kind) {
+                return type;
+            }
+        };
     }
 
     private JsonNode ok(String method, String path) throws Exception {
@@ -391,7 +428,7 @@ class DailyPracticeIT {
         assertThat(attempt.get("rating").asString()).isEqualTo("AGAIN");
         assertThat(reviewLogs.findByMemoryItemIdOrderByReviewedAtAscIdAsc(item.memoryItemId())).hasSize(1);
         // 오늘 풀이가 이미 있어 GET은 그 풀이를 돌려주므로, 다시 큐를 만들면 어떻게 되는지는 서비스로 본다.
-        var queued = dailyQueue.preview(currentUser.id(), (s, i, k) -> QuestionType.SHORT_ANSWER, Set.of()).plan().entries();
+        var queued = dailyQueue.preview(currentUser.id(), allNewAs(QuestionType.SHORT_ANSWER), Set.of()).plan().entries();
         assertThat(queued).hasSize(1);
         assertThat(queued.getFirst().itemId()).isEqualTo(item.memoryItemId());
         assertThat(queued.getFirst().source().name()).as("첫 풀이 뒤에는 신규가 아니다").isEqualTo("REVIEW");
@@ -420,6 +457,29 @@ class DailyPracticeIT {
         JsonNode again = ok("GET", "/api/practice/%d/next".formatted(nextPractice)).get("presentation");
         assertThat(again.get("questionId").asLong()).as("보류된 문제 대신 변형").isNotEqualTo(firstQuestion);
         assertThat(questions.findByMemoryItemIdOrderByIdAsc(item.memoryItemId())).hasSizeGreaterThanOrEqualTo(2);
+    }
+
+    /** 신규 후보는 첫 학습을 끝낸 세션에서만 받는다. 확인만 했거나 첫 학습 도중인 세션의 항목은 첫 학습에서 다룬다(#78). */
+    @Test
+    void newItemsComeOnlyFromSessionsWhoseFirstStudyIsDone() throws Exception {
+        long notStarted = confirmedOnly(input("목표 전", 1, List.of(unit("A", fact("가", 1)))));
+        long inProgress = confirmedOnly(input("첫 학습 중", 1, List.of(unit("B", fact("나", 1)))));
+        PracticeSession running = firstStudy(inProgress, false);
+        long done = confirmedOnly(input("첫 학습 끝", 1, List.of(unit("C", fact("다", 1)))));
+        firstStudy(done, true);
+
+        assertThat(items(ok("GET", "/api/daily"))).as("첫 학습을 끝낸 세션의 첫 풀이 없는 항목(상한으로 넘친 항목)만")
+                .extracting(i -> i.get("memoryItemId").asLong())
+                .containsExactly(item(done, MemoryItemKind.FACT, 0).memoryItemId());
+
+        running.complete(clock.instant());
+        practices.save(running);
+        assertThat(items(ok("GET", "/api/daily"))).as("첫 학습을 끝내면 그 세션도 받는다")
+                .extracting(i -> i.get("memoryItemId").asLong())
+                .containsExactlyInAnyOrder(item(done, MemoryItemKind.FACT, 0).memoryItemId(),
+                        item(inProgress, MemoryItemKind.FACT, 0).memoryItemId());
+        assertThat(items(ok("GET", "/api/daily"))).extracting(i -> i.get("memoryItemId").asLong())
+                .doesNotContain(item(notStarted, MemoryItemKind.FACT, 0).memoryItemId());
     }
 
     @Test

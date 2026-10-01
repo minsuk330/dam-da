@@ -394,6 +394,24 @@
         "tags" : [ "learning-session-controller" ]
       }
     },
+    "/api/memory/model" : {
+      "get" : {
+        "operationId" : "model",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MemoryModel"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "memory-model-controller" ]
+      }
+    },
     "/api/notifications" : {
       "get" : {
         "operationId" : "list",
@@ -1077,6 +1095,20 @@
         },
         "required" : [ "fidelity", "id", "inputPath", "learningSessionId", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
       },
+      "CurvePoint" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "retrievability" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        },
+        "required" : [ "day", "retrievability" ]
+      },
       "DailyItemView" : {
         "type" : "object",
         "properties" : {
@@ -1564,6 +1596,51 @@
         },
         "required" : [ "conversationId", "createdAt", "fidelity", "id", "inputPath", "itemCount", "status", "topicHint", "unitCount" ]
       },
+      "MemoryModel" : {
+        "type" : "object",
+        "properties" : {
+          "curve" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CurvePoint"
+            }
+          },
+          "defaultCurve" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/CurvePoint"
+            }
+          },
+          "firstRecallDays" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "parametersVersion" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "predictionImprovement" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "progress" : {
+            "$ref" : "#/components/schemas/Progress"
+          },
+          "reviewedItems" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "DEFAULT", "PERSONALIZED" ]
+          },
+          "typicalStabilityDays" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          }
+        },
+        "required" : [ "curve", "defaultCurve", "firstRecallDays", "parametersVersion", "predictionImprovement", "progress", "reviewedItems", "status", "typicalStabilityDays" ]
+      },
       "NewTurnRequest" : {
         "type" : "object",
         "properties" : {
@@ -1841,6 +1918,20 @@
           }
         },
         "required" : [ "choices", "position", "presentationId", "questionId", "sameDayRecheck", "stem", "total", "type" ]
+      },
+      "Progress" : {
+        "type" : "object",
+        "properties" : {
+          "gradedReviews" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "requiredReviews" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "gradedReviews", "requiredReviews" ]
       },
       "QuestionView" : {
         "type" : "object",

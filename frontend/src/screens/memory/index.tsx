@@ -2,21 +2,17 @@ import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useMemoryOverview } from '@/api/memory';
+import { useMemoryModel } from '@/api/memory-model';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
+import { Icon } from '@/components/icon';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime, sessionStatusLabel } from '@/labels';
+import { openSession } from '@/navigation';
 import { colors, spacing } from '@/theme';
-
-/** 학습을 시작한 세션은 세션 상세(게이지)로, 그 전 세션은 세션 확인으로 보낸다. */
-function open(session: { id: number; status: string }) {
-  const id = String(session.id);
-  if (session.status === 'IN_PROGRESS') router.push({ pathname: '/sessions/[id]/memory', params: { id } });
-  else router.push({ pathname: '/sessions/[id]', params: { id } });
-}
 
 /** 기억 탭: 학습 세션 목록과 세션별 기억 게이지 (스펙 §6.4.3). 색은 세션의 목표 유지율 기준이다. */
 export function Memory() {
@@ -68,6 +64,8 @@ export function Memory() {
         </ThemedText>
       </Card>
 
+      <MemoryModelLink />
+
       <ThemedText variant="headline">학습 세션</ThemedText>
       {data.map((session) => {
         const memory = overview.bySession.get(session.id);
@@ -76,7 +74,7 @@ export function Memory() {
             key={session.id}
             accessibilityRole="link"
             accessibilityLabel={`${session.topicHint ?? '주제 없음'}, ${sessionStatusLabel[session.status]}`}
-            onPress={() => open(session)}>
+            onPress={() => openSession(session.id, session.status)}>
             {({ pressed }) => (
               <Card pressed={pressed} style={styles.card}>
                 <View style={styles.row}>
@@ -106,6 +104,34 @@ export function Memory() {
   );
 }
 
+/** 내 기억 패턴 화면으로 가는 행. 지금 쓰는 기억 모델과 개인화 진행도를 한 줄로 보여준다. */
+function MemoryModelLink() {
+  const { data } = useMemoryModel();
+  const status = !data
+    ? '망각 곡선과 기억 유지 기간'
+    : data.status === 'PERSONALIZED'
+      ? `개인 모델 v${data.parametersVersion} 적용 중`
+      : `기본 모델 · 복습 기록 ${data.progress.gradedReviews.toLocaleString()} / ${data.progress.requiredReviews.toLocaleString()}`;
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`내 기억 패턴, ${status}`}
+      onPress={() => router.push('/memory-model')}>
+      {({ pressed }) => (
+        <Card pressed={pressed} style={styles.link}>
+          <View style={styles.linkText}>
+            <ThemedText variant="headline">내 기억 패턴</ThemedText>
+            <ThemedText variant="caption" tone="inkSecondary">
+              {status}
+            </ThemedText>
+          </View>
+          <Icon name="chevron-right" color={colors.inkMuted} />
+        </Card>
+      )}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   center: {
     flex: 1,
@@ -125,4 +151,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   title: { flexShrink: 1 },
+  link: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  linkText: { flex: 1, gap: spacing.xs },
 });

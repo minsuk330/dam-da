@@ -9,4 +9,6 @@ public interface MemoryStateRepository extends JpaRepository<MemoryState, Long> 
     Optional<MemoryState> findByMemoryItemId(Long memoryItemId);
 
     List<MemoryState> findByUserId(Long userId);
+
+    void deleteByUserId(Long userId);
 }

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from fsrs import ReviewLog
+import fsrs.optimizer as py_fsrs_optimizer
 from fsrs.optimizer import Optimizer, mini_batch_size
 from fsrs.scheduler import DEFAULT_PARAMETERS
 
@@ -28,6 +29,8 @@ class Settings:
     train_ratio: float = 0.8
     min_improvement: float = 0.02
     min_validation_reviews: int = 30
+    # py-fsrs 기본(5)은 합성 기록에서 덜 수렴해 곡선 방향이 진짜 사용자와 반대로 나오기도 했다. 20에서 검증 성능이 가장 좋았다.
+    epochs: int = 20
 
     def to_dict(self) -> dict:
         return {
@@ -35,6 +38,7 @@ class Settings:
             "trainRatio": self.train_ratio,
             "minImprovement": self.min_improvement,
             "minValidationReviews": self.min_validation_reviews,
+            "epochs": self.epochs,
         }
 
 
@@ -60,16 +64,26 @@ class Result:
     weights: list[float] | None = field(default=None)
 
 
-def default_optimize(train: list[ReviewLog]) -> list[float]:
-    return list(Optimizer(train).compute_optimal_parameters())
+def optimizer(epochs: int) -> Callable[[list[ReviewLog]], list[float]]:
+    def optimize(train: list[ReviewLog]) -> list[float]:
+        # py-fsrs 6.1.1은 epoch 수를 인자로 받지 않고 모듈 전역값을 읽는다.
+        previous = py_fsrs_optimizer.num_epochs
+        py_fsrs_optimizer.num_epochs = epochs
+        try:
+            return list(Optimizer(train).compute_optimal_parameters())
+        finally:
+            py_fsrs_optimizer.num_epochs = previous
+
+    return optimize
 
 
 def run(
     logs: list[ReviewLog],
     current: Current,
     settings: Settings = Settings(),
-    optimize: Callable[[list[ReviewLog]], list[float]] = default_optimize,
+    optimize: Callable[[list[ReviewLog]], list[float]] | None = None,
 ) -> Result:
+    optimize = optimize or optimizer(settings.epochs)
     logs = sorted(logs, key=lambda log: log.review_datetime)
     validation = {"fsrsPackage": FSRS_PACKAGE, "settings": settings.to_dict(), "reviewCount": len(logs)}
     if len(logs) < settings.min_reviews:

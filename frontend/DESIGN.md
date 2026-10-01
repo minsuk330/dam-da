@@ -282,6 +282,23 @@ components:
   gauge-unchecked:
     backgroundColor: "{colors.outline}"
     rounded: "{rounded.full}"
+  chart:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink-muted}"
+    typography: "{typography.caption}"
+    height: 168px
+  chart-line:
+    backgroundColor: "{colors.primary}"
+    width: 2px
+  chart-line-context:
+    backgroundColor: "{colors.ink-muted}"
+    width: 2px
+  chart-grid:
+    backgroundColor: "{colors.outline}"
+    width: 1px
+  chart-marker:
+    backgroundColor: "{colors.primary}"
+    size: 8px
   tab-bar:
     backgroundColor: "{colors.glass}"
     rounded: "{rounded.full}"
@@ -379,6 +396,12 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
   - 아직 등급이 없는 항목은 0%가 아니다. 채움 없이 `gauge-unchecked` 트랙(`outline`)과 "아직 확인 전" 글자로 구분한다.
   - 진행 막대(풀이 진행도·단계 표시)는 단계 색 없이 `gauge` 트랙 + `gauge-fill`만 쓴다. 진행은 좋고 나쁨이 아니다.
 
+- **망각 곡선 차트** (스펙 §6.4.9, 내 기억 패턴 화면): x축 일수(0~30), y축 기억할 확률(0~100%) 선 그래프.
+  - 흰 카드(`chart`) 위. 선은 2px(`chart-line`), 끝점에 8px 점(`chart-marker`)과 2px `surface` 테두리.
+  - 비교 곡선(기본 모델)은 강조 하나·나머지 회색 원칙으로 `chart-line-context`(ink-muted) 2px. 색 대신 범례(짧은 선 표시 + 글자)와 끝 값 글자로 구분한다.
+  - 격자는 1px `outline`(`chart-grid`), 실선. 목표 유지율 90% 선만 글자 라벨을 붙인다. 글자는 선 색이 아니라 `ink-muted`/`ink-secondary`.
+  - y축은 0%부터 시작한다. 축은 하나만 쓴다.
+  - 차트 아래에 주요 일수(7·30일)의 값을 글자로 함께 쓴다. 선 모양만으로 값을 전달하지 않는다.
 - **눌림·비활성·제외 상태**: 버튼은 `primary-pressed`로 어둡게, 카드·행은 배경을 `card-pressed`(surface-soft)로, 강조 카드는 `card-hero-pressed`로 바꾼다. 투명도로 눌림을 표시하지 않는다. 비활성은 불투명도 0.4, 사용자가 뺀 항목은 0.6으로 흐리게 한다(이 두 값은 design.md 스키마에 투명도 토큰이 없어 `src/theme/index.ts`의 `opacity`에 둔다).
 - **아이콘**: 크기는 `icon-small`(16) / `icon`(20) / `icon-large`(24) / `icon-xl`(32)만 쓴다. 아이콘을 담는 원은 `icon-circle`(44), 완료 표시는 `done-mark`(72).
 - **다크 모드**: 지원하지 않는다(라이트 전용). 다크 토큰을 추가하기 전까지 OS 테마와 상관없이 라이트로 그린다.

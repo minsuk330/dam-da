@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Schemas } from '@/api/client';
@@ -79,9 +80,19 @@ export function SessionConfirm({ id }: { id: number }) {
       ref={scroll}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing['3xl'] }]}>
-      <ThemedText variant="caption" tone="inkMuted">
-        {data.topicHint ?? '주제 없음'}
-      </ThemedText>
+      <View style={styles.topRow}>
+        <ThemedText variant="caption" tone="inkMuted" numberOfLines={1} style={styles.topic}>
+          {data.topicHint ?? '주제 없음'}
+        </ThemedText>
+        <Pressable
+          accessibilityRole="link"
+          hitSlop={8}
+          onPress={() => router.push({ pathname: '/conversations/[id]', params: { id: data.conversationId } })}>
+          <ThemedText variant="caption" tone="primaryInk">
+            원본 대화 보기
+          </ThemedText>
+        </Pressable>
+      </View>
       {step === 'turns' && <TurnsStep session={data} onNext={() => go('units')} />}
       {step === 'units' && <UnitsStep session={data} onBack={() => go('turns')} onConfirmed={() => go('goals')} />}
       {step === 'goals' && <GoalsStep sessionId={id} onChosen={() => go('prepare')} />}
@@ -94,4 +105,6 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   centerText: { textAlign: 'center' },
   content: { padding: spacing.xl, gap: spacing.sm },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  topic: { flex: 1 },
 });
