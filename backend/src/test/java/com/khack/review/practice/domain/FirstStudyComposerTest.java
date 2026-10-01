@@ -81,6 +81,37 @@ class FirstStudyComposerTest {
     }
 
     @Test
+    void aMemoryItemGetsOnlyOneQuestionAndLaterGoalsMoveToAnotherKeyPoint() {
+        Composition c = compose(LearningGoal.KEY_RECALL, LearningGoal.PRINCIPLE, LearningGoal.EXPLAIN_OWN_WORDS);
+
+        // 같은 항목에 문제를 여러 개 내면 중복 검사에서 거의 다 떨어진다. 대표 사실(11, 21)을 핵심 내용 기억하기가 먼저 쓰면
+        // 원리 이해하기·자기 말로 설명하기는 같은 단위의 아직 안 쓴 핵심 사실로 옮기고, 남은 것이 없으면 그 단위에서는 건너뛴다.
+        assertThat(questions(c)).containsExactly("1:11:SHORT_ANSWER", "1:13:SHORT_ANSWER", "1:21:SHORT_ANSWER",
+                "2:12:ESSAY", "7:14:ESSAY");
+        assertThat(c.questions()).extracting(PlannedQuestion::memoryItemId).doesNotHaveDuplicates();
+        assertThat(c.goals()).extracting(GoalSummary::candidates).containsExactly(3, 2, 2);
+        assertThat(c.goals()).extracting(GoalSummary::planned).containsExactly(3, 1, 1);
+    }
+
+    @Test
+    void goalWhoseTargetsAreAllTakenHasZeroQuestionsAndAReason() {
+        Composition c = FirstStudyComposer.compose(List.of(LearningGoal.KEY_RECALL, LearningGoal.PRINCIPLE),
+                List.of(new Unit(2L, List.of(new Item(21L, FACT)))), 12);
+
+        assertThat(questions(c)).containsExactly("1:21:SHORT_ANSWER");
+        assertThat(c.goals().get(1).planned()).isZero();
+        assertThat(c.goals().get(1).reason()).contains("다른 목표");
+    }
+
+    @Test
+    void distinguishMovesToAnotherKeyPointWhenTheRepresentativeIsTaken() {
+        Composition c = compose(LearningGoal.PRINCIPLE, LearningGoal.DISTINGUISH);
+
+        assertThat(c.questions()).contains(new PlannedQuestion(LearningGoal.DISTINGUISH, 12L, 11L, QuestionType.MULTIPLE_CHOICE));
+        assertThat(c.questions()).extracting(PlannedQuestion::memoryItemId).doesNotHaveDuplicates();
+    }
+
+    @Test
     void distinguishNeedsTwoKeyPointsInAUnit() {
         Composition c = FirstStudyComposer.compose(List.of(LearningGoal.DISTINGUISH),
                 List.of(new Unit(2L, List.of(new Item(21L, FACT), new Item(22L, CONFUSION)))), 12);
