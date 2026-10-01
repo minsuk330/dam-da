@@ -73,7 +73,8 @@ public class LlmFeedbackContentGenerator implements FeedbackContentGenerator {
 
     private <T> T call(String system, FeedbackContentRequest request, Class<T> type) {
         try {
-            return llm.generate(system, FeedbackPrompt.user(request), type);
+            // 학습자가 답을 내고 기다리는 자리다. 짧은 글이라 추론을 줄여도 규칙을 지킨다(기본 추론 대비 3.5초 → 1.5초, 2026-10-02 측정).
+            return llm.generate(system, FeedbackPrompt.user(request), type, LlmPort.Reasoning.MINIMAL);
         } catch (RuntimeException e) {
             throw new FeedbackGenerationException("LLM 호출에 실패했습니다: " + e.getMessage(), e);
         }

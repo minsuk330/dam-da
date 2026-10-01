@@ -28,17 +28,17 @@ class DevSessionsController {
     ResponseEntity<String> page() {
         return ResponseEntity.ok()
                 .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
-                .body(SessionPage.render(conversations.list()));
+                .body(SessionPage.render(conversations.all()));
     }
 
     @GetMapping("/dev/sessions.md")
     ResponseEntity<String> markdown() {
-        return ResponseEntity.ok().contentType(MARKDOWN).body(SessionMarkdown.render(conversations.list()));
+        return ResponseEntity.ok().contentType(MARKDOWN).body(SessionMarkdown.render(conversations.all()));
     }
 
     /** tools CLI(벤치마크, 커넥터 검증, Markdown 내보내기)가 읽는 원본. */
     @GetMapping("/dev/sessions.json")
     List<SavedSession> json() {
-        return conversations.list();
+        return conversations.all();
     }
 }

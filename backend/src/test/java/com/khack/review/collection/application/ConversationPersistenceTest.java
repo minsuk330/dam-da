@@ -39,7 +39,7 @@ class ConversationPersistenceTest {
     CurrentUser currentUser;
 
     private SavedSession reload(String sessionId) {
-        return query.list().stream().filter(s -> s.id().equals(sessionId)).findFirst().orElseThrow();
+        return query.all().stream().filter(s -> s.id().equals(sessionId)).findFirst().orElseThrow();
     }
 
     @Test
@@ -80,7 +80,7 @@ class ConversationPersistenceTest {
         intake.intake(input(List.of(turn(1, "first"))));
         SavedSession second = intake.intake(input(List.of(turn(1, "second"))));
 
-        List<SavedSession> all = query.list();
+        List<SavedSession> all = query.all();
         assertThat(all.get(all.size() - 1).id()).isEqualTo(second.id());
     }
 }

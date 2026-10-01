@@ -81,11 +81,22 @@ class QuestionGenerationIT {
         /** 있으면 다음 품질 검사 한 번이 이 문이 열릴 때까지 멈춘다(들어오면 {@code holding}을 연다). */
         final java.util.concurrent.atomic.AtomicReference<java.util.concurrent.CountDownLatch> hold = new java.util.concurrent.atomic.AtomicReference<>();
         final java.util.concurrent.CountDownLatch holding = new java.util.concurrent.CountDownLatch(1);
+        /** 있으면 품질 검사들이 이 장벽에서 서로 만나야 한다. 혼자 기다리다 시간이 지나면 {@code metAlone}. */
+        final java.util.concurrent.atomic.AtomicReference<java.util.concurrent.CyclicBarrier> meet = new java.util.concurrent.atomic.AtomicReference<>();
+        final java.util.concurrent.atomic.AtomicBoolean metAlone = new java.util.concurrent.atomic.AtomicBoolean();
 
         @Override
         public JevResult evaluate(Object state, Map<String, com.khack.review.common.application.port.out.JevQuestion> questions) {
             if (!questions.containsKey(QuestionQualityQuestions.GROUNDED)) {
                 return UNIT_PASS;
+            }
+            java.util.concurrent.CyclicBarrier together = meet.get();
+            if (together != null) {
+                try {
+                    together.await(5, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    metAlone.set(true);
+                }
             }
             java.util.concurrent.CountDownLatch gate = hold.getAndSet(null);
             if (gate != null) {
@@ -161,6 +172,8 @@ class QuestionGenerationIT {
         generator.clear();
         jev.quality.clear();
         jev.qualityDefault = QUALITY_PASS;
+        jev.meet.set(null);
+        jev.metAlone.set(false);
     }
 
     private long confirmedSession() {
@@ -269,6 +282,20 @@ class QuestionGenerationIT {
         assertThat(ready.get("failed").asBoolean()).isFalse();
         assertThat(ready.get("failureReason").isNull()).isTrue();
         assertThat(ready.get("questions")).hasSize(1);
+    }
+
+    @Test
+    void questionsForDifferentItemsInAUnitAreCheckedAtTheSameTime() throws Exception {
+        long id = confirmedSession();
+        // 두 문제(헷갈린 지점·조건)는 같은 단위의 다른 기억 항목이다. 차례로 검사하면 장벽에서 서로 만나지 못한다.
+        jev.meet.set(new java.util.concurrent.CyclicBarrier(2));
+
+        goals.choose(id, List.of(LearningGoal.CORRECT_MISCONCEPTION, LearningGoal.CONDITION), null);
+        awaitStatus(() -> id, LearningSessionStatus.QUESTIONS_READY);
+
+        assertThat(generator.targets()).extracting(t -> t.memoryItemId()).doesNotHaveDuplicates();
+        assertThat(jev.metAlone).as("두 품질 검사가 동시에 진행됨").isFalse();
+        assertThat(firstStudy(id).get("questions")).hasSize(2);
     }
 
     @Test

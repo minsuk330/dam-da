@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class FakeLlmPort implements LlmPort {
 
-	public record Call(String systemPrompt, String userPrompt) {
+	public record Call(String systemPrompt, String userPrompt, Reasoning reasoning) {
 	}
 
 	private final List<Call> calls = new ArrayList<>();
@@ -36,8 +36,8 @@ public class FakeLlmPort implements LlmPort {
 	}
 
 	@Override
-	public <T> T generate(String systemPrompt, String userPrompt, Class<T> responseType) {
-		calls.add(new Call(systemPrompt, userPrompt));
+	public <T> T generate(String systemPrompt, String userPrompt, Class<T> responseType, Reasoning reasoning) {
+		calls.add(new Call(systemPrompt, userPrompt, reasoning));
 		if (responses.isEmpty()) {
 			throw new IllegalStateException("FakeLlmPort: willReturn()으로 응답을 먼저 지정하세요");
 		}
