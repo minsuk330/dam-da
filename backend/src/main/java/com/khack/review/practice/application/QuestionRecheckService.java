@@ -60,6 +60,20 @@ public class QuestionRecheckService {
         recheck(event.questionId(), event.userId(), event.presentationId(), false);
     }
 
+    /** 이 문제의 재검사가 끝나 기록이 있는가. 진행 중이거나, 기록이 없거나, 실패해 다시 시도할 수 있으면 거짓이다. */
+    public boolean finished(Long questionId) {
+        return !inFlight.containsKey(questionId) && rechecks.findByQuestionId(questionId)
+                .filter(done -> done.getResult() != RecheckResult.FAILED).isPresent();
+    }
+
+    /**
+     * 피드백 요청을 막지 않도록 재검사를 비동기로 한다. 진행 중인 재검사가 있으면 그 결과를 기다리고, 지난 재검사가 실패했으면 한 번 더 시도한다.
+     */
+    @Async
+    public CompletableFuture<Optional<Long>> recheckInBackground(Long questionId, Long userId, Long presentationId) {
+        return CompletableFuture.completedFuture(recheck(questionId, userId, presentationId, true));
+    }
+
     /**
      * 문제를 재검사하고 다시 확인에 쓸 변형 문제 ID를 돌려준다. 통과·폐기 모두 보류된 같은 문제 대신 변형 문제를 쓴다.
      * 이미 끝났으면 기록을 쓰고, 진행 중이면 기다린다.

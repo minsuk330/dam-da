@@ -98,6 +98,8 @@ class FeedbackIT {
         /** 남은 횟수만큼 문제 품질 검사를 떨어뜨린다(근거 부족). */
         final java.util.concurrent.atomic.AtomicInteger qualityRejections = new java.util.concurrent.atomic.AtomicInteger();
         final java.util.concurrent.atomic.AtomicInteger qualityCalls = new java.util.concurrent.atomic.AtomicInteger();
+        /** 있으면 문제 품질 검사가 열릴 때까지 기다린다. 재검사가 진행 중인 상태를 만든다. */
+        final AtomicReference<java.util.concurrent.CountDownLatch> qualityGate = new AtomicReference<>();
 
         @Override
         public JevResult evaluate(Object state, Map<String, JevQuestion> questions) {
@@ -127,6 +129,17 @@ class FeedbackIT {
                         new JevAnswer.Choice(next, Map.of(next, 1.0), 0.9)));
             }
             if (questions.containsKey(QuestionQualityQuestions.GROUNDED)) {
+                java.util.concurrent.CountDownLatch gate = qualityGate.get();
+                if (gate != null) {
+                    try {
+                        if (!gate.await(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                            throw new IllegalStateException("테스트: 품질 검사 대기 시간 초과");
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(e);
+                    }
+                }
                 qualityCalls.incrementAndGet();
             }
             boolean reject = questions.containsKey(QuestionQualityQuestions.GROUNDED)
@@ -226,6 +239,10 @@ class FeedbackIT {
         jev.lastState.set(null);
         jev.verdicts.clear();
         jev.qualityRejections.set(0);
+        java.util.concurrent.CountDownLatch gate = jev.qualityGate.getAndSet(null);
+        if (gate != null) {
+            gate.countDown();
+        }
         generator.clear();
     }
 
@@ -508,8 +525,8 @@ class FeedbackIT {
 
         // 재검사를 통과해도 같은 문제는 다시 내지 않는다. 원래 문제는 승인으로 남고 변형 문제로 다시 확인한다.
         assertThat(view.get("action").asString()).isEqualTo("GENERATE_VARIANT");
-        assertThat(view.get("recheckQueued").asBoolean()).isTrue();
         QuestionRecheck recheck = awaitRecheck(q1);
+        awaitRecheckQueued(p1);
         assertThat(recheck.getResult()).isEqualTo(RecheckResult.PASSED);
         assertThat(questionRepository.findById(q1).orElseThrow().getStatus()).isEqualTo(QuestionStatus.APPROVED);
         Question variant = questionRepository.findById(recheck.getVariantQuestionId()).orElseThrow();
@@ -565,11 +582,50 @@ class FeedbackIT {
         QuestionRecheck recheck = awaitRecheck(q1);
         assertThat(recheck.getResult()).isEqualTo(RecheckResult.RETIRED);
         assertThat(view.get("action").asString()).isEqualTo("GENERATE_VARIANT");
+        awaitRecheckQueued(p1);
         assertThat(practices.findById(practiceId).orElseThrow().getQueue().getLast().getQuestionId())
                 .isEqualTo(recheck.getVariantQuestionId());
         assertThat(questionRepository.findAll()).filteredOn(q -> Long.valueOf(q1).equals(q.getVariantOfId()))
                 .as("변형 문제 하나").hasSize(1);
         assertThat(jev.qualityCalls.get() - qualityCalls).as("재검사 1번 + 변형 검사 1번").isEqualTo(2);
+    }
+
+    @Test
+    void variantFeedbackDoesNotWaitForARunningRecheck() throws Exception {
+        long practiceId = startPractice(PracticeKind.FIRST_STUDY);
+        JsonNode first = nextPresentation(practiceId);
+        long p1 = first.get("presentationId").asLong();
+        long q1 = first.get("questionId").asLong();
+        int queued = practices.findById(practiceId).orElseThrow().getQueue().size();
+        java.util.concurrent.CountDownLatch gate = new java.util.concurrent.CountDownLatch(1);
+        jev.qualityGate.set(gate);
+
+        answerJudged(p1, WRONG_TEXT, "AMBIGUOUS");
+        JsonNode view = decide(p1);
+
+        // 판정 직후 시작한 재검사가 품질 검사에서 멈춰 있어도 피드백은 기다리지 않고 바로 답한다. 변형 문제는 아직 편성 전이다.
+        assertThat(view.get("action").asString()).isEqualTo("GENERATE_VARIANT");
+        assertThat(view.get("recheckQueued").asBoolean()).isFalse();
+        assertThat(rechecks.findByQuestionId(q1)).isEmpty();
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue()).hasSize(queued);
+
+        // 재검사가 끝나면 변형 문제를 오늘 큐 끝에 넣는다.
+        gate.countDown();
+        QuestionRecheck recheck = awaitRecheck(q1);
+        awaitRecheckQueued(p1);
+        PracticeQueueEntry requeued = practices.findById(practiceId).orElseThrow().getQueue().getLast();
+        assertThat(requeued.getQuestionId()).isEqualTo(recheck.getVariantQuestionId()).isNotEqualTo(q1);
+        assertThat(requeued.getRecheckOfPresentationId()).isEqualTo(p1);
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue()).hasSize(queued + 1);
+    }
+
+    /** 피드백 기록에 오늘 다시 묻기가 편성될 때까지 기다린다. 변형 문제는 재검사가 끝난 뒤 따로 편성된다. */
+    private void awaitRecheckQueued(long presentationId) throws Exception {
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(15));
+        while (!ok("GET", "/api/practice/presentations/%d/feedback".formatted(presentationId), null).get("recheckQueued").asBoolean()) {
+            assertThat(Instant.now()).as("확인 문제 편성 대기").isBefore(deadline);
+            Thread.sleep(20);
+        }
     }
 
     private QuestionRecheck awaitRecheck(long questionId) {
