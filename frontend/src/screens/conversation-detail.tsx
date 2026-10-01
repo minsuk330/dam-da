@@ -57,7 +57,7 @@ export function ConversationDetail({ id }: { id: string }) {
       {data.fidelity === 'model_transcribed' && (
         <View style={styles.notice}>
           <ThemedText variant="subhead" tone="primaryInk">
-            커넥터로 받은 발화는 모델이 옮겨 적은 것이라 실제로 입력한 문장과 다를 수 있어요. 내용이 맞는지 확인해 주세요.
+            커넥터로 받은 메시지는 Claude가 옮겨 적은 것이라 실제로 입력한 문장과 다를 수 있어요. 내용이 맞는지 확인해 주세요.
           </ThemedText>
         </View>
       )}
@@ -76,14 +76,14 @@ export function ConversationDetail({ id }: { id: string }) {
       )}
 
       <View style={styles.section}>
-        <ThemedText variant="title">복습 단위 {data.reviewUnits.length}개</ThemedText>
+        <ThemedText variant="title">주제 {data.reviewUnits.length}개</ThemedText>
         {data.reviewUnits.map((unit) => (
           <ReviewUnitCard key={unit.title} unit={unit} turnsByIndex={turnsByIndex} />
         ))}
       </View>
 
       <View style={styles.section}>
-        <ThemedText variant="title">받은 발화 {data.userTurns.length}개</ThemedText>
+        <ThemedText variant="title">받은 메시지 {data.userTurns.length}개</ThemedText>
         {data.userTurns.map((turn) => (
           <TurnCard key={turn.index} turn={turn} />
         ))}
@@ -133,7 +133,7 @@ function TurnCard({ turn }: { turn: Turn }) {
           #{turn.index}
         </ThemedText>
         <Chip variant="soft" label={intentLabel[turn.intent]} />
-        {verdict && <Chip variant="status" label={`대화 중 AI 판정: ${verdict}`} />}
+        {verdict && <Chip variant="status" label={`대화에서 AI가 ${verdict}`} />}
         {isMeta && (
           <ThemedText variant="caption" tone="inkMuted">
             복습 근거로 쓰지 않음

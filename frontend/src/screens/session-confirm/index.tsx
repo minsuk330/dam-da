@@ -54,7 +54,7 @@ export function SessionConfirm({ id }: { id: number }) {
   if (isError) {
     return (
       <View style={styles.center}>
-        <ThemedText tone="dangerInk">학습 세션을 불러오지 못했어요.</ThemedText>
+        <ThemedText tone="dangerInk">학습 내용을 불러오지 못했어요.</ThemedText>
         <Button variant="secondary" title="다시 시도" onPress={() => refetch()} />
       </View>
     );
@@ -66,7 +66,7 @@ export function SessionConfirm({ id }: { id: number }) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
-        <ThemedText variant="headline">내용을 검수하고 있어요</ThemedText>
+        <ThemedText variant="headline">배운 내용을 확인하고 있어요</ThemedText>
         <ThemedText variant="subhead" tone="inkMuted" style={styles.centerText}>
           대화에서 뽑은 내용이 맞는지 확인하는 중이에요. 끝나면 알림으로 알려드릴게요.
         </ThemedText>

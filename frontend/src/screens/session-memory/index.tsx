@@ -74,7 +74,7 @@ export function SessionMemory({ id }: { id: number }) {
       <Stack.Screen options={{ title: session.data.topicHint ?? '기억 상태' }} />
 
       <Card style={styles.card}>
-        <ThemedText variant="headline">세션 전체</ThemedText>
+        <ThemedText variant="headline">전체</ThemedText>
         <Gauge size="lg" value={value} target={target} />
         <ThemedText variant="caption" tone="inkSecondary">
           목표 유지율 {percent(target)}%
@@ -126,7 +126,7 @@ function UnitCard({
     <View style={styles.section}>
       <ThemedText variant="title">{unit.title}</ThemedText>
       <Card style={styles.card}>
-        <Gauge size="lg" label="단위 평균" value={average} target={target} />
+        <Gauge size="lg" label="이 주제 평균" value={average} target={target} />
         <ThemedText variant="caption" tone="inkSecondary">
           확인한 항목 {checkedItems}/{totalItems}
         </ThemedText>

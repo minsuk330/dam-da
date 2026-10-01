@@ -18,8 +18,8 @@ export const inputPathIcon: Record<Detail['inputPath'], IconName> = {
 }
 
 export const fidelityLabel: Record<Detail['fidelity'], string> = {
-  verbatim: '원문',
-  model_transcribed: '모델이 옮겨 적음',
+  verbatim: '원문 그대로',
+  model_transcribed: 'Claude가 옮겨 적음',
 }
 
 export const intentLabel: Record<Turn['intent'], string> = {
@@ -33,9 +33,9 @@ export const intentLabel: Record<Turn['intent'], string> = {
 
 /** 대화 중 AI가 한 판정. 사용자 답변 판정이 아니다. */
 export const aiVerdictLabel: Record<Turn['aiVerdict'], string | null> = {
-  confirmed: '맞음',
-  partial: '일부 맞음',
-  corrected: '교정됨',
+  confirmed: '맞다고 함',
+  partial: '일부만 맞다고 함',
+  corrected: '바로잡음',
   not_applicable: null,
 }
 
@@ -47,7 +47,7 @@ export const factKindLabel: Record<Schemas['KeyPointResponse']['kind'], string |
 
 export const sessionStatusLabel: Record<Schemas['LearningSessionSummary']['status'], string> = {
   RECEIVED: '받음',
-  REVIEWING: '검수 중',
+  REVIEWING: '확인 중',
   AWAITING_CONFIRMATION: '확인 필요',
   CONFIRMED: '확인 완료',
   QUESTIONS_READY: '문제 준비됨',
@@ -63,11 +63,11 @@ export const itemKindLabel: Record<Schemas['Item']['kind'], string> = {
 
 /** Jev가 복습 단위를 검수한 결과. 판정만 보여주고 제외 여부는 사용자가 정한다. */
 export const unitVerdictLabel: Record<Schemas['Unit']['verdict'], string> = {
-  PENDING: '검수 중',
-  APPROVED: '검수 통과',
+  PENDING: '확인 중',
+  APPROVED: '확인됨',
   HELD: '확인 필요',
   REJECTED: '빼기 권장',
-  UNAVAILABLE: '검수 못 함',
+  UNAVAILABLE: '확인 못 함',
 }
 
 export const questionTypeLabel: Record<Schemas['QuestionView']['type'], string> = {

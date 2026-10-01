@@ -47,11 +47,11 @@ export function AddConversation() {
         </View>
         <ThemedText variant="title">대화를 저장했어요</ThemedText>
         <ThemedText variant="subhead" tone="inkSecondary" style={styles.centerText}>
-          발화 {saved.userTurnCount}개 · 복습 단위 {saved.reviewUnitCount}개
+          메시지 {saved.userTurnCount}개 · 주제 {saved.reviewUnitCount}개
           {saved.warnings.length > 0 ? ` · 확인할 점 ${saved.warnings.length}개` : ''}
         </ThemedText>
         <ThemedText variant="caption" tone="inkMuted" style={styles.centerText}>
-          검수가 끝나면 뽑은 내용을 확인하고 첫 학습을 준비해요.
+          내용 확인이 끝나면 뽑은 내용을 확인하고 첫 학습을 준비해요.
         </ThemedText>
         <View style={styles.actions}>
           {saved.learningSessionId !== null ? (
@@ -139,7 +139,7 @@ export function AddConversation() {
             style={[styles.field, styles.fieldMultiline]}
           />
           <ThemedText variant="caption" tone="inkMuted">
-            붙여넣은 대화는 모델이 옮겨 적은 것으로 표시돼요. 저장 뒤 원문과 맞는지 확인할 수 있어요.
+            붙여넣은 대화는 Claude가 옮겨 적은 것으로 표시돼요. 저장 뒤 내가 한 말과 맞는지 확인할 수 있어요.
           </ThemedText>
         </View>
       )}

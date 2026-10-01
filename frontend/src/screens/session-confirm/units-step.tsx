@@ -50,7 +50,7 @@ export function UnitsStep({ session, onBack, onConfirmed }: { session: Detail; o
       ))}
 
       <ThemedText variant="subhead" tone="inkSecondary" style={styles.count}>
-        기억 항목 {items.length}개 중 {included}개를 복습해요
+        기억할 내용 {items.length}개 중 {included}개를 복습해요
       </ThemedText>
       <Button
         title="확인 완료"
@@ -58,7 +58,7 @@ export function UnitsStep({ session, onBack, onConfirmed }: { session: Detail; o
         loading={edit.isPending && edit.variables?.kind === 'confirm'}
         onPress={() => edit.mutate({ kind: 'confirm' }, { onSuccess: onConfirmed })}
       />
-      <Button variant="secondary" title="이전: 발화 확인" disabled={edit.isPending} onPress={onBack} />
+      <Button variant="secondary" title="이전: 메시지 확인" disabled={edit.isPending} onPress={onBack} />
     </View>
   );
 }
@@ -84,11 +84,11 @@ function UnitCard({
       </View>
       {unit.verdictReason && (
         <ThemedText variant="caption" tone="inkSecondary">
-          검수 의견: {unit.verdictReason}
+          확인 의견: {unit.verdictReason}
         </ThemedText>
       )}
       <ThemedText variant="caption" tone="inkMuted">
-        {unit.evidenceTurns.length > 0 ? `근거 발화 ${unit.evidenceTurns.join(', ')}` : '근거 발화 없음'}
+        {unit.evidenceTurns.length > 0 ? `근거 메시지 ${unit.evidenceTurns.join(', ')}` : '근거 메시지 없음'}
       </ThemedText>
 
       {unit.items.map((item, i) => {
@@ -103,7 +103,7 @@ function UnitCard({
             disabled={busy || unit.excluded}
             onPress={() => onToggleItem(item.id, included)}>
             <ThemedText variant="caption" tone="inkSecondary">
-              {itemKindLabel[item.kind]} · 발화 {item.sourceTurns.join(', ') || '없음'}
+              {itemKindLabel[item.kind]} · 메시지 {item.sourceTurns.join(', ') || '없음'}
             </ThemedText>
             <ThemedText variant="subhead" tone={included ? 'ink' : 'inkMuted'}>
               {item.content}

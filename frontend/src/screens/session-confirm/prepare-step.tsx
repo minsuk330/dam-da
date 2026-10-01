@@ -57,7 +57,7 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
         <ActivityIndicator size="large" color={colors.primary} />
         <ThemedText variant="title">문제를 만들고 있어요</ThemedText>
         <ThemedText variant="subhead" tone="inkMuted" style={styles.centerText}>
-          문제 {data.planned}개를 만들고 품질 검사를 하고 있어요.{'\n'}검사를 통과한 문제만 보여드려요.
+          문제 {data.planned}개를 만들고 확인하고 있어요.{'\n'}확인을 통과한 문제만 보여드려요.
         </ThemedText>
       </View>
     );
@@ -71,7 +71,7 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
       <ThemedText variant="display">첫 학습이{'\n'}준비됐어요</ThemedText>
 
       <Card variant="lavender" style={styles.quality}>
-        <ThemedText variant="headline">품질 검사 결과</ThemedText>
+        <ThemedText variant="headline">문제 확인 결과</ThemedText>
         <View style={styles.stats}>
           <Stat value={data.planned} label="만든 문제" />
           <Stat value={passed} label="통과" />
@@ -79,8 +79,8 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
         </View>
         <ThemedText variant="caption" tone="inkSecondary">
           {held > 0
-            ? `보류된 ${held}개(${data.held.map((h) => questionTypeLabel[h.type]).join(', ')})는 품질 검사를 통과하지 못해 이번 첫 학습에서 빠졌어요. 검사를 통과한 문제만 풀어요.`
-            : '모든 문제가 품질 검사를 통과했어요.'}
+            ? `보류된 ${held}개(${data.held.map((h) => questionTypeLabel[h.type]).join(', ')})는 확인을 통과하지 못해 이번 첫 학습에서 빠졌어요. 확인을 통과한 문제만 풀어요.`
+            : '모든 문제가 확인을 통과했어요.'}
         </ThemedText>
       </Card>
 

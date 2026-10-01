@@ -33,7 +33,7 @@ export function Memory() {
   if (isError) {
     return (
       <View style={styles.center}>
-        <ThemedText tone="dangerInk">학습 세션을 불러오지 못했어요.</ThemedText>
+        <ThemedText tone="dangerInk">학습 목록을 불러오지 못했어요.</ThemedText>
         <Button variant="secondary" title="다시 시도" onPress={overview.refetch} />
       </View>
     );
@@ -59,18 +59,18 @@ export function Memory() {
         <Gauge size="lg" value={overview.average} target={overview.target} />
         {overview.isError && (
           <ThemedText variant="caption" tone="dangerInk">
-            일부 세션의 기억 상태를 불러오지 못했어요.
+            일부 학습의 기억 상태를 불러오지 못했어요.
           </ThemedText>
         )}
         <ThemedText variant="caption" tone="inkSecondary">
-          세션 {data.length}개 · 기억 항목 {data.reduce((sum, s) => sum + s.itemCount, 0)}개
+          학습 {data.length}개 · 기억할 내용 {data.reduce((sum, s) => sum + s.itemCount, 0)}개
         </ThemedText>
       </Card>
 
       <MemoryModelLink />
 
       <ThemedText variant="title" style={styles.sectionTitle}>
-        학습 세션
+        내 학습
       </ThemedText>
       <Card style={styles.list}>
         {data.map((session, i) => {
@@ -92,7 +92,7 @@ export function Memory() {
                 />
               </View>
               <ThemedText variant="caption" tone="inkMuted">
-                {formatRelativeDay(session.createdAt, serverToday)} · 복습 단위 {session.unitCount}개 · 기억 항목{' '}
+                {formatRelativeDay(session.createdAt, serverToday)} · 주제 {session.unitCount}개 · 기억할 내용{' '}
                 {session.itemCount}개
               </ThemedText>
               <Gauge value={memory?.value ?? null} target={memory?.target} />
