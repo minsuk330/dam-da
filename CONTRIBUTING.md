@@ -28,7 +28,7 @@
 
 - 승인 불필요. 작성자가 직접 merge한다.
 - CI는 없다. **PR 올리기 전 로컬에서 `./gradlew test` 통과 필수.**
-- 실제 LLM을 호출하는 테스트·벤치마크(`./gradlew benchmark`)는 로컬에서 수동 실행한다. 프롬프트·커넥터 스키마를 바꾼 PR은 벤치마크 결과 요약을 본문에 적는다.
+- 실제 LLM을 호출하는 테스트(`./gradlew liveTest`, `@Tag("live")`)와 벤치마크(`./gradlew benchmark`)는 로컬에서 수동 실행한다. LLM·Jev를 부르는 흐름을 바꾼 PR은 `liveTest` 결과를 본문에 적는다. 프롬프트·커넥터 스키마를 바꾼 PR은 벤치마크 결과 요약을 본문에 적는다.
 - 포트 계약 변경은 인터페이스·record·fake만 담은 PR을 먼저 merge한 뒤 구현한다.
 
 ## 이슈

@@ -43,8 +43,39 @@ dependencyManagement {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	// 실제 Jev·OpenAI를 부르는 @Tag("live") 테스트는 빼고, 키 없이 fake로 돈다.
+	useJUnitPlatform {
+		excludeTags 'live'
+	}
 	systemProperty 'spring.profiles.active', 'test'
+}
+
+// 실제 Jev·OpenAI 호출로 핵심 흐름을 검증한다. backend/.env의 키가 필요하고 비용이 든다. PR 전 수동 실행.
+tasks.register('liveTest', Test) {
+	description = 'Runs @Tag("live") tests against the real Jev and OpenAI APIs (needs keys in backend/.env).'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'live'
+	}
+	// test 프로파일(H2, 키 비움) 위에 live 프로파일로 실제 키를 되살린다.
+	systemProperty 'spring.profiles.active', 'test,live'
+	outputs.upToDateWhen { false }
+	shouldRunAfter tasks.named('test')
+	// 키는 backend/.env(또는 -PenvFile=경로)에서 읽어 테스트 프로세스 환경에 넣는다. 값은 출력하지 않는다.
+	doFirst {
+		def envFile = file(project.findProperty('envFile') ?: '.env')
+		if (envFile.exists()) {
+			envFile.eachLine { line ->
+				def trimmed = line.trim()
+				if (trimmed && !trimmed.startsWith('#') && trimmed.contains('=')) {
+					def (key, value) = [trimmed.substring(0, trimmed.indexOf('=')).trim(), trimmed.substring(trimmed.indexOf('=') + 1).trim()]
+					environment key, value
+				}
+			}
+		}
+	}
 }
 
 def cli = { String taskName, String main ->
