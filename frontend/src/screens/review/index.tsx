@@ -21,6 +21,7 @@ import { Chip } from '@/components/chip';
 import { ChoiceChip } from '@/components/choice-chip';
 import { Icon } from '@/components/icon';
 import { Notice } from '@/components/notice';
+import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { questionTypeLabel } from '@/labels';
 import { colors, components, spacing } from '@/theme';
@@ -44,21 +45,24 @@ type Outcome = 'correct' | 'wrong' | 'uncertain' | 'ambiguous';
 /**
  * - loading: 다음 문제를 불러오는 중
  * - answering: 답하는 중. `retry`면 힌트 뒤 재도전이라 평가하지 않으므로 자기평가를 받지 않는다.
- * - checking: 답을 내고 서버가 다음 행동을 정하는 중
- * - result: 판정과 서버가 정한 다음 행동(힌트·개념 설명·다음 문제 등)을 보여준다
+ * - checking: 답을 내고 판정을 기다리는 중
+ * - result: 판정을 보여준다. 서버가 정한 다음 행동(힌트·개념 설명·다음 문제 등)은 `feedback`이 오면 이어서 보여준다.
+ *   힌트·설명 생성은 몇 초 걸려서, 판정(제출 응답)을 먼저 보여주고 기다리게 한다.
  */
 type Phase =
   | { kind: 'loading' }
   | { kind: 'answering'; retry: boolean }
   | { kind: 'checking'; retry: boolean }
-  | { kind: 'result'; attempt: Attempt; feedback: Feedback; outcome: Outcome }
+  | { kind: 'result'; attempt: Attempt; feedback: Feedback | null; outcome: Outcome }
   | { kind: 'done' };
 
-function outcomeOf(attempt: Attempt, feedback: Feedback): Outcome {
-  if (feedback.action === 'REQUEST_CONFIRMATION' || !attempt.judgment.judged) return 'uncertain';
-  if (feedback.action === 'GENERATE_VARIANT' || attempt.judgment.verdict === 'UNABLE_TO_JUDGE') return 'ambiguous';
-  return attempt.correct === true || attempt.judgment.verdict === 'MET' ? 'correct' : 'wrong';
-}
+/** 서버가 정한 시도 결과. 피드백이 받는 결과와 같아서 피드백을 기다리지 않고 보여줄 수 있다. */
+const OUTCOME: Record<Attempt['outcome'], Outcome> = {
+  CORRECT: 'correct',
+  WRONG: 'wrong',
+  UNCERTAIN: 'uncertain',
+  QUESTION_AMBIGUOUS: 'ambiguous',
+};
 
 /**
  * 화면에 남길 풀이 경로. 확인 문제는 원래 문제의 경로(`earlier`)를 마저 정한다.
@@ -91,8 +95,6 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
   const [hint, setHint] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<Map<number, ItemResult>>(() => new Map());
-  // 낸 답이 판정까지 끝났는데 피드백 요청만 실패했으면, 다시 시도할 때 답을 또 내지 않는다.
-  const pendingAttempt = useRef<Attempt | null>(null);
   // 응답 시간: 문제(재도전이면 힌트)를 보여준 때부터 잰다.
   const shownAt = useRef(0);
   const firstInputAt = useRef<number | null>(null);
@@ -110,7 +112,6 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
     setAnswer(emptyAnswer);
     setSelfAssessment(null);
     setHint(null);
-    pendingAttempt.current = null;
     shownAt.current = Date.now();
     firstInputAt.current = null;
     setPhase({ kind: 'answering', retry: false });
@@ -182,21 +183,33 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
     if (!presentation) return;
     setPhase({ kind: 'checking', retry });
     setError(null);
+    let attempt: Attempt;
     try {
       const now = Date.now();
-      const attempt =
-        pendingAttempt.current ??
-        (await submitAttempt(presentation.presentationId, {
-          choiceIndex: presentation.type === 'MULTIPLE_CHOICE' ? answer.choiceIndex : null,
-          answer: presentation.type === 'MULTIPLE_CHOICE' ? null : answer.text.trim(),
-          selfAssessment: retry ? null : selfAssessment,
-          responseTimeMs: now - shownAt.current,
-          firstInputMs: firstInputAt.current === null ? null : firstInputAt.current - shownAt.current,
-        }));
-      pendingAttempt.current = attempt;
+      attempt = await submitAttempt(presentation.presentationId, {
+        choiceIndex: presentation.type === 'MULTIPLE_CHOICE' ? answer.choiceIndex : null,
+        answer: presentation.type === 'MULTIPLE_CHOICE' ? null : answer.text.trim(),
+        selfAssessment: retry ? null : selfAssessment,
+        responseTimeMs: now - shownAt.current,
+        firstInputMs: firstInputAt.current === null ? null : firstInputAt.current - shownAt.current,
+      });
+    } catch (e) {
+      setError(errorMessage(e));
+      setPhase({ kind: 'answering', retry });
+      return;
+    }
+    // 판정은 바로 보여주고 다음 행동은 이어서 받는다.
+    setPhase({ kind: 'result', attempt, feedback: null, outcome: OUTCOME[attempt.outcome] });
+    await loadFeedback(attempt);
+  }
+
+  /** 다음 행동을 받는다. 실패하면 판정은 둔 채 다시 시도하게 한다(답을 또 내지 않는다). */
+  async function loadFeedback(attempt: Attempt) {
+    if (!presentation) return;
+    setError(null);
+    try {
       const feedback = await decideFeedback(presentation.presentationId);
-      pendingAttempt.current = null;
-      const outcome = outcomeOf(attempt, feedback);
+      const outcome = OUTCOME[attempt.outcome];
       if (feedback.hint) setHint(feedback.hint);
       setResults((prev) => {
         const map = new Map(prev);
@@ -217,7 +230,6 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
       setPhase({ kind: 'result', attempt, feedback, outcome });
     } catch (e) {
       setError(errorMessage(e));
-      setPhase({ kind: 'answering', retry });
     }
   }
 
@@ -230,7 +242,8 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
   }
 
   const graded = result && (result.outcome === 'correct' || result.outcome === 'wrong') ? result.outcome : null;
-  const moreQueued = result?.feedback.recheckQueued || result?.feedback.action === 'RELEARN_TODAY';
+  const feedback = result?.feedback ?? null;
+  const moreQueued = feedback?.recheckQueued || feedback?.action === 'RELEARN_TODAY';
   const last = presentation.position + 1 >= presentation.total && !moreQueued;
   // 진행 막대는 답한 문제 수다. 결과를 보고 있으면 지금 문제까지 센다.
   const answered = presentation.position + (result ? 1 : 0);
@@ -259,7 +272,7 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
           {presentation.stem}
         </ThemedText>
 
-        {hint && (retry || result?.feedback.action === 'GIVE_HINT') && (
+        {hint && (retry || feedback?.action === 'GIVE_HINT') && (
           <Card variant="lavender" style={styles.box}>
             <ThemedText variant="headline">힌트</ThemedText>
             <ThemedText variant="subhead" tone="inkSecondary">
@@ -306,7 +319,7 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.xl }]}>
         {/* 제출·불러오기 실패는 누른 버튼 바로 위에 둔다. 스크롤 아래에 있으면 긴 문제에서 보이지 않는다. */}
-        {error && phase.kind !== 'result' && <Notice tone="danger">{error}</Notice>}
+        {error && (phase.kind !== 'result' || !feedback) && <Notice tone="danger">{error}</Notice>}
         {needsSelfAssessment && (
           <ThemedText variant="caption" tone="inkSecondary" style={styles.center}>
             얼마나 확신하는지 골라야 제출할 수 있어요
@@ -318,8 +331,15 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
         {phase.kind === 'loading' && (
           <Button title={error ? '다시 시도' : '다음 문제'} loading={!error} onPress={loadNext} />
         )}
-        {result?.feedback.action === 'GIVE_HINT' && <Button title="힌트 보고 다시 풀기" onPress={retryWithHint} />}
-        {result && result.feedback.action !== 'GIVE_HINT' && (
+        {result && !feedback && (
+          <Button
+            title={error ? '다시 시도' : '다음 문제'}
+            loading={!error}
+            onPress={() => loadFeedback(result.attempt)}
+          />
+        )}
+        {feedback?.action === 'GIVE_HINT' && <Button title="힌트 보고 다시 풀기" onPress={retryWithHint} />}
+        {feedback && feedback.action !== 'GIVE_HINT' && (
           <Button title={last ? '결과 보기' : '다음 문제'} onPress={loadNext} />
         )}
       </View>
@@ -327,7 +347,7 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
   );
 }
 
-/** 판정과 서버가 정한 다음 행동을 보여준다. */
+/** 판정과 서버가 정한 다음 행동을 보여준다. 다음 행동(`feedback`)이 아직 없으면 그 자리를 비워 둔다. */
 function ResultView({
   result: { attempt, feedback, outcome },
   recheck,
@@ -344,7 +364,7 @@ function ResultView({
           <View style={styles.resultTitle}>
             <Icon name="check-circle" color={colors.successInk} />
             <ThemedText variant="headline" tone="successInk">
-              {recheck ? '확인 문제도 맞혔어요' : feedback.path === 'AFTER_HINT' ? '힌트를 보고 맞혔어요' : '맞았어요'}
+              {recheck ? '확인 문제도 맞혔어요' : retried ? '힌트를 보고 맞혔어요' : '맞았어요'}
             </ThemedText>
           </View>
           {attempt.holdReason === 'GUESS_UNCONFIRMED' && (
@@ -352,7 +372,7 @@ function ResultView({
               아주 빨리 골라서 추측일 수도 있어요. 이번 답은 기억 상태에 반영하지 않았어요.
             </ThemedText>
           )}
-          {feedback.action === 'RELEARN_TODAY' && (
+          {feedback?.action === 'RELEARN_TODAY' && (
             <ThemedText variant="caption" tone="inkSecondary">
               도움을 받고 맞혔으니 오늘 한 번 더 확인할게요.
             </ThemedText>
@@ -368,15 +388,19 @@ function ResultView({
               {retried ? '이번에도 아쉬워요' : '아쉬워요'}
             </ThemedText>
           </View>
-          <ThemedText variant="subhead" tone="dangerInk">
-            {feedback.action === 'GIVE_HINT'
-              ? '힌트를 보고 한 번 더 풀어 볼까요?'
-              : feedback.action === 'EXPLAIN_CONCEPT'
-                ? '개념을 다시 짚어 볼게요.'
-                : feedback.action === 'RELEARN_TODAY'
-                  ? '남은 문제를 푼 뒤에 오늘 한 번 더 물어볼게요.'
-                  : '다음 학습에서 다시 볼게요.'}
-          </ThemedText>
+          {feedback ? (
+            <ThemedText variant="subhead" tone="dangerInk">
+              {feedback.action === 'GIVE_HINT'
+                ? '힌트를 보고 한 번 더 풀어 볼까요?'
+                : feedback.action === 'EXPLAIN_CONCEPT'
+                  ? '개념을 다시 짚어 볼게요.'
+                  : feedback.action === 'RELEARN_TODAY'
+                    ? '남은 문제를 푼 뒤에 오늘 한 번 더 물어볼게요.'
+                    : '다음 학습에서 다시 볼게요.'}
+            </ThemedText>
+          ) : (
+            <Skeleton width="70%" />
+          )}
         </View>
       )}
 
@@ -395,14 +419,17 @@ function ResultView({
             {attempt.holdReason === 'MISREAD' ? '질문을 다르게 읽은 것 같아요' : '이 답만으로는 판단하기 어려워요'}
           </ThemedText>
           <ThemedText variant="subhead" tone="inkSecondary">
-            {feedback.recheckQueued
-              ? '문제가 애매했을 수 있어요. 기억 상태는 그대로 두고 다른 문제로 다시 물어볼게요.'
-              : '문제가 애매했을 수 있어요. 기억 상태는 그대로 둘게요.'}
+            문제가 애매했을 수 있어요. 기억 상태는 그대로 둘게요.
           </ThemedText>
+          {feedback?.recheckQueued && (
+            <ThemedText variant="caption" tone="primaryInk">
+              다른 문제로 다시 물어볼게요.
+            </ThemedText>
+          )}
         </Card>
       )}
 
-      {feedback.action === 'EXPLAIN_CONCEPT' && feedback.explanation && (
+      {feedback?.action === 'EXPLAIN_CONCEPT' && feedback.explanation && (
         <Card style={styles.box}>
           <ThemedText variant="headline">개념 설명</ThemedText>
           <ThemedText variant="subhead" tone="inkSecondary">
@@ -421,7 +448,7 @@ function ResultView({
         </Card>
       )}
 
-      {feedback.prerequisite && (
+      {feedback?.prerequisite && (
         <Notice>
           먼저 「{feedback.prerequisite.concept}」을(를) 다시 보면 좋아요. {feedback.prerequisite.reason}
         </Notice>
