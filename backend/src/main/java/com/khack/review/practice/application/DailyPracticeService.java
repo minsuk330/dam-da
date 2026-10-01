@@ -5,7 +5,7 @@ import com.khack.review.common.application.CurrentUser;
 import com.khack.review.memory.application.DailyQueueService;
 import com.khack.review.memory.application.RatingPolicyProperties;
 import com.khack.review.memory.domain.DailyQueuePlanner;
-import com.khack.review.memory.domain.NewItemTypes;
+import com.khack.review.memory.domain.NewItems;
 import com.khack.review.practice.domain.FirstStudyPlan;
 import com.khack.review.practice.domain.FirstStudyPlanRepository;
 import com.khack.review.practice.domain.NewItemGoalTypes;
@@ -96,7 +96,7 @@ public class DailyPracticeService {
         if (existing.isPresent()) {
             return startedView(existing.get(), List.of());
         }
-        DailyQueueService.DailyQueue queue = dailyQueue.preview(userId, newTypes(), Set.of());
+        DailyQueueService.DailyQueue queue = dailyQueue.preview(userId, newItems(userId), Set.of());
         return previewView(queue, null, List.of());
     }
 
@@ -110,7 +110,7 @@ public class DailyPracticeService {
         if (existing.isPresent()) {
             return startedView(existing.get(), List.of());
         }
-        DailyQueueService.DailyQueue queue = dailyQueue.build(userId, newTypes(), Set.of());
+        DailyQueueService.DailyQueue queue = dailyQueue.build(userId, newItems(userId), Set.of());
         List<Long> questionIds = new ArrayList<>();
         List<DailyQueuePlanner.Entry> chosen = new ArrayList<>();
         List<Long> unavailable = new ArrayList<>();
@@ -186,10 +186,25 @@ public class DailyPracticeService {
                 plan.estimatedTime().toSeconds(), items, plan.carriedOver().size(), List.copyOf(unavailable));
     }
 
-    /** 신규 항목의 문제 유형은 세션의 학습 목표(첫 학습 계획)로 정한다. */
-    private NewItemTypes newTypes() {
+    /**
+     * 신규 항목은 첫 학습을 끝낸 세션에서만 받는다(첫 학습 상한으로 다루지 못한 항목). 학습 목표를 고르지 않았거나 첫 학습 전·도중인
+     * 세션의 항목은 첫 학습에서 다룬다. 문제 유형은 세션의 학습 목표(첫 학습 계획)로 정한다.
+     */
+    private NewItems newItems(Long userId) {
+        Set<Long> firstStudyDone = practices.findByUserIdAndKindAndCompletedAtIsNotNull(userId, PracticeKind.FIRST_STUDY).stream()
+                .map(PracticeSession::getLearningSessionId).collect(Collectors.toSet());
         Map<Long, Optional<FirstStudyPlan>> cache = new HashMap<>();
-        return (sessionId, itemId, kind) -> NewItemGoalTypes.typeFor(
-                cache.computeIfAbsent(sessionId, plans::findBySessionId).orElse(null), itemId, kind);
+        return new NewItems() {
+            @Override
+            public boolean admits(Long sessionId) {
+                return firstStudyDone.contains(sessionId);
+            }
+
+            @Override
+            public QuestionType typeFor(Long sessionId, Long memoryItemId, MemoryItemKind kind) {
+                return NewItemGoalTypes.typeFor(cache.computeIfAbsent(sessionId, plans::findBySessionId).orElse(null),
+                        memoryItemId, kind);
+            }
+        };
     }
 }
