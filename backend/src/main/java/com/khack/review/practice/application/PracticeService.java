@@ -30,6 +30,7 @@ import com.khack.review.practice.domain.DailyPracticeCompleted;
 import com.khack.review.practice.domain.PracticeKind;
 import com.khack.review.practice.domain.PracticeQueueEntry;
 import com.khack.review.practice.domain.PracticeSession;
+import com.khack.review.practice.domain.QuestionHeldAsAmbiguous;
 import com.khack.review.practice.domain.PracticeSessionRepository;
 import com.khack.review.practice.domain.QuestionPresentation;
 import com.khack.review.practice.domain.QuestionPresentationRepository;
@@ -225,6 +226,10 @@ public class PracticeService {
         transaction.executeWithoutResult(tx -> judgments.save(judgment));
         PracticeAttempt attempt = recorded.attempt();
         RatingDecision decision = judgment.getStatus() == JudgmentStatus.JUDGED ? recordReview(attempt, judgment) : null;
+        if (decision instanceof RatingDecision.Held held && held.reason().questionNeedsRecheck()) {
+            // 문제가 모호해서 보류됐다. 피드백 요청과 상관없이 문제를 재검사한다(비동기, 스펙 §6.4.5).
+            events.publishEvent(new QuestionHeldAsAmbiguous(attempt.getUserId(), attempt.getQuestionId(), attempt.getPresentationId()));
+        }
         return new AttemptView(attempt.getId(), attempt.getKind(), AttemptRules.isEvaluated(attempt.getKind()),
                 attempt.getChoiceCorrect(), attempt.getResponseTimeMs(), JudgmentView.of(judgment),
                 decision instanceof RatingDecision.Rated rated ? rated.rating() : null,
