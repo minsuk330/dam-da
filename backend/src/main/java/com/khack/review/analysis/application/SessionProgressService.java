@@ -24,4 +24,13 @@ public class SessionProgressService {
             session.moveTo(LearningSessionStatus.QUESTIONS_READY);
         }
     }
+
+    /** 첫 학습 풀이를 시작했다. 문제 준비 상태일 때만 학습 중으로 넘기고, 이미 넘어갔으면 그대로 둔다. */
+    @Transactional
+    public void markStudyStarted(Long sessionId) {
+        LearningSession session = sessions.findById(sessionId).orElseThrow(() -> new LearningSessionNotFoundException(sessionId));
+        if (session.getStatus() == LearningSessionStatus.QUESTIONS_READY) {
+            session.moveTo(LearningSessionStatus.IN_PROGRESS);
+        }
+    }
 }
