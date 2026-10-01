@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import random
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 
 from fsrs import Card, Rating, ReviewLog
@@ -36,9 +36,11 @@ def generate(
     seed: int = 7,
     true_weights: Sequence[float] | None = None,
     start: datetime = START,
+    intro: Mapping[int, datetime] | None = None,
 ) -> list[ReviewLog]:
     """`cards`개 항목을 처음 `days`의 절반 동안 고르게 도입하고 `days`일까지 복습한 기록.
 
+    `intro`에 있는 항목은 그 시각에 처음 복습한다(실제 세션의 첫 학습 시각, 로그인 계정 시연 데이터).
     Again 뒤에는 앱 정책(§6.4.8)처럼 같은 날 재확인을 한 번 넣는다.
     """
     rng = random.Random(seed)
@@ -48,6 +50,8 @@ def generate(
     logs: list[ReviewLog] = []
     for card_id in range(1, cards + 1):
         at = start + timedelta(days=rng.randrange(days // 2), minutes=rng.randrange(600))
+        if intro and card_id in intro:
+            at = intro[card_id]
         app_card = Card(card_id=card_id, due=at)
         true_card = Card(card_id=card_id, due=at)
         first = True

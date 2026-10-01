@@ -1,0 +1,77 @@
+{
+  "topicHint": "GET과 POST",
+  "userTurns": [
+    {
+      "index": 1,
+      "text": "GET이랑 POST는 언제 써?",
+      "intent": "info_request"
+    },
+    {
+      "index": 2,
+      "text": "POST는 데이터를 body에 담으니까 GET보다 보안상 안전한 거지?",
+      "intent": "understanding_check",
+      "aiVerdict": "corrected",
+      "correction": "body에 담겨도 HTTPS가 아니면 평문으로 노출된다. 암호화는 HTTPS가 하고, GET은 URL이 로그나 기록에 남기 쉬워 민감 정보에 맞지 않을 뿐이다."
+    },
+    {
+      "index": 3,
+      "text": "멱등성은 뭐야?",
+      "intent": "info_request"
+    },
+    {
+      "index": 4,
+      "text": "GET은 여러 번 보내도 결과가 같아야 하고 POST는 아닐 수 있다는 거지?",
+      "intent": "restatement",
+      "aiVerdict": "confirmed"
+    },
+    {
+      "index": 5,
+      "text": "학습에 넘겨줘",
+      "intent": "meta"
+    }
+  ],
+  "reviewUnits": [
+    {
+      "title": "요청 데이터 위치와 보안",
+      "keyPoints": [
+        {
+          "point": "GET은 데이터를 URL 쿼리에, POST는 요청 body에 담는다.",
+          "turns": [
+            1
+          ]
+        },
+        {
+          "point": "POST도 HTTPS 없이는 평문이다. 암호화는 HTTPS가 담당한다.",
+          "turns": [
+            2
+          ],
+          "kind": "warning"
+        }
+      ],
+      "confusionPoints": [
+        {
+          "turn": 2,
+          "userBelief": "POST는 body에 담으니 GET보다 보안상 안전하다."
+        }
+      ]
+    },
+    {
+      "title": "멱등성",
+      "keyPoints": [
+        {
+          "point": "멱등성은 같은 요청을 여러 번 보내도 서버 상태가 한 번 보낸 것과 같다는 뜻이다.",
+          "turns": [
+            3
+          ]
+        },
+        {
+          "point": "GET은 멱등이고 POST는 멱등이 아니다.",
+          "turns": [
+            3,
+            4
+          ]
+        }
+      ]
+    }
+  ]
+}

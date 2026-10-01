@@ -17,4 +17,6 @@ public interface ReviewLogRepository extends JpaRepository<ReviewLog, Long> {
     long countByUserIdAndRatingIsNotNull(Long userId);
 
     void deleteByUserId(Long userId);
+
+    void deleteByUserIdAndPolicyVersion(Long userId, int policyVersion);
 }
