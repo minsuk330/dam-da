@@ -34,6 +34,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <PhoneFrame>
         <StatusBar style="dark" />
+        <MockBadge />
         <Stack
           screenOptions={{
             headerShadowVisible: false,
@@ -54,7 +55,6 @@ export default function RootLayout() {
           <Stack.Screen name="settings" options={{ title: '매일 학습 설정' }} />
           <Stack.Screen name="review" options={{ title: '오늘의 복습' }} />
         </Stack>
-        <MockBadge />
       </PhoneFrame>
     </QueryClientProvider>
   );
