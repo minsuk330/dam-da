@@ -63,6 +63,15 @@ class LearningSessionTest {
     }
 
     @Test
+    void confusionPointWithoutUserBeliefIsSkipped() {
+        LearningSession session = create(List.of(new com.khack.review.collection.domain.ReviewUnit("표준오차",
+                List.of(new KeyPoint("표준오차는 표본평균의 퍼짐", List.of(1), null)),
+                List.of(new ConfusionPoint(2, null), new ConfusionPoint(2, " ")))));
+
+        assertThat(session.items()).extracting(MemoryItem::getKind).containsExactly(MemoryItemKind.FACT);
+    }
+
+    @Test
     void excludingAUnitExcludesItsItems() {
         LearningSession session = create(List.of(new com.khack.review.collection.domain.ReviewUnit("표준오차",
                 List.of(new KeyPoint("표준오차는 표본평균의 퍼짐", List.of(1), null)),

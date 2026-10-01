@@ -60,6 +60,7 @@ public class LearningSession {
     /**
      * 검증을 통과한 커넥터 입력으로 세션을 만든다. 핵심 사실과 헷갈린 지점은 각각 기억 항목 1개가 된다.
      * `meta` 발화는 출처에서 빼고(규칙 15), 출처가 남지 않은 항목과 항목이 없는 복습 단위는 만들지 않는다(규칙 2).
+     * `userBelief`가 빈 헷갈린 지점은 건너뛴다. 검증기가 경고로 남기므로 대화 저장은 실패시키지 않는다.
      */
     public static LearningSession create(Long userId, Long conversationId, SessionInput input, Instant createdAt) {
         LearningSession session = new LearningSession();
@@ -83,7 +84,8 @@ public class LearningSession {
             }
             for (ConfusionPoint confusion : source.confusions()) {
                 List<Integer> turns = withoutMeta(List.of(confusion.turn()), metaTurns);
-                if (!turns.isEmpty()) {
+                boolean hasBelief = confusion.userBelief() != null && !confusion.userBelief().isBlank();
+                if (hasBelief && !turns.isEmpty()) {
                     unit.addItem(MemoryItemKind.CONFUSION, confusion.userBelief(), turns);
                 }
             }
