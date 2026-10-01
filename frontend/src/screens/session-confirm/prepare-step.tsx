@@ -32,6 +32,15 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
       </View>
     );
   }
+  if (data.failed) {
+    return (
+      <View style={styles.step}>
+        <ThemedText variant="title">문제를 만들지 못했어요</ThemedText>
+        <Notice tone="danger">{data.failureReason ?? '잠시 후 다시 시도해 주세요.'}</Notice>
+        <Button title="학습 목표 다시 고르기" onPress={onNoPlan} />
+      </View>
+    );
+  }
   if (!data.generating && data.planned === 0) {
     return (
       <View style={styles.step}>
@@ -68,7 +77,7 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
         </View>
         <ThemedText variant="caption" tone="inkSecondary">
           {held > 0
-            ? `보류된 ${held}개는 품질 검사를 통과하지 못해 이번 학습에서 빠졌어요.`
+            ? `보류된 ${held}개(${data.held.map((h) => questionTypeLabel[h.type]).join(', ')})는 품질 검사를 통과하지 못해 이번 첫 학습에서 빠졌어요. 검사를 통과한 문제만 풀어요.`
             : '모든 문제가 품질 검사를 통과했어요.'}
         </ThemedText>
       </Card>

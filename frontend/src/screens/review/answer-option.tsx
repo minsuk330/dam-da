@@ -39,8 +39,8 @@ export function AnswerOption({
         pressed && styles.pressed,
       ]}>
       <View style={styles.content}>
-        {state === 'correct' && <Icon name="check" size={18} color={look.text} />}
-        {state === 'wrong' && <Icon name="x" size={18} color={look.text} />}
+        {state === 'correct' && <Icon name="check" size="md" color={look.text} />}
+        {state === 'wrong' && <Icon name="x" size="md" color={look.text} />}
         <Text style={[components.answerOption.typography, { color: look.text }]} numberOfLines={2}>
           {label}
         </Text>
@@ -61,5 +61,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  pressed: { opacity: 0.85 },
+  pressed: { backgroundColor: colors.outline },
 });

@@ -222,8 +222,7 @@ export const mockSessionApi = {
   strength(id: number): Schemas['Options'] {
     const itemCount = detail(id).units.flatMap((u) => u.items).filter((i) => i.status !== 'EXCLUDED').length
     return {
-      // 실제 API는 고르기 전이면 null을 준다(계약에는 null 표시가 빠져 있다).
-      current: (chosen[id]?.strength ?? null) as Strength,
+      current: chosen[id]?.strength ?? null,
       itemCount,
       simulationDays: 30,
       options: STRENGTHS.map((s) => ({ ...s, dailyMinutes: s.dailyMinutes * Math.max(1, itemCount / 4) })),
