@@ -29,8 +29,6 @@ npm run dev           # :5173, /api는 localhost:8080으로 proxy
 npm run api:types     # API 계약(frontend/openapi.json) 바뀌면 타입 재생성
 ```
 
-API 계약: 백엔드 DTO가 기준이고 `OpenApiSpecIT`가 `frontend/openapi.json`을 갱신한다. 프론트엔드 타입(`src/api/schema.d.ts`)은 손으로 고치지 않는다. 절차는 README 참고.
-
 ## Hard 제약
 
 위반하면 제품 전제가 깨지는 규칙이다. 바꿔야 하면 코드보다 먼저 사용자와 합의하고 스펙을 고친다.
@@ -70,6 +68,20 @@ API 계약: 백엔드 DTO가 기준이고 `OpenApiSpecIT`가 `frontend/openapi.j
 - 컨텍스트 간에는 ID로 참조하고, 다른 컨텍스트 기능은 그 컨텍스트의 application 서비스로 호출한다.
 - API 입출력은 DTO(record). 엔티티를 밖으로 노출하지 않는다.
 - `tools/`는 개발 도구 CLI 예외 패키지다. 런타임 코드가 의존하지 않는다.
+
+## API 계약 (필수)
+
+백엔드 코드가 기준이다. springdoc이 `/api/**` 컨트롤러를 자동으로 읽으므로 API를 추가해도 springdoc 설정은 고치지 않는다.
+
+- 앱이 쓰는 API는 `/api/` 아래에 둔다. 다른 경로는 계약(`frontend/openapi.json`)에 들어가지 않는다.
+- 요청·응답은 DTO record로 쓴다. `Map`, `ResponseEntity<?>`, `Object`를 반환하면 계약에 타입이 남지 않는다.
+- null이 될 수 있는 record 필드는 `org.jspecify.annotations.Nullable`로 표시한다. 표시 없는 필드는 계약에서 null이 아닌 값이 된다(`RecordNullabilityConverter`).
+- API를 바꾸면:
+  1. `./gradlew test` — `OpenApiSpecIT`가 `frontend/openapi.json`을 다시 쓰고 한 번 실패한다. 다시 실행해 통과를 확인한다.
+  2. `cd frontend && npm run api:types` — `src/api/schema.d.ts`를 다시 만든다.
+  3. `openapi.json`과 `schema.d.ts`를 같은 커밋에 넣는다.
+- `src/api/schema.d.ts`와 `openapi.json`은 손으로 고치지 않는다.
+- `/v3/api-docs`, Swagger UI는 `API_DOCS_ENABLED=true`일 때만 열린다. 배포 서버에서는 켜지 않는다.
 
 ## 소유 경계
 

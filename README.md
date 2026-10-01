@@ -81,13 +81,7 @@ npm run lint
 npm run api:types   # frontend/openapi.json → src/api/schema.d.ts
 ```
 
-API 계약은 백엔드 코드가 기준이다.
-
-1. `/api/**` 컨트롤러나 응답 DTO record를 바꾸고 `./gradlew test`를 돌리면 `OpenApiSpecIT`가 `frontend/openapi.json`을 다시 쓰고 한 번 실패한다. 다시 돌리면 통과한다.
-2. `frontend`에서 `npm run api:types`로 타입을 다시 만들고, `openapi.json`과 `schema.d.ts`를 함께 커밋한다.
-3. DTO record의 null 가능 필드는 `org.jspecify.annotations.Nullable`로 표시한다. 표시 없는 필드는 계약에서 null이 아닌 값이 된다(`RecordNullabilityConverter`).
-
-- Swagger UI(`/swagger-ui/index.html`)와 `/v3/api-docs`는 `API_DOCS_ENABLED=true`일 때만 열린다. 배포 서버에서는 켜지 않는다.
+API 계약 규칙과 변경 절차는 [`AGENTS.md`](AGENTS.md#api-계약-필수)를 따른다. 로컬 Swagger UI는 `API_DOCS_ENABLED=true`로 띄운 뒤 `/swagger-ui/index.html`.
 
 - 배포: 프론트엔드는 Vercel(Root Directory `frontend`), 백엔드는 VPS에 따로 올린다.
 - 백엔드 API는 `/api/**` 접두사를 쓴다. Vercel에서는 `frontend/vercel.json` rewrites로 `/api/**`를 VPS로 넘겨 같은 출처로 호출한다(VPS 도메인이 정해지면 추가).
