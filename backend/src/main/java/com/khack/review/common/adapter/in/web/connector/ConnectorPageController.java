@@ -41,6 +41,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 class ConnectorPageController {
 
     private static final String CSRF = ConnectorPageController.class.getName() + ".csrf";
+    /** 이 브라우저 세션에서 마지막으로 처리한 승인 요청({@code allow:}·{@code deny:} + 인가 요청). 같은 요청이 두 번 제출되면 안내만 한다. */
+    private static final String DECIDED = ConnectorPageController.class.getName() + ".decided";
     private static final MediaType HTML = new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8);
 
     private final SocialRegistrations social;
@@ -83,7 +85,7 @@ class ConnectorPageController {
                   <li>지금 나누는 학습 대화를 복습 앱에 저장</li>
                 </ul>
                 <p>복습 문제와 풀이 기록은 Claude로 보내지 않습니다. 복습은 앱에서 합니다.</p>
-                <form method="post" action="/connect/consent">
+                <form method="post" action="/connect/consent" onsubmit="if (this.dataset.sent) return false; this.dataset.sent = '1';">
                   <input type="hidden" name="query" value="%s">
                   <input type="hidden" name="csrf" value="%s">
                   <button class="button primary" name="decision" value="allow">허용</button>
@@ -99,8 +101,17 @@ class ConnectorPageController {
         currentUser.id();
         HttpSession session = request.getSession();
         if (!validCsrf(session, csrf)) {
+            // 이미 처리한 요청이 한 번 더 제출됐다(버튼을 두 번 누름 등). 첫 제출로 연결은 끝났으니 오류 대신 안내한다.
+            Object decided = session.getAttribute(DECIDED);
+            if (("allow:" + query).equals(decided)) {
+                return html(HttpStatus.OK, page("연결 승인됨", "<h1>이미 연결을 승인했습니다</h1><p>이 창을 닫고 Claude로 돌아가세요.</p>"));
+            }
+            if (("deny:" + query).equals(decided)) {
+                return html(HttpStatus.OK, page("연결 취소", "<h1>이미 연결을 취소했습니다</h1><p>이 창을 닫아도 됩니다.</p>"));
+            }
             return html(HttpStatus.FORBIDDEN, page("연결할 수 없음", "<h1>요청이 만료되었습니다</h1><p>Claude에서 다시 연결해 주세요.</p>"));
         }
+        session.setAttribute(DECIDED, ("allow".equals(decision) ? "allow:" : "deny:") + query);
         if ("allow".equals(decision)) {
             ConnectorConsentGate.approve(session, query);
             response.sendRedirect("/oauth2/authorize?" + query);
