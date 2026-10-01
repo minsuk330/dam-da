@@ -12,6 +12,16 @@ export function sampleRetrievability(session: Session): number | null {
   return SAMPLE_VALUES[session.id % SAMPLE_VALUES.length]
 }
 
+/** 예시 R이 가장 낮은 세션. 확인된 세션이 없으면 null. */
+export function sampleWeakest(sessions: Session[]): { session: Session; value: number } | null {
+  let weakest: { session: Session; value: number } | null = null
+  for (const session of sessions) {
+    const value = sampleRetrievability(session)
+    if (value !== null && (weakest === null || value < weakest.value)) weakest = { session, value }
+  }
+  return weakest
+}
+
 /** 확인된 세션들의 예시 R 평균. 확인된 세션이 없으면 null. */
 export function sampleAverage(sessions: Session[]): number | null {
   const values = sessions.map(sampleRetrievability).filter((v): v is number => v !== null)

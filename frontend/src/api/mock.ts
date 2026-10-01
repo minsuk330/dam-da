@@ -188,6 +188,31 @@ export const mockLearningSessions: Schemas['LearningSessionSummary'][] = [
   },
 ]
 
+/** 검수를 마친 세션의 "학습 내용 도착" 알림. 읽음 처리를 mock 안에서도 유지하도록 변경 가능한 객체로 둔다. */
+export const mockNotifications: Schemas['NotificationsView'] = {
+  unreadCount: 1,
+  items: [
+    {
+      id: 2,
+      type: 'SESSION_READY',
+      title: 'InnoDB 잠금과 MVCC 학습 내용이 도착했어요',
+      body: '공부할 내용을 확인해 보세요.',
+      targetId: 3,
+      read: false,
+      createdAt: daysAgo(0),
+    },
+    {
+      id: 1,
+      type: 'SESSION_READY',
+      title: '경영통계: 표준오차 학습 내용이 도착했어요',
+      body: '공부할 내용을 확인해 보세요.',
+      targetId: 2,
+      read: true,
+      createdAt: daysAgo(2),
+    },
+  ],
+}
+
 export const mockIntake: Schemas['IntakeResponse'] = {
   conversationId: 'mock-innodb',
   inputPath: 'paste',
