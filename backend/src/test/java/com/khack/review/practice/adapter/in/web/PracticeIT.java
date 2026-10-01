@@ -34,6 +34,7 @@ import com.khack.review.memory.domain.HoldReason;
 import com.khack.review.memory.domain.ReviewLog;
 import com.khack.review.memory.domain.ReviewLogRepository;
 import com.khack.review.memory.domain.SelfAssessment;
+import com.khack.review.practice.application.AnswerJudgeFixtures;
 import com.khack.review.practice.application.AnswerJudgeQuestions;
 import com.khack.review.practice.application.AnswerJudgeState;
 import com.khack.review.practice.application.LearningGoalService;
@@ -121,7 +122,7 @@ class PracticeIT {
     }
 
     static JevResult judged(String verdict, double contradiction, double repeats) {
-        return judged(verdict, 0.8, contradiction, 0.05, repeats);
+        return judged(verdict, 0.9, contradiction, 0.05, repeats);
     }
 
     static JevResult judged(String verdict, double confidence, double contradiction, double misread, double repeats) {
@@ -129,7 +130,7 @@ class PracticeIT {
                 AnswerJudgeQuestions.VERDICT, new JevAnswer.Choice(verdict, Map.of(verdict, confidence), confidence),
                 AnswerJudgeQuestions.OMISSION, new JevAnswer.Noul(0.1),
                 AnswerJudgeQuestions.CONTRADICTION, new JevAnswer.Noul(contradiction),
-                AnswerJudgeQuestions.MISREAD, new JevAnswer.Noul(misread),
+                AnswerJudgeQuestions.MISREAD, AnswerJudgeFixtures.misread(misread),
                 AnswerJudgeQuestions.REPEATS_USER_BELIEF, new JevAnswer.Noul(repeats),
                 AnswerJudgeQuestions.OFF_TARGET_ERROR, new JevAnswer.Noul(0.1)));
     }
@@ -289,7 +290,7 @@ class PracticeIT {
         });
         assertThat(judgments.findByAttemptId(unaided.get("attemptId").asLong())).hasValueSatisfying(j -> {
             assertThat(j.getJudgedBy()).isEqualTo(JudgedBy.JEV);
-            assertThat(j.getVerdictConfidence()).isEqualTo(0.8);
+            assertThat(j.getVerdictConfidence()).isEqualTo(0.9);
             assertThat(j.getEvidenceFidelity()).isEqualTo("model_transcribed");
         });
         PracticeAttempt firstAttempt = attempts.findById(unaided.get("attemptId").asLong()).orElseThrow();
@@ -354,7 +355,7 @@ class PracticeIT {
         assertThat(unaidedLog.getRating()).isEqualTo(Rating.AGAIN);
         assertThat(unaidedLog.getPolicyRow()).isEqualTo(4);
         assertThat(unaidedLog.getVerdict()).isEqualTo(AnswerVerdict.NOT_MET);
-        assertThat(unaidedLog.getVerdictConfidence()).isEqualTo(0.8);
+        assertThat(unaidedLog.getVerdictConfidence()).isEqualTo(0.9);
         assertThat(unaidedLog.getFailures()).isEqualTo("contradiction");
         assertThat(unaidedLog.getSelfAssessment()).isEqualTo(SelfAssessment.RECALLED_WITH_EFFORT);
         assertThat(aided.get("rating").isNull()).as("판정 실패: 등급 변환 안 함").isTrue();

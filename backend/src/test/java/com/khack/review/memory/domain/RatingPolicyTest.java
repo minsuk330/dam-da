@@ -93,7 +93,7 @@ class RatingPolicyTest {
     }
 
     @Test
-    void transcribedEvidenceNeedsHigherConfidence() {
+    void evidenceTranscribedNeedsHigherConfidence() {
         RatingPolicy policy = new RatingPolicy(0.6, 0.7,
                 Map.of(QuestionType.SHORT_ANSWER, Duration.ofSeconds(40)), 1.5);
         RatingInput verbatim = input(AnswerVerdict.MET, 0.65, false, 0, false, SelfAssessment.RECALLED_WITH_EFFORT);

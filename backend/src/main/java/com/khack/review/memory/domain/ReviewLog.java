@@ -109,12 +109,18 @@ public class ReviewLog {
 
     private Long firstInputMs;
 
+    /** 판정에 쓴 대화 근거가 모델이 옮겨 적은 것이었나. 이 기록 이전의 행은 null이다. */
+    private Boolean evidenceTranscribed;
+
+    /** 이 시도에 적용한 행 1·2의 신뢰도 기준(출처별). 이 기록 이전의 행은 null이다. */
+    private Double appliedMinConfidence;
+
     protected ReviewLog() {
     }
 
     /** 등급 또는 보류 결정을 남긴다. 평가 대상이 아닌 시도({@link RatingDecision.NotEvaluated})는 기록하지 않는다. */
     public static ReviewLog of(ReviewContext context, RatingInput input, RatingDecision decision, @Nullable Double elapsedDays,
-            @Nullable Integer parametersVersion) {
+            @Nullable Integer parametersVersion, double appliedMinConfidence) {
         ReviewLog log = new ReviewLog();
         switch (decision) {
             case RatingDecision.Rated rated -> {
@@ -129,6 +135,8 @@ public class ReviewLog {
                     throw new IllegalArgumentException("평가 대상이 아닌 시도는 복습 기록을 남기지 않습니다.");
         }
         log.policyVersion = decision.policyVersion();
+        log.evidenceTranscribed = input.evidenceTranscribed();
+        log.appliedMinConfidence = appliedMinConfidence;
         log.userId = context.userId();
         log.memoryItemId = context.memoryItemId();
         log.questionId = context.questionId();
@@ -196,6 +204,14 @@ public class ReviewLog {
 
     public int getPolicyRow() {
         return policyRow;
+    }
+
+    public Boolean getEvidenceTranscribed() {
+        return evidenceTranscribed;
+    }
+
+    public Double getAppliedMinConfidence() {
+        return appliedMinConfidence;
     }
 
     public int getPolicyVersion() {

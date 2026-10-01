@@ -97,10 +97,21 @@ public class AnswerJudge {
         return new AnswerJudgment.Jev(verdict(verdict.choice()), verdict.confidence(),
                 result.noul(AnswerJudgeQuestions.OMISSION).probability(),
                 result.noul(AnswerJudgeQuestions.CONTRADICTION).probability(),
-                result.noul(AnswerJudgeQuestions.MISREAD).probability(),
+                misread(result.choice(AnswerJudgeQuestions.MISREAD)),
                 withUserBelief ? result.noul(AnswerJudgeQuestions.REPEATS_USER_BELIEF).probability() : null,
                 result.noul(AnswerJudgeQuestions.OFF_TARGET_ERROR).probability(),
                 result.model());
+    }
+
+    /** `misread`는 신뢰도가 필요해 choice로 묻는다. 선택과 그 신뢰도를 `verdict`와 따로 그대로 보존한다. */
+    private static AnswerJudgment.Misread misread(JevAnswer.Choice answer) {
+        String choice = answer.choice();
+        if (!AnswerJudgeQuestions.MISREAD_CHOICE.equals(choice) && !AnswerJudgeQuestions.AS_ASKED.equals(choice)
+                && !AnswerJudgeQuestions.QUESTION_UNCLEAR.equals(choice)) {
+            throw new IllegalArgumentException("알 수 없는 misread 선택: " + choice);
+        }
+        return new AnswerJudgment.Misread(choice, answer.probabilities().getOrDefault(AnswerJudgeQuestions.MISREAD_CHOICE, 0.0),
+                answer.confidence());
     }
 
     private static AnswerVerdict verdict(String choice) {

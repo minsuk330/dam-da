@@ -115,6 +115,8 @@ class ReviewRecordServiceIT {
         assertThat(log.getRating()).isEqualTo(Rating.EASY);
         assertThat(log.getHoldReason()).isNull();
         assertThat(log.getPolicyVersion()).isEqualTo(RatingPolicy.VERSION);
+        assertThat(log.getEvidenceTranscribed()).as("원문 근거로 판정").isFalse();
+        assertThat(log.getAppliedMinConfidence()).as("적용한 기준을 기록한다").isEqualTo(0.7);
         assertThat(log.getParametersVersion()).isEqualTo(FsrsParametersService.DEFAULT_VERSION);
         assertThat(log.getElapsedDays()).as("첫 등급").isNull();
         assertThat(log.getPredictedRetrievability()).isEqualTo(0.8);
