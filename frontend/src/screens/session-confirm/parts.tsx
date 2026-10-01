@@ -36,7 +36,7 @@ export function StepHeader({ step, total, title, description }: { step: number; 
 export function Notice({ tone = 'warning', children }: { tone?: 'warning' | 'danger'; children: ReactNode }) {
   return (
     <View accessibilityRole="alert" style={[styles.notice, tone === 'danger' && styles.noticeDanger]}>
-      <Icon name="alert-circle" size={18} color={tone === 'danger' ? colors.dangerInk : colors.warningInk} />
+      <Icon name="alert-circle" size="md" color={tone === 'danger' ? colors.dangerInk : colors.warningInk} />
       <ThemedText variant="subhead" tone={tone === 'danger' ? 'dangerInk' : 'warningInk'} style={styles.noticeText}>
         {children}
       </ThemedText>

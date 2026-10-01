@@ -38,21 +38,23 @@ export function Conversations() {
       ) : (
         conversations.map((c) => (
           <Link key={c.id} href={{ pathname: '/conversations/[id]', params: { id: c.id } }} asChild>
-            <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
-              <Card style={styles.card}>
-                <View style={styles.titleRow}>
-                  <ThemedText variant="headline" style={styles.title}>
-                    {c.topicHint ?? '주제 없음'}
+            <Pressable accessibilityRole="link">
+              {({ pressed }) => (
+                <Card pressed={pressed} style={styles.card}>
+                  <View style={styles.titleRow}>
+                    <ThemedText variant="headline" style={styles.title}>
+                      {c.topicHint ?? '주제 없음'}
+                    </ThemedText>
+                    {c.warningCount > 0 && <Chip variant="warning" label={`경고 ${c.warningCount}`} />}
+                  </View>
+                  <ThemedText variant="caption" tone="inkMuted">
+                    {formatDateTime(c.receivedAt)} · {inputPathLabel[c.inputPath]} · {fidelityLabel[c.fidelity]}
                   </ThemedText>
-                  {c.warningCount > 0 && <Chip variant="warning" label={`경고 ${c.warningCount}`} />}
-                </View>
-                <ThemedText variant="caption" tone="inkMuted">
-                  {formatDateTime(c.receivedAt)} · {inputPathLabel[c.inputPath]} · {fidelityLabel[c.fidelity]}
-                </ThemedText>
-                <ThemedText variant="subhead" tone="inkSecondary">
-                  발화 {c.userTurnCount}개 · 복습 단위 {c.reviewUnitCount}개
-                </ThemedText>
-              </Card>
+                  <ThemedText variant="subhead" tone="inkSecondary">
+                    발화 {c.userTurnCount}개 · 복습 단위 {c.reviewUnitCount}개
+                  </ThemedText>
+                </Card>
+              )}
             </Pressable>
           </Link>
         ))
@@ -67,5 +69,4 @@ const styles = StyleSheet.create({
   card: { gap: spacing.xs },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   title: { flex: 1 },
-  pressed: { opacity: 0.85 },
 });

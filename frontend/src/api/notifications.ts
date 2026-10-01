@@ -38,3 +38,25 @@ export function useMarkNotificationRead() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   })
 }
+
+/** 알림을 모두 읽음으로 바꾼다. */
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      if (mockEnabled) {
+        mockNotifications.items.forEach((n) => (n.read = true))
+        mockNotifications.unreadCount = 0
+        return
+      }
+      const result = await api.POST('/api/notifications/read-all')
+      if (!result.response.ok) throw new Error(`API ${result.response.status}`)
+    },
+    onMutate: () => {
+      queryClient.setQueryData<Schemas['NotificationsView']>(['notifications'], (old) =>
+        old && { unreadCount: 0, items: old.items.map((n) => ({ ...n, read: true })) },
+      )
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  })
+}

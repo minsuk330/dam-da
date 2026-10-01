@@ -6,7 +6,7 @@ import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { ThemedText } from '@/components/themed-text';
 import { aiVerdictLabel, factKindLabel, fidelityLabel, formatDateTime, inputPathLabel, intentLabel } from '@/labels';
-import { colors, components, radius, spacing } from '@/theme';
+import { colors, components, opacity, radius, spacing } from '@/theme';
 
 type Turn = Schemas['UserTurnResponse'];
 type ReviewUnit = Schemas['ReviewUnitResponse'];
@@ -182,5 +182,5 @@ const styles = StyleSheet.create({
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
   quote: { borderLeftWidth: 2, borderLeftColor: colors.outline, paddingLeft: spacing.md },
-  muted: { opacity: 0.6 },
+  muted: { opacity: opacity.excluded },
 });

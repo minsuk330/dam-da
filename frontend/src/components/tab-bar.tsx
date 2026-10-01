@@ -50,7 +50,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                 if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
               }}
               style={[styles.item, { backgroundColor: token.backgroundColor }]}>
-              <Icon name={tab.icon} size={22} color={token.textColor} />
+              <Icon name={tab.icon} size="lg" color={token.textColor} />
             </Pressable>
           );
         })}
