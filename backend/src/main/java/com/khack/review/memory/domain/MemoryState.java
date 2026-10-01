@@ -13,6 +13,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.hibernate.annotations.ColumnDefault;
 
@@ -71,6 +73,15 @@ public class MemoryState {
     @ColumnDefault("false")
     private boolean autoQuestionsPaused;
 
+    /**
+     * 대화 근거로 매긴 초기 등급(스펙 §6.4.4)과 그 시각. 복습 기록(review_log)에 남지 않으므로 재계산 때 첫 복습으로 다시 적용한다.
+     * 초기 평가 없이 시작한 항목은 null이다.
+     */
+    @Enumerated(EnumType.STRING)
+    private Rating initialRating;
+
+    private Instant initialRatedAt;
+
     protected MemoryState() {
     }
 
@@ -85,6 +96,43 @@ public class MemoryState {
     public void review(Scheduler scheduler, int parametersVersion, Rating rating, Instant reviewedAt) {
         apply(scheduler.reviewCard(toCard(), rating, reviewedAt).card(), parametersVersion);
         consecutiveHolds = 0;
+    }
+
+    /** 대화 근거로 초기 등급을 반영한다. 재계산 때 쓰도록 등급과 시각을 남긴다. */
+    public void seed(Scheduler scheduler, int parametersVersion, Rating rating, Instant ratedAt) {
+        review(scheduler, parametersVersion, rating, ratedAt);
+        this.initialRating = rating;
+        this.initialRatedAt = ratedAt;
+    }
+
+    /** 재계산에 다시 적용할 등급 하나. */
+    public record Replay(Rating rating, Instant reviewedAt) {
+    }
+
+    /**
+     * 새 매개변수로 기억 상태를 처음부터 다시 계산한다(스펙 §6.4.9). java-fsrs에 재스케줄이 없으므로 초기 등급과 등급 기록을
+     * 시간순으로 다시 적용한다. 목표 유지율은 지금 값을 쓰고, 보류 횟수는 FSRS 상태가 아니므로 그대로 둔다.
+     * 다시 적용할 등급이 없으면(아직 확인 전) 아무것도 바꾸지 않는다.
+     */
+    public void replay(Scheduler scheduler, int parametersVersion, List<Replay> reviews) {
+        List<Replay> all = new ArrayList<>();
+        if (initialRating != null) {
+            all.add(new Replay(initialRating, initialRatedAt));
+        }
+        all.addAll(reviews);
+        if (all.isEmpty()) {
+            return;
+        }
+        Card card = Card.builder().cardId(Math.toIntExact(memoryItemId)).due(all.getFirst().reviewedAt()).build();
+        for (Replay review : all) {
+            card = scheduler.reviewCard(card, review.rating(), review.reviewedAt()).card();
+        }
+        apply(card, parametersVersion);
+    }
+
+    /** 초기 평가가 있었는가. */
+    public boolean isSeeded() {
+        return initialRating != null;
     }
 
     /**

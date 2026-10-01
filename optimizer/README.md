@@ -1,6 +1,6 @@
 # optimizer
 
-개인 FSRS 매개변수 학습·검증 배치 (스펙 §6.4.9, #24). 서버 스케줄러는 java-fsrs이고, java-fsrs에는 매개변수 최적화가 없어 py-fsrs(`fsrs[optimizer]`) 옵티마이저를 쓴다.
+개인 FSRS 매개변수 학습·검증 배치 (스펙 §6.4.9, #24). 서버 스케줄러는 java-fsrs이고, java-fsrs에는 매개변수 최적화가 없어 py-fsrs(`fsrs[optimizer]`) 옵티마이저를 쓴다. 적용·재계산은 백엔드가 한다(#25).
 
 ## 실행
 
@@ -23,7 +23,19 @@ uv run khack-optimizer --server http://localhost:8080      # 개선되면 새 �
 4. 뒤 구간 복습마다 복습 직전 예측 R과 실제 기억 여부(Again이면 0)로 log loss와 RMSE(bins, 20구간)를 계산한다.
    항목 기록은 처음부터 다시 적용하고, 같은 날 재확인은 상태에만 반영하고 채점하지 않는다(옵티마이저 손실과 같은 기준). 재확인 건수는 검증 결과에 따로 남긴다.
 5. 학습 매개변수의 log loss가 **기본값과 현재 값 둘 다**보다 `min-improvement`(기본 2%) 이상 낮을 때만 `POST /dev/fsrs-parameters`로 새 버전(`OPTIMIZED`)과 검증 결과를 저장한다.
-   그렇지 않으면 기존 값을 유지한다. 저장한 버전의 적용(활성화)과 기억 상태 재계산은 #25.
+   그렇지 않으면 기존 값을 유지한다. 저장만 하고 적용은 하지 않는다.
+
+## 적용과 롤백
+
+```bash
+curl localhost:8080/dev/fsrs-parameters                      # 저장된 버전 목록
+curl -X POST localhost:8080/dev/fsrs-parameters/2/activate   # 현재 사용자에게 버전 2 적용 + 기억 상태 재계산
+curl -X POST localhost:8080/dev/fsrs-parameters/1/activate   # 기본값으로 롤백
+```
+
+java-fsrs에는 재스케줄이 없으므로, 적용할 때 항목마다 초기 등급(대화 근거, `memory_state.initial_rating`)과 등급 기록을 시간순으로 새 스케줄러에 다시 적용한다.
+이후 등급은 새 버전으로 반영되고 복습 기록에 버전이 남는다. 매일 학습 큐는 다시 계산된 다음 복습 시각을 그대로 쓴다.
+초기 등급 저장 이전에 초기 평가를 받은 항목은 처음부터 다시 적용할 수 없어 기존 상태를 둔다(응답의 `skipped`).
 
 ## 설정값
 
