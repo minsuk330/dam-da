@@ -42,7 +42,7 @@ export function TurnsStep({ session, onNext }: { session: Detail; onNext: () => 
       />
 
       {session.fidelity === 'model_transcribed' && (
-        <Notice>모델이 옮겨 적은 대화예요. 확인하기 전에는 원문으로 취급하지 않아요.</Notice>
+        <Notice>Claude가 옮겨 적은 대화예요. 내가 한 말과 같은지 확인해 주세요. 확인하기 전에는 원문 그대로로 보지 않아요.</Notice>
       )}
       {edit.error && <Notice tone="danger">{edit.error.message}</Notice>}
 
@@ -50,7 +50,7 @@ export function TurnsStep({ session, onNext }: { session: Detail; onNext: () => 
         editing === turn.index ? (
           <TurnEditor
             key={turn.index}
-            title={`발화 ${turn.index} 고치기`}
+            title={`${turn.index}번째 메시지 고치기`}
             initial={turn}
             saving={edit.isPending}
             onCancel={() => setEditing(null)}
@@ -72,7 +72,7 @@ export function TurnsStep({ session, onNext }: { session: Detail; onNext: () => 
 
       {editing === 'new' ? (
         <TurnEditor
-          title="빠진 발화 추가"
+          title="빠진 메시지 추가"
           initial={{ text: '', intent: 'info_request' }}
           sourceCandidates={sourceCandidates}
           saving={edit.isPending}
@@ -87,7 +87,7 @@ export function TurnsStep({ session, onNext }: { session: Detail; onNext: () => 
       ) : (
         <Button
           variant="secondary"
-          title="빠진 발화 추가"
+          title="빠진 메시지 추가"
           disabled={editing !== null}
           onPress={() => setEditing('new')}
         />
@@ -105,13 +105,13 @@ function TurnCard({ turn, onEdit, disabled }: { turn: Turn; onEdit: () => void; 
     <Card style={[styles.turn, meta && styles.turnMeta]}>
       <View style={styles.turnHeader}>
         <ThemedText variant="caption" tone="inkMuted">
-          발화 {turn.index}
+          {turn.index}번째 메시지
         </ThemedText>
         <Chip label={intentLabel[turn.intent]} />
         <View style={styles.spacer} />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`발화 ${turn.index} 고치기`}
+          accessibilityLabel={`${turn.index}번째 메시지 고치기`}
           disabled={disabled}
           onPress={onEdit}
           hitSlop={8}>
@@ -123,12 +123,12 @@ function TurnCard({ turn, onEdit, disabled }: { turn: Turn; onEdit: () => void; 
       <ThemedText tone={meta ? 'inkMuted' : 'ink'}>{turn.text}</ThemedText>
       {meta && (
         <ThemedText variant="caption" tone="inkMuted">
-          대화 진행 발화는 복습 근거로 쓰지 않아요.
+          대화 진행 메시지는 복습에 쓰지 않아요.
         </ThemedText>
       )}
       {verdict && (
         <ThemedText variant="caption" tone="inkSecondary">
-          대화 중 AI 판정: {verdict}
+          대화에서 AI가 {verdict}
           {turn.correction ? ` · ${turn.correction}` : ''}
         </ThemedText>
       )}
@@ -168,7 +168,7 @@ function TurnEditor({
     <Card style={styles.turn}>
       <ThemedText variant="headline">{title}</ThemedText>
       <TextInput
-        accessibilityLabel="발화 내용"
+        accessibilityLabel="메시지 내용"
         value={text}
         onChangeText={setText}
         multiline
@@ -178,7 +178,7 @@ function TurnEditor({
         style={styles.field}
       />
       <ThemedText variant="caption" tone="inkMuted">
-        이 발화는 무엇이었나요?
+        이 메시지는 무엇이었나요?
       </ThemedText>
       <View style={styles.intents}>
         {INTENTS.map((value) => {
@@ -200,7 +200,7 @@ function TurnEditor({
       {canBeSource && (
         <View>
           <ThemedText variant="caption" tone="inkMuted">
-            이 발화가 근거가 되는 내용을 골라 주세요. (선택)
+            이 메시지가 근거가 되는 내용을 골라 주세요. (선택)
           </ThemedText>
           {sourceCandidates.map((item, i) => (
             <OptionRow

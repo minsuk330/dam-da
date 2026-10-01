@@ -158,7 +158,7 @@ function TodayStudy({
       <Card style={styles.todayCard}>
         <ThemedText variant="title">오늘 낼 문제를 준비하지 못했어요</ThemedText>
         <ThemedText variant="subhead" tone="inkSecondary">
-          품질 검사를 통과한 문제가 없어 오늘 학습을 시작하지 못했어요. 기억 상태는 바뀌지 않았어요.
+          확인을 통과한 문제가 없어 오늘 학습을 시작하지 못했어요. 기억 상태는 바뀌지 않았어요.
         </ThemedText>
         <Button variant="secondary" title="다시 시도" loading={start.isPending} onPress={() => start.mutate()} />
       </Card>
@@ -373,7 +373,7 @@ function RecentConversations({ serverToday }: { serverToday: string | undefined 
                   {c.topicHint ?? '주제 없음'}
                 </ThemedText>
                 <ThemedText variant="caption" tone="inkMuted">
-                  {formatRelativeDay(c.receivedAt, serverToday)} · 복습 단위 {c.reviewUnitCount}개
+                  {formatRelativeDay(c.receivedAt, serverToday)} · 주제 {c.reviewUnitCount}개
                 </ThemedText>
               </View>
               {c.warningCount > 0 && <View accessibilityLabel={`경고 ${c.warningCount}`} style={styles.warningDot} />}

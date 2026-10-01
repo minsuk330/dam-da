@@ -59,7 +59,7 @@ export function Conversations() {
                   {formatRelativeDay(c.receivedAt, serverToday)} · {inputPathLabel[c.inputPath]} · {fidelityLabel[c.fidelity]}
                 </ThemedText>
                 <ThemedText variant="caption" tone="inkSecondary">
-                  발화 {c.userTurnCount}개 · 복습 단위 {c.reviewUnitCount}개
+                  메시지 {c.userTurnCount}개 · 주제 {c.reviewUnitCount}개
                 </ThemedText>
               </View>
               <Icon name="chevron-right" size="md" color={colors.inkMuted} />
