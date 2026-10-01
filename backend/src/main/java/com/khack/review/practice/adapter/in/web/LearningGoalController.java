@@ -37,7 +37,7 @@ class LearningGoalController {
             FirstStudyComposer.Composition plan) {
     }
 
-    record ChooseRequest(List<LearningGoal> goals, MemoryStrength strength) {
+    record GoalsRequest(List<LearningGoal> goals, MemoryStrength strength) {
     }
 
     record ErrorResponse(String code, String message) {
@@ -51,7 +51,7 @@ class LearningGoalController {
     }
 
     @PutMapping("/api/sessions/{sessionId}/learning-goals")
-    FirstStudyComposer.Composition choose(@PathVariable Long sessionId, @RequestBody ChooseRequest request) {
+    FirstStudyComposer.Composition choose(@PathVariable Long sessionId, @RequestBody GoalsRequest request) {
         return goals.choose(sessionId, request.goals(), request.strength());
     }
 
