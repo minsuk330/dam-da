@@ -83,6 +83,10 @@ class FeedbackIT {
     static class StubJev implements JevPort {
 
         final AtomicReference<String> nextAction = new AtomicReference<>();
+        /** 비어 있지 않으면 다음 행동 선택마다 하나씩 꺼내 답한다(동시 요청이 서로 다른 행동을 고르게). */
+        final java.util.Deque<String> nextActions = new java.util.concurrent.ConcurrentLinkedDeque<>();
+        /** 있으면 다음 행동 선택에서 모든 요청이 모일 때까지 기다린다. 동시 요청이 모두 저장 전 상태를 보게 한다. */
+        final AtomicReference<java.util.concurrent.CyclicBarrier> nextActionBarrier = new AtomicReference<>();
         final AtomicReference<Object> lastState = new AtomicReference<>();
         final java.util.Deque<Object> verdicts = new java.util.concurrent.ConcurrentLinkedDeque<>();
 
@@ -97,7 +101,16 @@ class FeedbackIT {
             }
             if (questions.containsKey(NextActionQuestions.NEXT_ACTION)) {
                 lastState.set(state);
-                String next = nextAction.get();
+                java.util.concurrent.CyclicBarrier barrier = nextActionBarrier.get();
+                if (barrier != null) {
+                    try {
+                        barrier.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+                String queued = nextActions.poll();
+                String next = queued != null ? queued : nextAction.get();
                 if (next == null) {
                     throw new JevCallException(500, "테스트: 다음 행동 선택 불가", null);
                 }
@@ -188,6 +201,8 @@ class FeedbackIT {
     @BeforeEach
     void resetStubs() {
         jev.nextAction.set(null);
+        jev.nextActions.clear();
+        jev.nextActionBarrier.set(null);
         jev.lastState.set(null);
         jev.verdicts.clear();
         generator.clear();
@@ -555,6 +570,25 @@ class FeedbackIT {
         assertThat(responses).allSatisfy(r -> assertThat(r.statusCode()).as(r.body()).isEqualTo(200));
         assertThat(aids.findByPresentationIdOrderByExposedAtAscIdAsc(p1)).extracting(AidExposure::getType)
                 .containsExactly(AidType.HINT);
+    }
+
+    @Test
+    void concurrentRequestsChoosingDifferentActionsApplyOnlyOne() throws Exception {
+        long practiceId = startPractice(PracticeKind.FIRST_STUDY);
+        long p1 = nextPresentation(practiceId).get("presentationId").asLong();
+        answerJudged(p1, WRONG_TEXT, "WRONG");
+        clock.travel(Duration.ofSeconds(1));
+        jev.nextActions.addAll(List.of("give_hint", "explain_concept"));
+        jev.nextActionBarrier.set(new java.util.concurrent.CyclicBarrier(2));
+
+        List<HttpResponse<String>> responses = concurrently(p1, 2);
+
+        assertThat(responses).allSatisfy(r -> assertThat(r.statusCode()).as(r.body()).isEqualTo(200));
+        List<AidExposure> shown = aids.findByPresentationIdOrderByExposedAtAscIdAsc(p1);
+        assertThat(shown).as("힌트·설명 중 한쪽만").hasSize(1);
+        int queued = practices.findById(practiceId).orElseThrow().getQueue().size();
+        assertThat(queued).as("설명이 반영됐을 때만 확인 문제 편성")
+                .isEqualTo(shown.getFirst().getType() == AidType.EXPLANATION ? 3 : 2);
     }
 
     /** 같은 제시에 피드백 요청을 동시에 보낸다. */
