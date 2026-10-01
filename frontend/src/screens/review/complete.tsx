@@ -31,7 +31,8 @@ const SAMPLE_NEXT: Record<Path, string> = {
   afterExplanation: '내일',
   repeatedWrong: '오늘 한 번 더',
 };
-const SAMPLE_R: Record<Path, number> = { independent: 0.95, afterHint: 0.86, afterExplanation: 0.74, repeatedWrong: 0.52 };
+// 방금 복습했으므로 대부분 목표 이상이고, 다시 볼 항목만 목표 아래다.
+const SAMPLE_R: Record<Path, number> = { independent: 0.97, afterHint: 0.95, afterExplanation: 0.92, repeatedWrong: 0.8 };
 
 /** 학습 완료: 확인한 항목, 도움이 필요했던 항목, 다음 복습 일정, 복습 단위 게이지. */
 export function ReviewComplete({ results }: { results: ItemResult[] }) {

@@ -49,7 +49,7 @@ export function Memory() {
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={[styles.content, { paddingBottom: tabBarSpace }]}>
-      <Card variant="lavender" style={styles.summary}>
+      <Card style={styles.summary}>
         <View style={styles.row}>
           <ThemedText variant="headline">전체 기억</ThemedText>
           <Chip label="예시 값" />

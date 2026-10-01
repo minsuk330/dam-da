@@ -5,7 +5,8 @@ type Session = Schemas['LearningSessionSummary']
 // 기억 게이지 API(이슈 #21) 전까지 쓰는 예시 값. API가 생기면 이 파일을 지우고 실제 R로 바꾼다.
 // 확인을 마치기 전 세션은 초기 평가가 없으므로 실제와 같이 "아직 확인 전"(null)으로 둔다.
 const CONFIRMED_OR_LATER: Session['status'][] = ['CONFIRMED', 'QUESTIONS_READY', 'IN_PROGRESS']
-const SAMPLE_VALUES = [0.86, 0.72, 0.58, 0.91, 0.44]
+// 세션 ID로 고른다. mock 세션 1(5일 전)은 많이 잊음, 2(2일 전)는 복습할 때로 보이게 한다.
+const SAMPLE_VALUES = [0.93, 0.68, 0.86, 0.91, 0.44]
 
 export function sampleRetrievability(session: Session): number | null {
   if (!CONFIRMED_OR_LATER.includes(session.status)) return null

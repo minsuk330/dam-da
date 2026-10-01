@@ -27,6 +27,7 @@ export const colors = {
   "warning": "#F0A500",
   "warningTint": "#FFF0CC",
   "warningInk": "#7A4D00",
+  "warningFill": "#B87800",
   "glass": "#DCE4FCB8",
   "glassItem": "#CED6EB"
 } as const;
@@ -298,6 +299,12 @@ export const components = {
   },
   "gauge": {
     "backgroundColor": "#D6E1FF",
+    "textColor": "#2448C8",
+    "typography": {
+      "fontFamily": "SUIT-Medium",
+      "fontSize": 12,
+      "lineHeight": 17
+    },
     "rounded": 9999,
     "height": 8
   },
@@ -308,6 +315,34 @@ export const components = {
   },
   "gaugeFill": {
     "backgroundColor": "#2E5BE8",
+    "rounded": 9999
+  },
+  "gaugeReview": {
+    "backgroundColor": "#FFF0CC",
+    "textColor": "#7A4D00",
+    "typography": {
+      "fontFamily": "SUIT-Medium",
+      "fontSize": 12,
+      "lineHeight": 17
+    },
+    "rounded": 9999
+  },
+  "gaugeReviewFill": {
+    "backgroundColor": "#B87800",
+    "rounded": 9999
+  },
+  "gaugeLow": {
+    "backgroundColor": "#FFE3E3",
+    "textColor": "#A8242B",
+    "typography": {
+      "fontFamily": "SUIT-Medium",
+      "fontSize": 12,
+      "lineHeight": 17
+    },
+    "rounded": 9999
+  },
+  "gaugeLowFill": {
+    "backgroundColor": "#E5484D",
     "rounded": 9999
   },
   "gaugeUnchecked": {

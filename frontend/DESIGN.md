@@ -30,6 +30,7 @@ colors:
   warning: "#F0A500"
   warning-tint: "#FFF0CC"
   warning-ink: "#7A4D00"
+  warning-fill: "#B87800"
   glass: "#DCE4FCB8"
   glass-item: "#CED6EB"
 typography:
@@ -208,6 +209,8 @@ components:
     typography: "{typography.body}"
   gauge:
     backgroundColor: "{colors.primary-tint}"
+    textColor: "{colors.primary-ink}"
+    typography: "{typography.caption}"
     rounded: "{rounded.full}"
     height: 8px
   gauge-large:
@@ -216,6 +219,22 @@ components:
     height: 12px
   gauge-fill:
     backgroundColor: "{colors.primary}"
+    rounded: "{rounded.full}"
+  gauge-review:
+    backgroundColor: "{colors.warning-tint}"
+    textColor: "{colors.warning-ink}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.full}"
+  gauge-review-fill:
+    backgroundColor: "{colors.warning-fill}"
+    rounded: "{rounded.full}"
+  gauge-low:
+    backgroundColor: "{colors.danger-tint}"
+    textColor: "{colors.danger-ink}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.full}"
+  gauge-low-fill:
+    backgroundColor: "{colors.danger}"
     rounded: "{rounded.full}"
   gauge-unchecked:
     backgroundColor: "{colors.outline}"
@@ -303,11 +322,19 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
   - 그림자는 쓰지 않는다. 떠 있어도 깊이는 흐림과 반투명으로 만든다.
   - 탭바가 내용 위에 떠 있으므로, 탭 화면의 스크롤 내용은 아래에 탭바 높이만큼 여백을 둔다.
 - **기억 게이지** (스펙 §6.4.3, 레퍼런스에 없어 추가): 지금 떠올릴 확률 R을 보여주는 가로 막대.
-  - 트랙 `primary-tint`, 채움 `primary`(`gauge-fill`), 알약형. 기본 높이 8(`gauge`, 목록 행·복습 단위), 큰 높이 12(`gauge-large`, 세션 요약·완료 화면).
+  - 알약형. 기본 높이 8(`gauge`, 목록 행·복습 단위), 큰 높이 12(`gauge-large`, 세션 요약·완료 화면).
+  - **세 단계 색** (2026-10-01 사용자 결정). 기준은 고정 %가 아니라 그 항목의 **목표 유지율**(기억 강도, 스펙 §6.4.7)이다. 매일 학습 큐가 "R이 목표 유지율 아래면 복습 대상"(§6.4.4)이므로 색의 뜻이 "복습할 때인가"와 같아진다. 목표 유지율을 모르면 0.9로 본다.
+    | 단계 | 조건 | 트랙·라벨 칩 | 채움 | 라벨 |
+    |---|---|---|---|---|
+    | 잘 기억 | R ≥ 목표 | `gauge` (primary-tint / primary-ink) | `gauge-fill` (primary) | 잘 기억해요 |
+    | 복습할 때 | 목표 − 0.15 ≤ R < 목표 | `gauge-review` (warning-tint / warning-ink) | `gauge-review-fill` (warning-fill) | 복습할 때예요 |
+    | 많이 잊음 | R < 목표 − 0.15 | `gauge-low` (danger-tint / danger-ink) | `gauge-low-fill` (danger) | 많이 잊었어요 |
+  - 그라데이션으로 섞지 않고 세 단계로 끊는다. 트랙도 단계 색의 옅은 면으로 바꾼다. 채움은 자기 트랙 위에서 3:1 이상이다(노랑은 `warning`이 1.6:1이라 더 진한 `warning-fill`을 쓴다).
+  - 색만으로 뜻을 전하지 않는다. 퍼센트 옆에 단계 라벨을 트랙과 같은 색의 작은 칩으로 붙인다.
+  - 게이지는 흰 카드(`card`) 위에 둔다. 라벤더·primary 면 위에서는 단계 색이 탁해진다. 빨강 단계도 벌주는 말이 아니라 담담하게("많이 잊었어요") 쓴다.
   - 막대 위에 라벨과 퍼센트를 글자로 함께 쓴다("지금 기억할 확률 72%"). 막대 길이만으로 값을 전달하지 않는다. 글자는 막대가 아니라 카드 위에 있으므로 `ThemedText`로 쓴다: 기본은 `caption`·`ink-secondary`, 큰 게이지는 `subhead`·`ink`, 확인 전은 `caption`·`ink-muted`.
-  - 값이 낮다고 색을 바꾸지 않는다. 약한 항목은 "가장 약한 항목" 같은 글자로 알린다.
   - 아직 등급이 없는 항목은 0%가 아니다. 채움 없이 `gauge-unchecked` 트랙(`outline`)과 "아직 확인 전" 글자로 구분한다.
-  - 진행 막대(풀이 진행도)가 필요하면 같은 토큰을 쓴다.
+  - 진행 막대(풀이 진행도·단계 표시)는 단계 색 없이 `gauge` 트랙 + `gauge-fill`만 쓴다. 진행은 좋고 나쁨이 아니다.
 
 ## Do's and Don'ts
 
