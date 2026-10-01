@@ -39,7 +39,10 @@ AI 대화를 매일의 맞춤형 학습으로 연결하는 개인 지식 유지 
 | 공유 링크 수집 | Playwright for Java | 1.63.0 |
 | 빌드 | Gradle (Groovy DSL) + `io.spring.dependency-management` | 1.1.7 |
 | 테스트 | JUnit 5 (`spring-boot-starter-webmvc-test`) | Spring Boot BOM 관리 |
-| 프론트엔드 | TBD (`frontend/`) | - |
+| API 문서·계약 | springdoc-openapi (`springdoc-openapi-starter-webmvc-ui`) | 3.1.1 |
+| 프론트엔드 | Expo (Expo Router, React Native, 웹은 react-native-web) + TanStack Query (`frontend/`), 웹 빌드를 Vercel 배포 | SDK 57 |
+| 디자인 시스템 | `frontend/DESIGN.md`(Google DESIGN.md 형식, `@google/design.md` lint) → `src/theme/tokens.ts` 생성 | `frontend/package.json` 기준 |
+| API 클라이언트 | openapi-typescript(타입 생성) + openapi-fetch | `frontend/package.json` 기준 |
 
 - 스키마는 해커톤 단계에서 JPA `ddl-auto: update`로 엔티티 기준 자동 갱신한다. 운영 전 마이그레이션 도구로 바꾼다.
 - 개발 도구 `/dev/**`는 `.env`의 `DEV_TOOLS_ENABLED=true`일 때만 열린다. 이 기기에서 직접 온 요청은 그대로 허용하고, 원격(배포 서버·터널 경유)은 `X-Dev-Token` 헤더가 `DEV_TOOLS_TOKEN`과 같을 때만 허용한다. 그 외는 404.
@@ -67,3 +70,28 @@ docker run --rm --init --ipc=host -p 8080:8080 --env-file .env -v "$PWD/data:/ap
 ```
 
 Playwright 버전을 올리면 `backend/Dockerfile`의 `mcr.microsoft.com/playwright/java` 태그도 같은 버전으로 올린다.
+
+### 프론트엔드
+
+Expo 앱이다. 시연은 웹 빌드를 Vercel에 올려 화면 공유로 하고, 웹에서는 가운데 휴대폰 영역(390×844) 안에 그린다.
+
+```bash
+cd frontend
+npm install
+npm run web          # :8081 웹 개발 서버. Spring은 기본 http://localhost:8080 (다르면 EXPO_PUBLIC_API_URL=http://localhost:8082 npm run web)
+npm run typecheck
+npm run lint
+npm run build:web    # expo export -p web → dist/
+npm run api:types    # frontend/openapi.json → src/api/schema.d.ts
+npm run design:tokens  # frontend/DESIGN.md → src/theme/tokens.ts
+```
+
+- 디자인 기준은 [`frontend/DESIGN.md`](frontend/DESIGN.md), 규칙은 [`AGENTS.md`](AGENTS.md#ui디자인-필수).
+- 로컬 개발은 Expo 개발 서버(:8081)와 Spring(:8080)의 출처가 달라 Spring이 `CORS_ALLOWED_ORIGINS`(기본 `http://localhost:8081`)에만 `/api/**` CORS를 연다. 배포 서버는 `CORS_ALLOWED_ORIGINS=`로 비운다.
+- 글꼴은 SUIT(`assets/fonts`, SIL OFL 1.1, `SUIT-LICENSE.txt`).
+
+API 계약 규칙과 변경 절차는 [`AGENTS.md`](AGENTS.md#api-계약-필수)를 따른다. 로컬 Swagger UI는 `API_DOCS_ENABLED=true`로 띄운 뒤 `/swagger-ui/index.html`.
+
+- 배포: 프론트엔드는 Vercel(Root Directory `frontend`), 백엔드는 VPS에 따로 올린다.
+- 백엔드 API는 `/api/**` 접두사를 쓴다. Vercel에서는 `frontend/vercel.json` rewrites로 `/api/**`를 VPS로 넘겨 같은 출처로 호출한다(VPS 도메인이 정해지면 추가).
+- `X-Dev-Token`은 프론트엔드 번들에 넣지 않는다. 배포 환경에서 `/dev/**`는 curl로만 호출한다.

@@ -1,0 +1,1627 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "AI Learning Companion API",
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "/"
+  } ],
+  "paths" : {
+    "/api/conversations" : {
+      "get" : {
+        "operationId" : "list_2",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ConversationSummaryResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "conversation-controller" ]
+      }
+    },
+    "/api/conversations/paste" : {
+      "post" : {
+        "operationId" : "paste",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntakeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "conversation-input-controller" ]
+      }
+    },
+    "/api/conversations/share-link" : {
+      "post" : {
+        "operationId" : "shareLink",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ShareLinkRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntakeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "conversation-input-controller" ]
+      }
+    },
+    "/api/conversations/{id}" : {
+      "get" : {
+        "operationId" : "get",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "conversation-controller" ]
+      }
+    },
+    "/api/learning-sessions" : {
+      "get" : {
+        "operationId" : "list_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/LearningSessionSummary"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-session-controller" ]
+      }
+    },
+    "/api/learning-sessions/{sessionId}" : {
+      "get" : {
+        "operationId" : "detail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LearningSessionDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-session-controller" ]
+      }
+    },
+    "/api/learning-sessions/{sessionId}/confirm" : {
+      "post" : {
+        "operationId" : "confirm",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LearningSessionDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-session-controller" ]
+      }
+    },
+    "/api/learning-sessions/{sessionId}/items/{itemId}" : {
+      "patch" : {
+        "operationId" : "item",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExclusionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LearningSessionDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-session-controller" ]
+      }
+    },
+    "/api/learning-sessions/{sessionId}/turns" : {
+      "post" : {
+        "operationId" : "insertTurn",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewTurnRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LearningSessionDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-session-controller" ]
+      }
+    },
+    "/api/learning-sessions/{sessionId}/turns/{index}" : {
+      "put" : {
+        "operationId" : "editTurn",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "in" : "path",
+          "name" : "index",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TurnRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LearningSessionDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-session-controller" ]
+      }
+    },
+    "/api/learning-sessions/{sessionId}/units/{unitId}" : {
+      "patch" : {
+        "operationId" : "unit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "in" : "path",
+          "name" : "unitId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExclusionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LearningSessionDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-session-controller" ]
+      }
+    },
+    "/api/notifications" : {
+      "get" : {
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotificationsView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "notification-controller" ]
+      }
+    },
+    "/api/notifications/read-all" : {
+      "post" : {
+        "operationId" : "readAll",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "notification-controller" ]
+      }
+    },
+    "/api/notifications/{id}/read" : {
+      "post" : {
+        "operationId" : "read",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "notification-controller" ]
+      }
+    },
+    "/api/practice/presentations/{presentationId}/aids" : {
+      "post" : {
+        "operationId" : "recordAid",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "presentationId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AidRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AidView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "practice-controller" ]
+      }
+    },
+    "/api/practice/presentations/{presentationId}/attempts" : {
+      "post" : {
+        "operationId" : "submit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "presentationId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Submission"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AttemptView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "practice-controller" ]
+      }
+    },
+    "/api/practice/{practiceId}/next" : {
+      "get" : {
+        "operationId" : "next",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "practiceId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Next"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "practice-controller" ]
+      }
+    },
+    "/api/sessions/{sessionId}/first-study" : {
+      "get" : {
+        "operationId" : "firstStudy",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FirstStudy"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "first-study-controller" ]
+      }
+    },
+    "/api/sessions/{sessionId}/first-study/practice" : {
+      "post" : {
+        "operationId" : "startFirstStudy",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PracticeView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "practice-controller" ]
+      }
+    },
+    "/api/sessions/{sessionId}/learning-goals" : {
+      "get" : {
+        "operationId" : "options_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OptionsView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-goal-controller" ]
+      },
+      "put" : {
+        "operationId" : "choose_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChooseRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Composition"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "learning-goal-controller" ]
+      }
+    },
+    "/api/sessions/{sessionId}/memory-strength" : {
+      "get" : {
+        "operationId" : "options",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Options"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "memory-strength-controller" ]
+      },
+      "put" : {
+        "operationId" : "choose",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChooseRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "memory-strength-controller" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "AidRequest" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "enum" : [ "INTERPRETATION", "HINT", "EXPLANATION" ]
+          }
+        },
+        "required" : [ "type" ]
+      },
+      "AidView" : {
+        "type" : "object",
+        "properties" : {
+          "aidId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "exposedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "INTERPRETATION", "HINT", "EXPLANATION" ]
+          }
+        },
+        "required" : [ "aidId", "exposedAt", "type" ]
+      },
+      "AttemptView" : {
+        "type" : "object",
+        "properties" : {
+          "attemptId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "correct" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "evaluated" : {
+            "type" : "boolean"
+          },
+          "holdReason" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "LOW_CONFIDENCE", "UNABLE_TO_JUDGE", "MISREAD", "GUESS_UNCONFIRMED" ]
+          },
+          "judgment" : {
+            "$ref" : "#/components/schemas/JudgmentView"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FIRST_UNASSISTED", "ASSISTED_RETRY", "DELAYED_RECHECK" ]
+          },
+          "rating" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "AGAIN", "HARD", "GOOD", "EASY" ]
+          },
+          "responseTimeMs" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "attemptId", "correct", "evaluated", "holdReason", "judgment", "kind", "rating", "responseTimeMs" ]
+      },
+      "ChooseRequest" : {
+        "type" : "object",
+        "properties" : {
+          "strength" : {
+            "type" : "string",
+            "enum" : [ "LIGHT", "UNDERSTAND", "APPLY", "MASTER" ]
+          }
+        },
+        "required" : [ "strength" ]
+      },
+      "Composition" : {
+        "type" : "object",
+        "properties" : {
+          "goals" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/GoalSummary"
+            }
+          },
+          "maxQuestions" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PlannedQuestion"
+            }
+          },
+          "unplannedItemIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        },
+        "required" : [ "goals", "maxQuestions", "questions", "unplannedItemIds" ]
+      },
+      "ConfusionPointResponse" : {
+        "type" : "object",
+        "properties" : {
+          "turn" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "userBelief" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "turn", "userBelief" ]
+      },
+      "ConversationDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "fidelity" : {
+            "type" : "string",
+            "enum" : [ "verbatim", "model_transcribed" ]
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "inputPath" : {
+            "type" : "string",
+            "enum" : [ "connector", "share_link", "paste" ]
+          },
+          "receivedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "reviewUnits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReviewUnitResponse"
+            }
+          },
+          "topicHint" : {
+            "type" : [ "string", "null" ]
+          },
+          "userTurns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserTurnResponse"
+            }
+          },
+          "warnings" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnits", "topicHint", "userTurns", "warnings" ]
+      },
+      "ConversationSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "fidelity" : {
+            "type" : "string",
+            "enum" : [ "verbatim", "model_transcribed" ]
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "inputPath" : {
+            "type" : "string",
+            "enum" : [ "connector", "share_link", "paste" ]
+          },
+          "receivedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "reviewUnitCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "topicHint" : {
+            "type" : [ "string", "null" ]
+          },
+          "userTurnCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "warningCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
+      },
+      "ExclusionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "excluded" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "excluded" ]
+      },
+      "FirstStudy" : {
+        "type" : "object",
+        "properties" : {
+          "generating" : {
+            "type" : "boolean"
+          },
+          "held" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/HeldSlot"
+            }
+          },
+          "planned" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/QuestionView"
+            }
+          },
+          "sessionStatus" : {
+            "type" : "string",
+            "enum" : [ "RECEIVED", "REVIEWING", "AWAITING_CONFIRMATION", "CONFIRMED", "QUESTIONS_READY", "IN_PROGRESS" ]
+          }
+        },
+        "required" : [ "generating", "held", "planned", "questions", "sessionStatus" ]
+      },
+      "GoalSummary" : {
+        "type" : "object",
+        "properties" : {
+          "candidates" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "goal" : {
+            "type" : "string",
+            "enum" : [ "KEY_RECALL", "PRINCIPLE", "DISTINGUISH", "CONDITION", "APPLY_CASE", "CORRECT_MISCONCEPTION", "EXPLAIN_OWN_WORDS" ]
+          },
+          "planned" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "candidates", "goal", "planned", "reason" ]
+      },
+      "GoalView" : {
+        "type" : "object",
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "goal" : {
+            "type" : "string",
+            "enum" : [ "KEY_RECALL", "PRINCIPLE", "DISTINGUISH", "CONDITION", "APPLY_CASE", "CORRECT_MISCONCEPTION", "EXPLAIN_OWN_WORDS" ]
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "description", "goal", "label", "number" ]
+      },
+      "HeldSlot" : {
+        "type" : "object",
+        "properties" : {
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          }
+        },
+        "required" : [ "memoryItemId", "position", "type" ]
+      },
+      "IntakeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "conversationId" : {
+            "type" : "string"
+          },
+          "inputPath" : {
+            "type" : "string"
+          },
+          "reviewUnitCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "userTurnCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "warnings" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "conversationId", "inputPath", "reviewUnitCount", "userTurnCount", "warnings" ]
+      },
+      "Item" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FACT", "WARNING", "PRACTICE", "CONFUSION" ]
+          },
+          "sourceTurns" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "NEW", "ACTIVE", "EXCLUDED" ]
+          }
+        },
+        "required" : [ "content", "id", "kind", "sourceTurns", "status" ]
+      },
+      "JudgmentView" : {
+        "type" : "object",
+        "properties" : {
+          "judged" : {
+            "type" : "boolean"
+          },
+          "misconceptionRecurred" : {
+            "type" : "boolean"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "CONTRADICTION", "OMISSION", "MISREAD" ]
+          },
+          "verdict" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "MET", "NOT_MET", "UNABLE_TO_JUDGE" ]
+          }
+        },
+        "required" : [ "judged", "misconceptionRecurred", "reason", "verdict" ]
+      },
+      "KeyPointResponse" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "fact", "warning", "practice" ]
+          },
+          "point" : {
+            "type" : "string"
+          },
+          "turns" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        },
+        "required" : [ "kind", "point", "turns" ]
+      },
+      "LearningSessionDetail" : {
+        "type" : "object",
+        "properties" : {
+          "confirmedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "fidelity" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "inputPath" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "RECEIVED", "REVIEWING", "AWAITING_CONFIRMATION", "CONFIRMED", "QUESTIONS_READY", "IN_PROGRESS" ]
+          },
+          "topicHint" : {
+            "type" : [ "string", "null" ]
+          },
+          "turns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Turn"
+            }
+          },
+          "units" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Unit"
+            }
+          },
+          "warnings" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "confirmedAt", "createdAt", "fidelity", "id", "inputPath", "status", "topicHint", "turns", "units", "warnings" ]
+      },
+      "LearningSessionSummary" : {
+        "type" : "object",
+        "properties" : {
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "fidelity" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "inputPath" : {
+            "type" : "string"
+          },
+          "itemCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "RECEIVED", "REVIEWING", "AWAITING_CONFIRMATION", "CONFIRMED", "QUESTIONS_READY", "IN_PROGRESS" ]
+          },
+          "topicHint" : {
+            "type" : [ "string", "null" ]
+          },
+          "unitCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "createdAt", "fidelity", "id", "inputPath", "itemCount", "status", "topicHint", "unitCount" ]
+      },
+      "NewTurnRequest" : {
+        "type" : "object",
+        "properties" : {
+          "afterIndex" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "aiVerdict" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "confirmed", "partial", "corrected", "not_applicable" ]
+          },
+          "correction" : {
+            "type" : [ "string", "null" ]
+          },
+          "intent" : {
+            "type" : "string",
+            "enum" : [ "info_request", "rephrase_request", "understanding_check", "restatement", "challenge", "meta" ]
+          },
+          "sourceOf" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "afterIndex", "aiVerdict", "correction", "intent", "sourceOf", "text" ]
+      },
+      "Next" : {
+        "type" : "object",
+        "properties" : {
+          "done" : {
+            "type" : "boolean"
+          },
+          "presentation" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/PresentationView"
+          }
+        },
+        "required" : [ "done", "presentation" ]
+      },
+      "NotificationView" : {
+        "type" : "object",
+        "properties" : {
+          "body" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "read" : {
+            "type" : "boolean"
+          },
+          "targetId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "body", "createdAt", "id", "read", "targetId", "title", "type" ]
+      },
+      "NotificationsView" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NotificationView"
+            }
+          },
+          "unreadCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "items", "unreadCount" ]
+      },
+      "Option" : {
+        "type" : "object",
+        "properties" : {
+          "dailyMinutes" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "desiredRetention" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "maxQuestionLevel" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reviewsInPeriod" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "strength" : {
+            "type" : "string",
+            "enum" : [ "LIGHT", "UNDERSTAND", "APPLY", "MASTER" ]
+          }
+        },
+        "required" : [ "dailyMinutes", "desiredRetention", "label", "maxQuestionLevel", "reviewsInPeriod", "strength" ]
+      },
+      "Options" : {
+        "type" : "object",
+        "properties" : {
+          "current" : {
+            "type" : "string",
+            "enum" : [ "LIGHT", "UNDERSTAND", "APPLY", "MASTER" ]
+          },
+          "itemCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Option"
+            }
+          },
+          "simulationDays" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "current", "itemCount", "options", "simulationDays" ]
+      },
+      "OptionsView" : {
+        "type" : "object",
+        "properties" : {
+          "available" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/GoalView"
+            }
+          },
+          "maxSelected" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "plan" : {
+            "$ref" : "#/components/schemas/Composition"
+          },
+          "saved" : {
+            "type" : "boolean"
+          },
+          "selected" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "KEY_RECALL", "PRINCIPLE", "DISTINGUISH", "CONDITION", "APPLY_CASE", "CORRECT_MISCONCEPTION", "EXPLAIN_OWN_WORDS" ]
+            }
+          }
+        },
+        "required" : [ "available", "maxSelected", "plan", "saved", "selected" ]
+      },
+      "PasteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      },
+      "PlannedQuestion" : {
+        "type" : "object",
+        "properties" : {
+          "goal" : {
+            "type" : "string",
+            "enum" : [ "KEY_RECALL", "PRINCIPLE", "DISTINGUISH", "CONDITION", "APPLY_CASE", "CORRECT_MISCONCEPTION", "EXPLAIN_OWN_WORDS" ]
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "relatedItemId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          }
+        },
+        "required" : [ "goal", "memoryItemId", "relatedItemId", "type" ]
+      },
+      "PracticeView" : {
+        "type" : "object",
+        "properties" : {
+          "completed" : {
+            "type" : "boolean"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FIRST_STUDY", "DAILY" ]
+          },
+          "learningSessionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "practiceId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "completed", "kind", "learningSessionId", "practiceId", "total" ]
+      },
+      "PresentationView" : {
+        "type" : "object",
+        "properties" : {
+          "choices" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "presentationId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "questionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sameDayRecheck" : {
+            "type" : "boolean"
+          },
+          "stem" : {
+            "type" : "string"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          }
+        },
+        "required" : [ "choices", "position", "presentationId", "questionId", "sameDayRecheck", "stem", "total", "type" ]
+      },
+      "QuestionView" : {
+        "type" : "object",
+        "properties" : {
+          "choices" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "learningGoal" : {
+            "type" : "string"
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "questionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "stem" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          }
+        },
+        "required" : [ "choices", "learningGoal", "memoryItemId", "position", "questionId", "stem", "type" ]
+      },
+      "ReviewUnitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "confusionPoints" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConfusionPointResponse"
+            }
+          },
+          "evidenceTurns" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "keyPoints" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/KeyPointResponse"
+            }
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "confusionPoints", "evidenceTurns", "keyPoints", "title" ]
+      },
+      "ShareLinkRequest" : {
+        "type" : "object",
+        "properties" : {
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "url" ]
+      },
+      "Submission" : {
+        "type" : "object",
+        "properties" : {
+          "answer" : {
+            "type" : [ "string", "null" ]
+          },
+          "choiceIndex" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "firstInputMs" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "responseTimeMs" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "selfAssessment" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "RECALLED_EASILY", "RECALLED_WITH_EFFORT", "GUESSED" ]
+          }
+        },
+        "required" : [ "answer", "choiceIndex", "firstInputMs", "responseTimeMs", "selfAssessment" ]
+      },
+      "Turn" : {
+        "type" : "object",
+        "properties" : {
+          "aiVerdict" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "confirmed", "partial", "corrected", "not_applicable" ]
+          },
+          "correction" : {
+            "type" : [ "string", "null" ]
+          },
+          "index" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "intent" : {
+            "type" : "string",
+            "enum" : [ "info_request", "rephrase_request", "understanding_check", "restatement", "challenge", "meta" ]
+          },
+          "quotedText" : {
+            "type" : [ "string", "null" ]
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "aiVerdict", "correction", "index", "intent", "quotedText", "text" ]
+      },
+      "TurnRequest" : {
+        "type" : "object",
+        "properties" : {
+          "aiVerdict" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "confirmed", "partial", "corrected", "not_applicable" ]
+          },
+          "correction" : {
+            "type" : [ "string", "null" ]
+          },
+          "intent" : {
+            "type" : "string",
+            "enum" : [ "info_request", "rephrase_request", "understanding_check", "restatement", "challenge", "meta" ]
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "aiVerdict", "correction", "intent", "text" ]
+      },
+      "Unit" : {
+        "type" : "object",
+        "properties" : {
+          "evidenceTurns" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "excluded" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            }
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "verdict" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "APPROVED", "HELD", "REJECTED", "UNAVAILABLE" ]
+          },
+          "verdictReason" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "evidenceTurns", "excluded", "id", "items", "title", "verdict", "verdictReason" ]
+      },
+      "UserTurnResponse" : {
+        "type" : "object",
+        "properties" : {
+          "aiVerdict" : {
+            "type" : "string",
+            "enum" : [ "confirmed", "partial", "corrected", "not_applicable" ]
+          },
+          "correction" : {
+            "type" : [ "string", "null" ]
+          },
+          "index" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "intent" : {
+            "type" : "string",
+            "enum" : [ "info_request", "rephrase_request", "understanding_check", "restatement", "challenge", "meta" ]
+          },
+          "quotedText" : {
+            "type" : [ "string", "null" ]
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "aiVerdict", "correction", "index", "intent", "quotedText", "text" ]
+      }
+    }
+  }
+}
