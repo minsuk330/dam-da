@@ -22,6 +22,15 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # 시스템 기본 JDK가 21�
 ./gradlew liveTest    # 실제 Jev·OpenAI로 핵심 흐름 검증(@Tag("live")). backend/.env 키 필요, 비용 발생. worktree면 -PenvFile=경로
 ./gradlew benchmark   # 커넥터 저장 결과 채점. 서버(bootRun, DEV_TOOLS_ENABLED=true)가 떠 있어야 함. 다른 포트면 -Pserver=
 ./gradlew bootRun     # :8080
+
+cd frontend            # Expo (SDK 57, Expo Router). 시연은 웹 빌드
+npm run typecheck     # frontend/ 변경 PR 전 필수
+npm run lint          # frontend/ 변경 PR 전 필수
+npm run build:web     # frontend/ 변경 PR 전 필수 (expo export -p web → dist/)
+npm run web           # :8081 웹 개발 서버. 기본은 mock 데이터(src/api/mock.ts). 실제 API는 EXPO_PUBLIC_API_MOCK=false + EXPO_PUBLIC_API_URL(기본 http://localhost:8080)
+npm run api:types     # API 계약(frontend/openapi.json) 바뀌면 타입 재생성
+npm run design:lint   # DESIGN.md 검사 (대비·깨진 참조)
+npm run design:tokens # DESIGN.md → src/theme/tokens.ts
 ```
 
 ## Hard 제약
@@ -63,6 +72,33 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # 시스템 기본 JDK가 21�
 - 컨텍스트 간에는 ID로 참조하고, 다른 컨텍스트 기능은 그 컨텍스트의 application 서비스로 호출한다.
 - API 입출력은 DTO(record). 엔티티를 밖으로 노출하지 않는다.
 - `tools/`는 개발 도구 CLI 예외 패키지다. 런타임 코드가 의존하지 않는다.
+
+## API 계약 (필수)
+
+백엔드 코드가 기준이다. springdoc이 `/api/**` 컨트롤러를 자동으로 읽으므로 API를 추가해도 springdoc 설정은 고치지 않는다.
+
+- 앱이 쓰는 API는 `/api/` 아래에 둔다. 다른 경로는 계약(`frontend/openapi.json`)에 들어가지 않는다.
+- 요청·응답은 DTO record로 쓴다. `Map`, `ResponseEntity<?>`, `Object`를 반환하면 계약에 타입이 남지 않는다.
+- null이 될 수 있는 record 필드는 `org.jspecify.annotations.Nullable`로 표시한다. 표시 없는 필드는 계약에서 null이 아닌 값이 된다(`RecordNullabilityConverter`).
+- API를 바꾸면:
+  1. `./gradlew test` — `OpenApiSpecIT`가 `frontend/openapi.json`을 다시 쓰고 한 번 실패한다. 다시 실행해 통과를 확인한다.
+  2. `cd frontend && npm run api:types` — `src/api/schema.d.ts`를 다시 만든다.
+  3. `openapi.json`과 `schema.d.ts`를 같은 커밋에 넣는다.
+- `src/api/schema.d.ts`와 `openapi.json`은 손으로 고치지 않는다.
+- `/v3/api-docs`, Swagger UI는 `API_DOCS_ENABLED=true`일 때만 열린다. 배포 서버에서는 켜지 않는다.
+
+## UI·디자인 (필수)
+
+`frontend/`는 Expo 앱이고 시연은 웹 빌드(Vercel)를 화면 공유로 한다. 웹에서는 390×844 휴대폰 영역 안에 그린다(`PhoneFrame`).
+
+- UI·스타일·상호작용을 바꾸는 작업 전에 [`frontend/DESIGN.md`](frontend/DESIGN.md)를 읽는다. 값의 정본은 DESIGN.md YAML이다.
+- 값을 바꾸려면 DESIGN.md를 고치고 `npm run design:lint` → `npm run design:tokens`. `src/theme/tokens.ts`는 손으로 고치지 않는다.
+- 색·크기·간격·라운드·글꼴은 `@/theme`에서만 가져온다. `src/theme/` 밖에 hex·fontSize·임의 숫자를 쓰지 않는다(아이콘 미세 보정 같은 일회성 값은 이유를 주석으로).
+- 글자는 `ThemedText`의 `variant`/`tone`으로. 화면 파일에서 fontSize·fontFamily를 직접 쓰지 않는다.
+- 공통 컴포넌트(`src/components/`)는 variant·size·state(pressed/disabled/loading)·`style`(마지막에 병합)·접근성 역할을 갖는다. 두 화면 이상에서 쓰일 때만 공통으로 올리고, 그 전엔 `src/screens/`에 둔다. `src/app/`은 라우트만.
+- 브랜드 컴포넌트(버튼·카드·칩·선택지·게이지)는 직접 만든다. `@expo/ui` 기본 컴포넌트는 웹에서 토큰을 따르지 않으므로(2026-10-01 확인) 쓰려면 웹 렌더링을 먼저 확인한다.
+- 화면은 네 상태(불러오는 중·비어 있음·오류·정상)를 구분한다.
+- 리뷰 체크리스트: DESIGN.md의 Do's and Don'ts + Expo `expo-design-system` skill의 Native Slop 20가지. 화면을 만든 뒤 웹에서 스크린샷으로 확인하고, 두 항목 이상 걸리면 고친다.
 
 ## 소유 경계
 

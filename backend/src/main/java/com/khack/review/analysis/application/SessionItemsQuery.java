@@ -3,6 +3,7 @@ package com.khack.review.analysis.application;
 import com.khack.review.analysis.domain.LearningSession;
 import com.khack.review.analysis.domain.LearningSessionRepository;
 import com.khack.review.analysis.domain.MemoryItem;
+import com.khack.review.analysis.domain.MemoryItemKind;
 import com.khack.review.analysis.domain.MemoryItemStatus;
 import com.khack.review.collection.application.ConversationQueryService;
 import com.khack.review.collection.domain.UserTurn;
@@ -44,6 +45,30 @@ public class SessionItemsQuery {
                 .map(session -> session.items().stream()
                         .filter(item -> item.getStatus() != MemoryItemStatus.EXCLUDED)
                         .map(MemoryItem::getId)
+                        .toList());
+    }
+
+    /** 복습 단위 하나와 제외되지 않은 소속 기억 항목. */
+    public record UnitItems(Long unitId, String title, List<Item> items) {
+    }
+
+    public record Item(Long memoryItemId, MemoryItemKind kind, String content) {
+    }
+
+    /**
+     * 사용자의 세션이면 복습 단위별로 묶은 제외되지 않은 기억 항목(소속 항목이 모두 제외된 단위는 뺀다), 아니면 비어 있다.
+     * 기억 게이지(스펙 §6.4.3)처럼 단위 단위로 모아 보여주는 곳이 쓴다.
+     */
+    @Transactional(readOnly = true)
+    public Optional<List<UnitItems>> activeUnits(Long userId, Long sessionId) {
+        return sessions.findById(sessionId)
+                .filter(session -> Objects.equals(session.getUserId(), userId))
+                .map(session -> session.getUnits().stream()
+                        .map(unit -> new UnitItems(unit.getId(), unit.getTitle(), unit.getItems().stream()
+                                .filter(item -> item.getStatus() != MemoryItemStatus.EXCLUDED)
+                                .map(item -> new Item(item.getId(), item.getKind(), item.getContent()))
+                                .toList()))
+                        .filter(unit -> !unit.items().isEmpty())
                         .toList());
     }
 
