@@ -68,19 +68,8 @@ export function ConversationDetail({ id }: { id: string }) {
         </View>
       )}
 
-      {data.warnings.length > 0 && (
-        <View style={styles.warnings}>
-          <ThemedText variant="headline" tone="warningInk">
-            저장 시 경고
-          </ThemedText>
-          {data.warnings.map((w) => (
-            <ThemedText key={w} variant="subhead" tone="warningInk">
-              · {w}
-            </ThemedText>
-          ))}
-        </View>
-      )}
-
+      {/* 저장 시 경고(data.warnings)는 커넥터 스키마 기준의 진단 문장이라 화면에 내지 않는다. 고칠 일은 학습 내용 확인 단계가
+          사용자 말로 보여 주고, 원문 경고는 개발 도구 세션 뷰어에서 본다. */}
       <View style={styles.section}>
         <ThemedText variant="title">주제 {data.reviewUnits.length}개</ThemedText>
         {data.reviewUnits.map((unit) => (
@@ -184,13 +173,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderCurve: 'continuous',
     padding: spacing.lg,
-  },
-  warnings: {
-    backgroundColor: colors.warningTint,
-    borderRadius: radius.md,
-    borderCurve: 'continuous',
-    padding: spacing.lg,
-    gap: spacing.xs,
   },
   section: { gap: spacing.md },
   cardGap: { gap: spacing.sm },
