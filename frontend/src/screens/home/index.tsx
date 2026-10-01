@@ -1,20 +1,22 @@
 import { Link, router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useConversations } from '@/api/conversations';
+import { minutesOf, streakLabel, useDaily, useStartDaily, useStreak, type Daily } from '@/api/daily';
 import { useMemoryOverview } from '@/api/memory';
 import { useMarkNotificationRead, useNotifications } from '@/api/notifications';
+import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
 import { Icon } from '@/components/icon';
+import { Notice } from '@/components/notice';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime } from '@/labels';
 import { colors, components, spacing } from '@/theme';
 
-import { sampleStreak, sampleToday } from './sample-today';
 import { StatCard } from './stat-card';
 
 const today = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
@@ -23,7 +25,10 @@ const today = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', 
 export function Home() {
   const insets = useSafeAreaInsets();
   const tabBarSpace = useTabBarSpace();
-  const totalCount = sampleToday.reviewCount + sampleToday.newCount;
+  const daily = useDaily();
+  const streak = useStreak();
+  const data = daily.data;
+  const empty = data !== undefined && data.total === 0 && !data.started;
 
   return (
     <ScrollView
@@ -36,55 +41,157 @@ export function Home() {
       <View style={styles.titleRow}>
         <View style={styles.title}>
           <ThemedText variant="caption" tone="inkMuted">
-            {today.format(new Date())} · 지원님
+            {/* 서버의 오늘(시간 이동 데모에서도 맞는 날짜). 불러오기 전에는 기기 날짜. */}
+            {today.format(data ? new Date(`${data.date}T00:00:00`) : new Date())} · 지원님
           </ThemedText>
-          <ThemedText variant="display">오늘 학습할{'\n'}지식이 있어요</ThemedText>
+          <ThemedText variant="display">
+            {data?.completed ? '오늘 학습을\n마쳤어요' : empty ? '오늘은\n쉬어도 돼요' : '오늘 학습할\n지식이 있어요'}
+          </ThemedText>
         </View>
-        <Chip variant="status" label={`${totalCount}문제`} style={styles.titleChip} />
+        {data && data.total > 0 && !data.completed && (
+          <Chip variant="status" label={`${data.total}문제`} style={styles.titleChip} />
+        )}
       </View>
 
       <View style={styles.stats}>
         <StatCard
           variant="lavender"
           icon="clock"
-          value={String(sampleToday.minutes)}
+          value={data ? String(minutesOf(data)) : '-'}
           unit="분"
           label="오늘 예상 학습 시간"
         />
         <StatCard
           variant="surface"
           icon="zap"
-          value={String(sampleStreak.days)}
+          value={streak.data ? String(streak.data.current) : '-'}
           unit="일"
-          label={sampleStreak.studiedToday ? '연속 학습 중' : `오늘 하면 ${sampleStreak.days + 1}일째`}
+          label={streak.data ? streakLabel(streak.data) : '연속 학습'}
         />
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="오늘의 학습 시작하기"
-        onPress={() => router.push('/review')}>
-        {({ pressed }) => (
-          <Card variant="hero" pressed={pressed} style={styles.hero}>
-            <View style={styles.heroText}>
-              <ThemedText variant="title" tone="onPrimary">
-                오늘의 학습{'\n'}시작하기
-              </ThemedText>
-              <ThemedText variant="subhead" tone="onPrimary">
-                복습 {sampleToday.reviewCount} · 새 항목 {sampleToday.newCount} · 약 {sampleToday.minutes}분
-              </ThemedText>
-            </View>
-            <View style={styles.heroArrow}>
-              <Icon name="arrow-up-right" size="lg" color={colors.primary} />
-            </View>
-          </Card>
-        )}
-      </Pressable>
+      <TodayStudy daily={daily.data} isPending={daily.isPending} isError={daily.isError} refetch={() => daily.refetch()} />
 
       <MemorySummary />
 
       <RecentConversations />
     </ScrollView>
+  );
+}
+
+/**
+ * 오늘의 학습 카드(스펙 §6.4.4). 시작 전이면 시작해서 풀이로, 시작했으면 이어서 풀이로 간다.
+ * 할 것이 없거나 다 끝냈으면 누를 수 없는 안내 카드로 바뀐다.
+ */
+function TodayStudy({
+  daily,
+  isPending,
+  isError,
+  refetch,
+}: {
+  daily: Daily | undefined;
+  isPending: boolean;
+  isError: boolean;
+  refetch: () => void;
+}) {
+  const start = useStartDaily();
+  const nothingToSolve = start.data !== undefined && start.data.practiceId === null;
+
+  if (isPending) {
+    return (
+      <Card style={styles.todayCard}>
+        <ActivityIndicator color={colors.primary} />
+      </Card>
+    );
+  }
+  if (isError || !daily) {
+    return (
+      <Card style={styles.todayCard}>
+        <ThemedText tone="dangerInk">오늘의 학습을 불러오지 못했어요.</ThemedText>
+        <Button variant="secondary" title="다시 시도" onPress={refetch} />
+      </Card>
+    );
+  }
+  if (daily.completed) {
+    return (
+      <Card variant="lavender" style={styles.todayCard}>
+        <ThemedText variant="title">오늘 학습 완료</ThemedText>
+        <ThemedText variant="subhead" tone="inkSecondary">
+          {daily.total}문제를 풀었어요. 다음 복습은 기억이 떨어질 때쯤 다시 알려드릴게요.
+        </ThemedText>
+      </Card>
+    );
+  }
+  if (nothingToSolve) {
+    return (
+      <Card style={styles.todayCard}>
+        <ThemedText variant="title">오늘 낼 문제를 준비하지 못했어요</ThemedText>
+        <ThemedText variant="subhead" tone="inkSecondary">
+          품질 검사를 통과한 문제가 없어 오늘 학습을 시작하지 못했어요. 기억 상태는 바뀌지 않았어요.
+        </ThemedText>
+        <Button variant="secondary" title="다시 시도" loading={start.isPending} onPress={() => start.mutate()} />
+      </Card>
+    );
+  }
+  if (daily.total === 0 && !daily.started) {
+    return (
+      <Card style={styles.todayCard}>
+        <ThemedText variant="title">오늘 복습할 항목이 없어요</ThemedText>
+        <ThemedText variant="subhead" tone="inkSecondary">
+          기억이 아직 충분해요. 새로 배운 대화를 추가하면 내일부터 함께 복습해요.
+        </ThemedText>
+        <Button variant="secondary" title="대화 추가하기" onPress={() => router.navigate('/add')} />
+      </Card>
+    );
+  }
+
+  const open = (practiceId: number) =>
+    router.push({ pathname: '/review', params: { practiceId: String(practiceId) } });
+
+  function onPress() {
+    if (daily?.practiceId) {
+      open(daily.practiceId);
+      return;
+    }
+    start.mutate(undefined, {
+      onSuccess: (started) => {
+        if (started.practiceId) open(started.practiceId);
+      },
+    });
+  }
+
+  return (
+    <View style={styles.today}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={daily.started ? '오늘의 학습 이어서 하기' : '오늘의 학습 시작하기'}
+        accessibilityState={{ busy: start.isPending }}
+        disabled={start.isPending}
+        onPress={onPress}>
+        {({ pressed }) => (
+          <Card variant="hero" pressed={pressed} style={styles.hero}>
+            <View style={styles.heroText}>
+              <ThemedText variant="title" tone="onPrimary">
+                {daily.started ? '오늘의 학습\n이어서 하기' : '오늘의 학습\n시작하기'}
+              </ThemedText>
+              <ThemedText variant="subhead" tone="onPrimary">
+                {start.isPending
+                  ? '오늘 풀 문제를 준비하고 있어요…'
+                  : `복습 ${daily.reviewCount} · 새 항목 ${daily.newCount} · 약 ${minutesOf(daily)}분`}
+              </ThemedText>
+            </View>
+            <View style={styles.heroArrow}>
+              {start.isPending ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Icon name="arrow-up-right" size="lg" color={colors.primary} />
+              )}
+            </View>
+          </Card>
+        )}
+      </Pressable>
+      {start.isError && <Notice tone="danger">오늘의 학습을 시작하지 못했어요. 다시 시도해 주세요.</Notice>}
+    </View>
   );
 }
 
@@ -252,6 +359,8 @@ function RecentConversations() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
+  today: { gap: spacing.sm },
+  todayCard: { gap: spacing.md },
   content: { paddingHorizontal: spacing.xl, gap: spacing['2xl'] },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   brand: { flex: 1, marginLeft: spacing.sm },
