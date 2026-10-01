@@ -32,6 +32,15 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
       </View>
     );
   }
+  if (data.failed) {
+    return (
+      <View style={styles.step}>
+        <ThemedText variant="title">문제를 만들지 못했어요</ThemedText>
+        <Notice tone="danger">{data.failureReason ?? '잠시 후 다시 시도해 주세요.'}</Notice>
+        <Button title="학습 목표 다시 고르기" onPress={onNoPlan} />
+      </View>
+    );
+  }
   if (!data.generating && data.planned === 0) {
     return (
       <View style={styles.step}>

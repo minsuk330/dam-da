@@ -62,8 +62,8 @@ export function AnswerInput({
                   correct && styles.segmentCorrect,
                   wrong && styles.segmentWrong,
                 ]}>
-                {correct && <Icon name="check" size={16} color={colors.successInk} />}
-                {wrong && <Icon name="x" size={16} color={colors.dangerInk} />}
+                {correct && <Icon name="check" size="sm" color={colors.successInk} />}
+                {wrong && <Icon name="x" size="sm" color={colors.dangerInk} />}
                 <ThemedText variant="headline" tone={correct ? 'successInk' : wrong ? 'dangerInk' : 'ink'}>
                   {segment}
                 </ThemedText>
@@ -150,6 +150,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  fieldEssay: { minHeight: 160 },
+  fieldEssay: { minHeight: components.textArea.height },
   fieldGraded: { color: colors.inkSecondary },
 });

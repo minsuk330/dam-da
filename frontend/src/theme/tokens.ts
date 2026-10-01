@@ -18,6 +18,7 @@ export const colors = {
   "fieldPlaceholder": "#59607A",
   "inverse": "#0B0C12",
   "onInverse": "#FFFFFF",
+  "stage": "#D4D7DE",
   "success": "#16A06A",
   "successTint": "#D9F4E8",
   "successInk": "#0B6B46",
@@ -33,6 +34,7 @@ export const colors = {
 } as const;
 
 export const spacing = {
+  "2xs": 2,
   "xs": 4,
   "sm": 8,
   "md": 12,
@@ -150,6 +152,33 @@ export const components = {
     "textColor": "#FFFFFF",
     "rounded": 9999,
     "size": 44
+  },
+  "iconSmall": {
+    "size": 16
+  },
+  "icon": {
+    "size": 20
+  },
+  "iconLarge": {
+    "size": 24
+  },
+  "iconXl": {
+    "size": 32
+  },
+  "iconCircle": {
+    "backgroundColor": "#D6E1FF",
+    "textColor": "#2448C8",
+    "rounded": 9999,
+    "size": 44
+  },
+  "doneMark": {
+    "backgroundColor": "#2E5BE8",
+    "textColor": "#FFFFFF",
+    "rounded": 9999,
+    "size": 72
+  },
+  "phoneStage": {
+    "backgroundColor": "#D4D7DE"
   },
   "answerOption": {
     "backgroundColor": "#EEF2FF",
@@ -276,7 +305,25 @@ export const components = {
     "backgroundColor": "#2E5BE8",
     "textColor": "#FFFFFF",
     "rounded": 32,
-    "padding": 24
+    "padding": 24,
+    "height": 156
+  },
+  "cardHeroPressed": {
+    "backgroundColor": "#2149CF",
+    "textColor": "#FFFFFF",
+    "rounded": 32
+  },
+  "cardStat": {
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#12141F",
+    "rounded": 28,
+    "padding": 20,
+    "height": 152
+  },
+  "cardPressed": {
+    "backgroundColor": "#EEF2FF",
+    "textColor": "#12141F",
+    "rounded": 28
   },
   "field": {
     "backgroundColor": "#DCE4FC",
@@ -296,6 +343,15 @@ export const components = {
       "fontSize": 16,
       "lineHeight": 25
     }
+  },
+  "textAreaCompact": {
+    "height": 96
+  },
+  "textArea": {
+    "height": 160
+  },
+  "textAreaLarge": {
+    "height": 220
   },
   "gauge": {
     "backgroundColor": "#D6E1FF",

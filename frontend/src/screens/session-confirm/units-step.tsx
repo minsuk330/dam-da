@@ -8,7 +8,7 @@ import { Chip } from '@/components/chip';
 import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
 import { itemKindLabel, unitVerdictLabel } from '@/labels';
-import { spacing } from '@/theme';
+import { colors, opacity, spacing } from '@/theme';
 
 import { Notice, StepHeader } from './parts';
 
@@ -90,11 +90,13 @@ function UnitCard({
         {unit.evidenceTurns.length > 0 ? `근거 발화 ${unit.evidenceTurns.join(', ')}` : '근거 발화 없음'}
       </ThemedText>
 
-      {unit.items.map((item) => {
+      {unit.items.map((item, i) => {
         const included = item.status !== 'EXCLUDED';
         return (
           <OptionRow
             key={item.id}
+            variant="plain"
+            style={i > 0 && styles.divided}
             multiple
             selected={included}
             disabled={busy || unit.excluded}
@@ -121,9 +123,10 @@ function UnitCard({
 const styles = StyleSheet.create({
   step: { gap: spacing.md },
   unit: { gap: spacing.sm },
-  unitExcluded: { opacity: 0.6 },
+  unitExcluded: { opacity: opacity.excluded },
   unitHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   unitTitle: { flex: 1 },
   unitToggle: { alignSelf: 'flex-end', paddingTop: spacing.xs },
   count: { textAlign: 'center', marginTop: spacing.sm },
+  divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline },
 });

@@ -21,6 +21,7 @@ colors:
   field-placeholder: "#59607A"
   inverse: "#0B0C12"
   on-inverse: "#FFFFFF"
+  stage: "#D4D7DE"
   success: "#16A06A"
   success-tint: "#D9F4E8"
   success-ink: "#0B6B46"
@@ -81,6 +82,7 @@ rounded:
   xl: 32px
   full: 9999px
 spacing:
+  2xs: 2px
   xs: 4px
   sm: 8px
   md: 12px
@@ -123,6 +125,26 @@ components:
     textColor: "{colors.on-primary}"
     rounded: "{rounded.full}"
     size: 44px
+  icon-small:
+    size: 16px
+  icon:
+    size: 20px
+  icon-large:
+    size: 24px
+  icon-xl:
+    size: 32px
+  icon-circle:
+    backgroundColor: "{colors.primary-tint}"
+    textColor: "{colors.primary-ink}"
+    rounded: "{rounded.full}"
+    size: 44px
+  done-mark:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.on-primary}"
+    rounded: "{rounded.full}"
+    size: 72px
+  phone-stage:
+    backgroundColor: "{colors.stage}"
   answer-option:
     backgroundColor: "{colors.surface-soft}"
     textColor: "{colors.ink}"
@@ -198,6 +220,21 @@ components:
     textColor: "{colors.on-primary}"
     rounded: "{rounded.xl}"
     padding: 24px
+    height: 156px
+  card-hero-pressed:
+    backgroundColor: "{colors.primary-pressed}"
+    textColor: "{colors.on-primary}"
+    rounded: "{rounded.xl}"
+  card-stat:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.lg}"
+    padding: 20px
+    height: 152px
+  card-pressed:
+    backgroundColor: "{colors.surface-soft}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.lg}"
   field:
     backgroundColor: "{colors.field}"
     textColor: "{colors.ink}"
@@ -207,6 +244,12 @@ components:
     backgroundColor: "{colors.field}"
     textColor: "{colors.field-placeholder}"
     typography: "{typography.body}"
+  text-area-compact:
+    height: 96px
+  text-area:
+    height: 160px
+  text-area-large:
+    height: 220px
   gauge:
     backgroundColor: "{colors.primary-tint}"
     textColor: "{colors.primary-ink}"
@@ -335,6 +378,10 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
   - 막대 위에 라벨과 퍼센트를 글자로 함께 쓴다("지금 기억할 확률 72%"). 막대 길이만으로 값을 전달하지 않는다. 글자는 막대가 아니라 카드 위에 있으므로 `ThemedText`로 쓴다: 기본은 `caption`·`ink-secondary`, 큰 게이지는 `subhead`·`ink`, 확인 전은 `caption`·`ink-muted`.
   - 아직 등급이 없는 항목은 0%가 아니다. 채움 없이 `gauge-unchecked` 트랙(`outline`)과 "아직 확인 전" 글자로 구분한다.
   - 진행 막대(풀이 진행도·단계 표시)는 단계 색 없이 `gauge` 트랙 + `gauge-fill`만 쓴다. 진행은 좋고 나쁨이 아니다.
+
+- **눌림·비활성·제외 상태**: 버튼은 `primary-pressed`로 어둡게, 카드·행은 배경을 `card-pressed`(surface-soft)로, 강조 카드는 `card-hero-pressed`로 바꾼다. 투명도로 눌림을 표시하지 않는다. 비활성은 불투명도 0.4, 사용자가 뺀 항목은 0.6으로 흐리게 한다(이 두 값은 design.md 스키마에 투명도 토큰이 없어 `src/theme/index.ts`의 `opacity`에 둔다).
+- **아이콘**: 크기는 `icon-small`(16) / `icon`(20) / `icon-large`(24) / `icon-xl`(32)만 쓴다. 아이콘을 담는 원은 `icon-circle`(44), 완료 표시는 `done-mark`(72).
+- **다크 모드**: 지원하지 않는다(라이트 전용). 다크 토큰을 추가하기 전까지 OS 테마와 상관없이 라이트로 그린다.
 
 ## Do's and Don'ts
 

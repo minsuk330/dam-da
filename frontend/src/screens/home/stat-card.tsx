@@ -23,7 +23,7 @@ export function StatCard({
   return (
     <Card variant={variant} style={styles.card}>
       <View style={[styles.iconCircle, { backgroundColor: lavender ? colors.primary : colors.surfaceSoft }]}>
-        <Icon name={icon} size={20} color={lavender ? colors.onPrimary : colors.ink} />
+        <Icon name={icon} size="md" color={lavender ? colors.onPrimary : colors.ink} />
       </View>
       <View style={styles.valueRow}>
         <ThemedText variant="stat">{value}</ThemedText>
@@ -39,11 +39,11 @@ export function StatCard({
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, minHeight: 152, justifyContent: 'space-between', gap: spacing.sm },
+  card: { flex: 1, minHeight: components.cardStat.height, justifyContent: 'space-between', gap: spacing.sm },
   iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: components.iconButtonPrimary.rounded,
+    width: components.iconCircle.size,
+    height: components.iconCircle.size,
+    borderRadius: components.iconCircle.rounded,
     alignItems: 'center',
     justifyContent: 'center',
   },

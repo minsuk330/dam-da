@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     borderRadius: components.field.rounded,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    minHeight: 96,
+    minHeight: components.textAreaCompact.height,
   },
   intents: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   intent: {

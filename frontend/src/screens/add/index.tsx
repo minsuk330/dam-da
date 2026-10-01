@@ -43,7 +43,7 @@ export function AddConversation() {
     return (
       <View style={[styles.center, { paddingBottom: tabBarSpace }]}>
         <View style={styles.doneIcon}>
-          <Icon name="check" size={28} color={colors.successInk} />
+          <Icon name="check" size="lg" color={colors.successInk} />
         </View>
         <ThemedText variant="title">대화를 저장했어요</ThemedText>
         <ThemedText variant="subhead" tone="inkSecondary" style={styles.centerText}>
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  fieldMultiline: { minHeight: 220 },
+  fieldMultiline: { minHeight: components.textAreaLarge.height },
   error: {
     gap: spacing.md,
     padding: components.feedbackWrong.padding,
