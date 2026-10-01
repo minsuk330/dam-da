@@ -1,5 +1,6 @@
 package com.khack.review.collection.domain;
 
+import com.khack.review.common.json.Json;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class LearningConversation {
 
     static final int LONG_TEXT = 100_000;
+    public static final int MAX_RAW_TRANSCRIPT = 1_000_000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -65,6 +67,10 @@ public class LearningConversation {
     @Column(nullable = false, length = LONG_TEXT)
     private List<String> warnings = new ArrayList<>();
 
+    /** 공유 링크·붙여넣기로 받은 원문 대화(JSON). 커넥터 입력은 원문이 없어 null이다. */
+    @Column(length = MAX_RAW_TRANSCRIPT)
+    private String rawTranscript;
+
     protected LearningConversation() {
     }
 
@@ -80,6 +86,23 @@ public class LearningConversation {
         input.userTurns().forEach(turn -> conversation.turns.add(ConversationTurn.from(turn)));
         conversation.reviewUnits = new ArrayList<>(input.reviewUnits());
         conversation.warnings = new ArrayList<>(warnings);
+        return conversation;
+    }
+
+    /** 공유 링크·붙여넣기로 받은 대화. 발화는 원문과 맞춘 것이다(규칙 14). */
+    public static LearningConversation fromTranscript(Long userId, RawConversation raw, SessionInput input, List<String> warnings,
+            Instant receivedAt) {
+        LearningConversation conversation = new LearningConversation();
+        conversation.sessionId = UUID.randomUUID().toString();
+        conversation.userId = userId;
+        conversation.inputPath = raw.inputPath();
+        conversation.fidelity = Fidelity.verbatim;
+        conversation.receivedAt = receivedAt;
+        conversation.topicHint = input.topicHint() != null ? input.topicHint() : raw.title();
+        input.userTurns().forEach(turn -> conversation.turns.add(ConversationTurn.from(turn)));
+        conversation.reviewUnits = new ArrayList<>(input.reviewUnits());
+        conversation.warnings = new ArrayList<>(warnings);
+        conversation.rawTranscript = Json.MAPPER.writeValueAsString(raw);
         return conversation;
     }
 
@@ -112,5 +135,9 @@ public class LearningConversation {
 
     public Instant getReceivedAt() {
         return receivedAt;
+    }
+
+    public String getRawTranscript() {
+        return rawTranscript;
     }
 }
