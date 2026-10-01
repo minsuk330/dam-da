@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param retryDelay                   재시도 대기. n번째 재시도는 n배 기다린다
  * @param relearnMaxPerSession         풀이 세션 하나에서 오늘 다시 묻기(확인 문제 포함)로 큐 끝에 넣을 수 있는 최대 개수(하루 분량 상한)
  * @param repeatedDifficultyPresentations 한 기억 항목에서 틀린 제시가 이만큼 쌓이면 반복 어려움으로 보고 선행 개념을 제안한다
+ * @param contentTimeout               힌트·설명·선행 개념 생성(LLM)을 기다리는 최대 시간. 넘으면 저장된 기본 힌트·설명을 쓴다
  */
 @ConfigurationProperties("review.practice.feedback")
 public record FeedbackPolicy(
@@ -18,5 +19,6 @@ public record FeedbackPolicy(
         int maxAttempts,
         Duration retryDelay,
         int relearnMaxPerSession,
-        int repeatedDifficultyPresentations) {
+        int repeatedDifficultyPresentations,
+        Duration contentTimeout) {
 }
