@@ -4,7 +4,13 @@ import com.khack.review.analysis.application.SessionProgressService;
 import com.khack.review.analysis.domain.LearningSessionStatus;
 import com.khack.review.common.application.CurrentUser;
 import com.khack.review.memory.application.MemoryStateService;
+import com.khack.review.memory.application.ReviewRecordService;
+import com.khack.review.memory.domain.AnswerVerdict;
 import com.khack.review.memory.domain.AttemptKind;
+import com.khack.review.memory.domain.HoldReason;
+import com.khack.review.memory.domain.RatingDecision;
+import com.khack.review.memory.domain.RatingInput;
+import com.khack.review.memory.domain.ReviewContext;
 import com.khack.review.memory.domain.SelfAssessment;
 import com.khack.review.practice.domain.AidExposure;
 import com.khack.review.practice.domain.AidExposureRepository;
@@ -22,12 +28,14 @@ import com.khack.review.question.application.QuestionQueryService;
 import com.khack.review.question.domain.Question;
 import com.khack.review.question.domain.QuestionStatus;
 import com.khack.review.question.domain.QuestionType;
+import io.github.openspacedrepetition.Rating;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,12 +54,15 @@ public class PracticeService {
     private final FirstStudyQueryService firstStudy;
     private final QuestionQueryService questions;
     private final MemoryStateService memory;
+    private final ReviewRecordService reviews;
     private final CurrentUser currentUser;
     private final Clock clock;
+    private final Duration multipleChoiceGuessTime;
 
     public PracticeService(PracticeSessionRepository practices, QuestionPresentationRepository presentations,
             AidExposureRepository aids, PracticeAttemptRepository attempts, SessionProgressService progress, FirstStudyQueryService firstStudy, QuestionQueryService questions,
-            MemoryStateService memory, CurrentUser currentUser, Clock clock) {
+            MemoryStateService memory, ReviewRecordService reviews, CurrentUser currentUser, Clock clock,
+            @Value("${review.practice.mc-guess-threshold:3s}") Duration multipleChoiceGuessTime) {
         this.practices = practices;
         this.presentations = presentations;
         this.aids = aids;
@@ -60,8 +71,10 @@ public class PracticeService {
         this.firstStudy = firstStudy;
         this.questions = questions;
         this.memory = memory;
+        this.reviews = reviews;
         this.currentUser = currentUser;
         this.clock = clock;
+        this.multipleChoiceGuessTime = multipleChoiceGuessTime;
     }
 
     public record PracticeView(Long practiceId, PracticeKind kind, @Nullable Long learningSessionId, int total,
@@ -86,9 +99,12 @@ public class PracticeService {
             @Nullable Long responseTimeMs, @Nullable Long firstInputMs) {
     }
 
-    /** 제출 결과. {@code correct}는 객관식 코드 채점 결과이고 서술형이면 null이다(판정은 Jev). */
+    /**
+     * 제출 결과. {@code correct}는 객관식 코드 채점 결과이고 서술형이면 null이다(판정은 Jev).
+     * {@code rating}·{@code holdReason}은 등급 변환 결과로, 서술형은 판정 뒤에 정해지므로 아직 null이다.
+     */
     public record AttemptView(Long attemptId, AttemptKind kind, boolean evaluated, @Nullable Boolean correct,
-            long responseTimeMs) {
+            long responseTimeMs, @Nullable Rating rating, @Nullable HoldReason holdReason) {
     }
 
     /** 첫 학습 풀이를 시작한다. 이미 시작했으면 그 풀이를 이어서 연다. */
@@ -164,8 +180,28 @@ public class PracticeService {
         PracticeAttempt.Answer answer = answer(questions.question(presentation.getQuestionId()), submission);
         PracticeAttempt saved = attempts.save(PracticeAttempt.of(presentation, classification, answer,
                 timing(submission, classification.timedFrom(), now)));
+        RatingDecision decision = saved.getQuestionType() == QuestionType.MULTIPLE_CHOICE ? recordMultipleChoice(saved) : null;
         return new AttemptView(saved.getId(), saved.getKind(), AttemptRules.isEvaluated(saved.getKind()), saved.getChoiceCorrect(),
-                saved.getResponseTimeMs());
+                saved.getResponseTimeMs(),
+                decision instanceof RatingDecision.Rated rated ? rated.rating() : null,
+                decision instanceof RatingDecision.Held held ? held.reason() : null);
+    }
+
+    /**
+     * 객관식은 코드 채점이 곧 판정이므로 바로 등급 변환과 FSRS 갱신을 한다(스펙 §6.4.5). 정답 번호가 없으면 판정 불가다.
+     * 읽기 어려운 시간 안에 고른 정답은 추측을 의심한다(변환표 행 3). 서술형은 Jev 판정(#17) 뒤에 같은 방식으로 기록한다.
+     */
+    private RatingDecision recordMultipleChoice(PracticeAttempt attempt) {
+        Boolean correct = attempt.getChoiceCorrect();
+        AnswerVerdict verdict = correct == null ? AnswerVerdict.UNABLE_TO_JUDGE : correct ? AnswerVerdict.MET : AnswerVerdict.NOT_MET;
+        Duration responseTime = Duration.ofMillis(attempt.getResponseTimeMs());
+        boolean guessSuspected = Boolean.TRUE.equals(correct) && responseTime.compareTo(multipleChoiceGuessTime) < 0;
+        RatingInput input = new RatingInput(attempt.getKind(), verdict, 1.0, false, 0, guessSuspected,
+                attempt.getSelfAssessment(), attempt.getQuestionType(), responseTime);
+        ReviewContext context = new ReviewContext(attempt.getUserId(), attempt.getMemoryItemId(), attempt.getQuestionId(),
+                attempt.getId(), attempt.getSubmittedAt(), attempt.getPredictedRetrievability(), attempt.isPriorAidExposed(),
+                attempt.getElapsedSincePriorMs(), attempt.isSameDayRecheck(), null, attempt.getFirstInputMs());
+        return reviews.record(context, input).decision();
     }
 
     private static PracticeAttempt.Answer answer(Question question, Submission submission) {
