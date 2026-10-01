@@ -57,8 +57,6 @@ function AppStack() {
         headerTitleStyle: { fontFamily: typography.headline.fontFamily, fontSize: typography.headline.fontSize },
         contentStyle: { backgroundColor: colors.canvas },
       }}>
-      {/* 서버 로그인에서 돌아오는 곳. 로그인 전후 모두 열려 있어야 한다. */}
-      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
       </Stack.Protected>
@@ -74,6 +72,8 @@ function AppStack() {
         <Stack.Screen name="settings" options={{ title: '매일 학습 설정' }} />
         <Stack.Screen name="review" options={{ title: '오늘의 복습' }} />
       </Stack.Protected>
+      {/* 서버 로그인에서 돌아오는 곳. 로그인 전후 모두 열려 있어야 한다. 보호된 화면에서 밀려날 때 첫 화면으로 고르지 않도록 맨 뒤에 둔다. */}
+      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
     </Stack>
   );
 }
