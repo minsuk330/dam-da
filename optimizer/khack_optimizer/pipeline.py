@@ -24,8 +24,9 @@ class Settings:
     """운영 설정값. CLI 인자로 바꾼다."""
 
     # py-fsrs 옵티마이저는 학습 구간의 채점 복습(같은 날 재확인·첫 복습 제외)이 mini batch(512개)보다 적으면
-    # 학습 없이 기본값을 돌려준다. 첫 복습·재확인·검증 구간을 감안해 전체 등급 기록 1000개를 먼저 요구한다.
-    min_reviews: int = 1000
+    # 학습 없이 기본값을 돌려준다. 전체 등급 기록은 그 하한과 같은 512개부터 시도하고, 학습 구간 부족은
+    # 따로 검사해 기존 매개변수를 유지한다. 첫 복습·재확인·검증 구간을 빼면 실제 학습은 대략 700~1000개부터 된다.
+    min_reviews: int = 512
     train_ratio: float = 0.8
     min_improvement: float = 0.02
     min_validation_reviews: int = 30

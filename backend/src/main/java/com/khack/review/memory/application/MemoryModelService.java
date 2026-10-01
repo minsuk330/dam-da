@@ -37,7 +37,7 @@ public class MemoryModelService {
     private final int curveDays;
 
     public MemoryModelService(FsrsParametersService parameters, ReviewLogRepository logs, MemoryStateRepository states,
-            @Value("${review.memory.personalization.min-reviews:1000}") int minReviews,
+            @Value("${review.memory.personalization.min-reviews:512}") int minReviews,
             @Value("${review.memory.personalization.curve-days:30}") int curveDays) {
         this.parameters = parameters;
         this.logs = logs;
