@@ -28,6 +28,9 @@ spring:
         streamable-http:
           mcp-endpoint: /mcp
 review:
+  dev-tools:
+    # /dev/** (세션 뷰어, 시간 이동). 로컬 .env에서만 켠다. 켜도 이 기기에서 직접 온 요청만 허용한다.
+    enabled: ${DEV_TOOLS_ENABLED:false}
   demo-user:
     name: 지원
   sessions-file: data/sessions.jsonl
