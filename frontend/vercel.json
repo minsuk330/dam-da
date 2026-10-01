@@ -3,5 +3,8 @@
   "framework": null,
   "buildCommand": "npx expo export -p web",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://hack.refit-100.site/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
