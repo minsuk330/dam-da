@@ -124,7 +124,7 @@ export function useMemoryStrength(id: number, enabled: boolean) {
   return useQuery({
     enabled,
     queryKey: ['memory-strength', id],
-    queryFn: async (): Promise<Omit<Schemas['Options'], 'current'> & { current: Strength | null }> =>
+    queryFn: async () =>
       mockEnabled
         ? mockCall(() => mockSessionApi.strength(id))
         : unwrap(await api.GET('/api/sessions/{sessionId}/memory-strength', { params: { path: { sessionId: id } } })),
