@@ -181,8 +181,14 @@ public class FeedbackService {
         boolean explanationBeforeLatest = exposures.stream().anyMatch(a -> a.getType() == AidType.EXPLANATION
                 && !a.getExposedAt().isAfter(latestAttempt.getSubmittedAt()));
         FeedbackPath path = FeedbackRules.path(latest, wrongAttempts, hintBeforeLatest, explanationBeforeLatest);
-        PresentationFeedback feedback = transaction.execute(tx -> apply(choice.action(), prepared, presentation, latestAttempt,
-                path, wrongAttempts));
+        Snapshot seen = new Snapshot(exposures.size(), relearnQueued || session.hasRecheckOf(presentationId));
+        Applied applied = transaction.execute(tx -> apply(choice.action(), prepared, presentation, latestAttempt, path,
+                wrongAttempts, seen));
+        if (!applied.applied()) {
+            log.info("피드백 제시 {}: 먼저 끝난 요청이 상태를 바꿔 {}을(를) 반영하지 않음", presentationId, choice.action());
+            return view(applied.feedback(), applied.feedback().getLastAction(), null, null);
+        }
+        PresentationFeedback feedback = applied.feedback();
         if (latest == AttemptOutcome.WRONG) {
             feedback = suggestPrerequisiteIfRepeated(feedback, presentation, question, history);
         }
@@ -213,16 +219,29 @@ public class FeedbackService {
         };
     }
 
+    /** 행동을 고를 때 본 상태. 잠근 뒤 다시 읽은 상태와 다르면 그 사이 다른 요청이 반영된 것이다. */
+    private record Snapshot(int aids, boolean relearnQueued) {
+    }
+
+    /** 저장 결과. {@code applied}가 거짓이면 먼저 끝난 요청 때문에 이 요청의 행동을 버렸고 {@code feedback}은 현재 기록이다. */
+    private record Applied(PresentationFeedback feedback, boolean applied) {
+    }
+
     /**
-     * 한 트랜잭션에서 도움 노출·재확인 편성·피드백 기록을 저장한다. 풀이 세션 행을 잠근 뒤 다시 읽으므로, 먼저 끝난 요청이
-     * 이미 보여 준 도움(최신 시도 뒤 같은 종류)이나 이미 편성한 재확인은 반복하지 않는다.
+     * 한 트랜잭션에서 도움 노출·재확인 편성·피드백 기록을 저장한다. 풀이 세션 행을 잠근 뒤 다시 읽어, 행동을 고를 때 본 상태와
+     * 다르면(다른 요청이 도움을 기록했거나 재확인을 편성함) 이 요청의 행동은 버린다. 그래서 동시 요청은 서로 다른 행동을 골랐어도 한쪽만
+     * 반영된다. 같은 상태에서 이미 보여 준 도움(최신 시도 뒤 같은 종류)이나 이미 편성한 재확인도 반복하지 않는다.
      */
-    private PresentationFeedback apply(FeedbackAction action, Prepared prepared, QuestionPresentation presentation,
-            PracticeAttempt latestAttempt, @Nullable FeedbackPath path, int wrongAttempts) {
+    private Applied apply(FeedbackAction action, Prepared prepared, QuestionPresentation presentation,
+            PracticeAttempt latestAttempt, @Nullable FeedbackPath path, int wrongAttempts, Snapshot seen) {
         PracticeSession session = practices.findForUpdateById(presentation.getPracticeSessionId()).orElseThrow();
         PresentationFeedback feedback = feedbacks.findByPresentationId(presentation.getId())
                 .orElseGet(() -> new PresentationFeedback(presentation.getId(), presentation.getUserId(), presentation.getMemoryItemId()));
         List<AidExposure> exposures = aids.findByPresentationIdOrderByExposedAtAscIdAsc(presentation.getId());
+        Snapshot now = new Snapshot(exposures.size(), feedback.isRelearnQueued() || session.hasRecheckOf(presentation.getId()));
+        if (!now.equals(seen)) {
+            return new Applied(feedback, false);
+        }
         switch (action) {
             case GIVE_HINT -> {
                 if (!shownAfter(exposures, AidType.HINT, latestAttempt)) {
@@ -249,7 +268,7 @@ public class FeedbackService {
             }
         }
         feedback.observe(path, wrongAttempts, action);
-        return feedbacks.save(feedback);
+        return new Applied(feedbacks.save(feedback), true);
     }
 
     private static boolean shownAfter(List<AidExposure> exposures, AidType type, PracticeAttempt latestAttempt) {
