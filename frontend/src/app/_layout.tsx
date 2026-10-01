@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { ApiError } from '@/api/client';
 import { SessionProvider, useSession } from '@/api/session';
 import { PhoneFrame } from '@/components/phone-frame';
+import { MockBadge } from '@/screens/mock-badge';
 import { colors, fonts, typography } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -35,6 +36,7 @@ export default function RootLayout() {
       <SessionProvider>
         <PhoneFrame>
           <StatusBar style="dark" />
+          <MockBadge />
           <AppStack />
         </PhoneFrame>
       </SessionProvider>

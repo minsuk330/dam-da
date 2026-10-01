@@ -11,6 +11,7 @@ import { Card } from '@/components/card';
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { dailySettingsStatus, memoryModelStatus } from '@/labels';
+import { profile } from '@/profile';
 import { colors, components, spacing } from '@/theme';
 
 /**
@@ -35,10 +36,10 @@ export function Me() {
       <View style={styles.profile}>
         <View style={styles.avatar}>
           <ThemedText variant="display" tone="primaryInk">
-            지
+            {profile.initial}
           </ThemedText>
         </View>
-        <ThemedText variant="title">지원</ThemedText>
+        <ThemedText variant="title">{profile.name}</ThemedText>
         {streak.data && (
           <ThemedText variant="subhead" tone="inkSecondary">
             연속 학습 {streak.data.current}일 · 최고 {streak.data.best}일
