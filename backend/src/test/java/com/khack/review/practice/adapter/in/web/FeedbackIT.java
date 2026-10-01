@@ -504,6 +504,80 @@ class FeedbackIT {
     }
 
     @Test
+    void failureWhileSavingLeavesNoAidRecheckOrFeedback() throws Exception {
+        long practiceId = startPractice(PracticeKind.FIRST_STUDY);
+        long p1 = nextPresentation(practiceId).get("presentationId").asLong();
+        answerJudged(p1, WRONG_TEXT, "WRONG");
+        jev.nextAction.set("explain_concept");
+        // 설명 본문이 컬럼 길이(10,000자)를 넘어 피드백 기록 저장이 실패한다. 도움 노출·확인 문제 편성은 그 전에 일어난다.
+        generator.willExplain("가".repeat(10_001));
+
+        clock.travel(Duration.ofSeconds(1));
+        HttpResponse<String> failed = send("POST", "/api/practice/presentations/%d/feedback".formatted(p1), null);
+
+        assertThat(failed.statusCode()).as(failed.body()).isNotEqualTo(200);
+        assertThat(aids.findByPresentationIdOrderByExposedAtAscIdAsc(p1)).as("도움 노출 롤백").isEmpty();
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue()).as("확인 문제 편성 롤백").hasSize(2);
+        assertThat(ok("GET", "/api/practice/presentations/%d/feedback".formatted(p1), null).get("action").isNull()).isTrue();
+
+        generator.clear();
+        JsonNode retried = decide(p1);
+        assertThat(retried.get("action").asString()).as("실패한 단계를 건너뛰지 않음").isEqualTo("EXPLAIN_CONCEPT");
+        assertThat(retried.get("recheckQueued").asBoolean()).isTrue();
+        assertThat(aids.findByPresentationIdOrderByExposedAtAscIdAsc(p1)).hasSize(1);
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue()).hasSize(3);
+    }
+
+    @Test
+    void concurrentFeedbackRequestsQueueTheRecheckOnce() throws Exception {
+        long practiceId = startPractice(PracticeKind.DAILY);
+        long p1 = nextPresentation(practiceId).get("presentationId").asLong();
+        answerJudged(p1, WRONG_TEXT, "WRONG");
+        clock.travel(Duration.ofSeconds(1));
+
+        List<HttpResponse<String>> responses = concurrently(p1, 4);
+
+        assertThat(responses).allSatisfy(r -> assertThat(r.statusCode()).as(r.body()).isEqualTo(200));
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue()).hasSize(3)
+                .filteredOn(entry -> Long.valueOf(p1).equals(entry.getRecheckOfPresentationId())).hasSize(1);
+        assertThat(decide(p1).get("recheckQueued").asBoolean()).isTrue();
+    }
+
+    @Test
+    void concurrentFeedbackRequestsRecordTheHintOnce() throws Exception {
+        long practiceId = startPractice(PracticeKind.FIRST_STUDY);
+        long p1 = nextPresentation(practiceId).get("presentationId").asLong();
+        answerJudged(p1, WRONG_TEXT, "WRONG");
+        clock.travel(Duration.ofSeconds(1));
+
+        List<HttpResponse<String>> responses = concurrently(p1, 4);
+
+        assertThat(responses).allSatisfy(r -> assertThat(r.statusCode()).as(r.body()).isEqualTo(200));
+        assertThat(aids.findByPresentationIdOrderByExposedAtAscIdAsc(p1)).extracting(AidExposure::getType)
+                .containsExactly(AidType.HINT);
+    }
+
+    /** 같은 제시에 피드백 요청을 동시에 보낸다. */
+    private List<HttpResponse<String>> concurrently(long presentationId, int count) throws Exception {
+        java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(count)) {
+            List<java.util.concurrent.Future<HttpResponse<String>>> futures = new java.util.ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    return send("POST", "/api/practice/presentations/%d/feedback".formatted(presentationId), null);
+                }));
+            }
+            start.countDown();
+            List<HttpResponse<String>> responses = new java.util.ArrayList<>();
+            for (var future : futures) {
+                responses.add(future.get());
+            }
+            return responses;
+        }
+    }
+
+    @Test
     void feedbackNeedsAnAnswerAndTheCurrentPresentation() throws Exception {
         long practiceId = startPractice(PracticeKind.FIRST_STUDY);
         long p1 = nextPresentation(practiceId).get("presentationId").asLong();

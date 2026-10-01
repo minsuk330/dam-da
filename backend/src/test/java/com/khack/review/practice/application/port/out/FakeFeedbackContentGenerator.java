@@ -19,11 +19,18 @@ public class FakeFeedbackContentGenerator implements FeedbackContentGenerator {
     private final List<FeedbackContentRequest> explanations = new CopyOnWriteArrayList<>();
     private final List<FeedbackContentRequest> prerequisites = new CopyOnWriteArrayList<>();
     private final Deque<RuntimeException> failures = new ArrayDeque<>();
+    private volatile String explanationText;
 
     /** 다음 호출(종류 무관)들이 순서대로 던질 예외. 다 쓰면 기본 동작. */
     public synchronized FakeFeedbackContentGenerator willFail(RuntimeException... failures) {
         this.failures.clear();
         this.failures.addAll(List.of(failures));
+        return this;
+    }
+
+    /** 이후 설명 본문을 이 값으로 고정한다. {@code clear()}로 기본 동작으로 돌아간다. */
+    public FakeFeedbackContentGenerator willExplain(String text) {
+        explanationText = text;
         return this;
     }
 
@@ -44,6 +51,7 @@ public class FakeFeedbackContentGenerator implements FeedbackContentGenerator {
         explanations.clear();
         prerequisites.clear();
         failures.clear();
+        explanationText = null;
     }
 
     @Override
@@ -57,6 +65,9 @@ public class FakeFeedbackContentGenerator implements FeedbackContentGenerator {
     public FeedbackContent explanation(FeedbackContentRequest request) {
         explanations.add(request);
         failIfRequested();
+        if (explanationText != null) {
+            return new FeedbackContent(explanationText, turns(request));
+        }
         String belief = request.userBelief() == null ? "" : " (믿었던 내용: " + request.userBelief() + ")";
         return new FeedbackContent("설명: " + request.itemContent() + belief, turns(request));
     }
