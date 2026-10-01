@@ -1,0 +1,4 @@
+# ./gradlew liveTest 전용. test 프로파일 위에 덧씌워 실제 Jev 키를 되살린다(OpenAI 키는 test에서도 그대로).
+review:
+  jev:
+    api-key: ${TYPESAFE_API_KEY:}
