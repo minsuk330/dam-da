@@ -479,17 +479,27 @@ class FeedbackIT {
     }
 
     @Test
-    void ambiguousQuestionIsRecheckedWithoutRatingChange() throws Exception {
+    void ambiguousQuestionThatPassesRecheckIsNotAskedAgain() throws Exception {
         long practiceId = startPractice(PracticeKind.FIRST_STUDY);
         JsonNode first = nextPresentation(practiceId);
         long p1 = first.get("presentationId").asLong();
+        long q1 = first.get("questionId").asLong();
         JsonNode a1 = answerJudged(p1, WRONG_TEXT, "AMBIGUOUS");
 
         JsonNode view = decide(p1);
 
+        // 재검사를 통과해도 같은 문제는 다시 내지 않는다. 원래 문제는 승인으로 남고 변형 문제로 다시 확인한다.
         assertThat(view.get("action").asString()).isEqualTo("GENERATE_VARIANT");
         assertThat(view.get("recheckQueued").asBoolean()).isTrue();
-        assertThat(practices.findById(practiceId).orElseThrow().getQueue().getLast().getRecheckOfPresentationId()).isEqualTo(p1);
+        QuestionRecheck recheck = awaitRecheck(q1);
+        assertThat(recheck.getResult()).isEqualTo(RecheckResult.PASSED);
+        assertThat(questionRepository.findById(q1).orElseThrow().getStatus()).isEqualTo(QuestionStatus.APPROVED);
+        Question variant = questionRepository.findById(recheck.getVariantQuestionId()).orElseThrow();
+        assertThat(variant.getStatus()).isEqualTo(QuestionStatus.APPROVED);
+        assertThat(variant.getVariantOfId()).isEqualTo(q1);
+        PracticeQueueEntry requeued = practices.findById(practiceId).orElseThrow().getQueue().getLast();
+        assertThat(requeued.getRecheckOfPresentationId()).isEqualTo(p1);
+        assertThat(requeued.getQuestionId()).isEqualTo(variant.getId()).isNotEqualTo(q1);
         assertThat(aids.findByPresentationIdOrderByExposedAtAscIdAsc(p1)).isEmpty();
     }
 

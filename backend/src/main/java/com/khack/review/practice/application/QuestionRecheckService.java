@@ -61,7 +61,8 @@ public class QuestionRecheckService {
     }
 
     /**
-     * 문제를 재검사하고 쓸 수 있는 문제 ID를 돌려준다(통과면 그 문제, 폐기면 변형 문제). 이미 끝났으면 기록을 쓰고, 진행 중이면 기다린다.
+     * 문제를 재검사하고 다시 확인에 쓸 변형 문제 ID를 돌려준다. 통과·폐기 모두 보류된 같은 문제 대신 변형 문제를 쓴다.
+     * 이미 끝났으면 기록을 쓰고, 진행 중이면 기다린다.
      *
      * @param retryFailed 지난 재검사가 실패했으면 다시 시도할지
      */
@@ -98,7 +99,9 @@ public class QuestionRecheckService {
         try {
             Optional<Question> usable = generation.recheck(questionId);
             if (usable.map(Question::getId).filter(questionId::equals).isPresent()) {
+                // 통과해도 모호 보류된 같은 문제는 다시 내지 않는다(스펙 §6.4.5). 원래 문제는 승인으로 두고 변형 문제로 다시 확인한다.
                 result = RecheckResult.PASSED;
+                variant = generation.requestVariant(questionId).map(Question::getId).orElse(null);
             } else {
                 result = RecheckResult.RETIRED;
                 variant = usable.map(Question::getId).orElse(null);

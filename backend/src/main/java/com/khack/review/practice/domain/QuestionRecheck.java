@@ -37,7 +37,7 @@ public class QuestionRecheck {
     @Column(nullable = false)
     private RecheckResult result;
 
-    /** 폐기 후 만든 변형 문제. 못 만들었으면 비어 있다. */
+    /** 보류된 문제 대신 다시 확인에 쓸 변형 문제(통과·폐기 모두). 못 만들었으면 비어 있다. */
     private Long variantQuestionId;
 
     @Column(length = 1_000)
@@ -62,13 +62,9 @@ public class QuestionRecheck {
         this.checkedAt = at;
     }
 
-    /** 이 기록으로 쓸 문제. 통과면 원래 문제, 폐기면 변형 문제(없으면 비어 있음), 실패면 비어 있다. */
+    /** 다시 확인에 쓸 문제. 보류된 같은 문제는 다시 내지 않으므로 변형 문제만 쓴다. 없거나 실패면 비어 있다. */
     public Optional<Long> usableQuestionId() {
-        return switch (result) {
-            case PASSED -> Optional.of(questionId);
-            case RETIRED -> Optional.ofNullable(variantQuestionId);
-            case FAILED -> Optional.empty();
-        };
+        return result == RecheckResult.FAILED ? Optional.empty() : Optional.ofNullable(variantQuestionId);
     }
 
     public Long getQuestionId() {
