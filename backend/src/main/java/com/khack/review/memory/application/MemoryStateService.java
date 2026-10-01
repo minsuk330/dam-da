@@ -45,14 +45,28 @@ public class MemoryStateService {
         return review(userId, memoryItemId, rating, clock.instant());
     }
 
-    /** 지정한 시각으로 등급 하나를 반영한다(대화 시각의 초기 평가 등). */
+    /** 지정한 시각으로 등급 하나를 반영한다. */
     @Transactional
     public ReviewResult review(Long userId, Long memoryItemId, Rating rating, Instant reviewedAt) {
+        return apply(userId, memoryItemId, rating, reviewedAt, false);
+    }
+
+    /** 대화 근거의 초기 등급을 대화 시각으로 반영한다(스펙 §6.4.4). 매개변수를 바꿔 재계산할 때 첫 복습으로 다시 쓴다. */
+    @Transactional
+    public ReviewResult seed(Long userId, Long memoryItemId, Rating rating, Instant ratedAt) {
+        return apply(userId, memoryItemId, rating, ratedAt, true);
+    }
+
+    private ReviewResult apply(Long userId, Long memoryItemId, Rating rating, Instant reviewedAt, boolean initial) {
         MemoryState state = states.findByMemoryItemId(memoryItemId)
                 .orElseGet(() -> new MemoryState(userId, memoryItemId, defaultRetention, reviewedAt));
         FsrsParametersService.Active active = parameters.activeFor(state.getUserId(), state.getDesiredRetention());
         Optional<Double> before = state.retrievability(active.scheduler(), reviewedAt);
-        state.review(active.scheduler(), active.version(), rating, reviewedAt);
+        if (initial) {
+            state.seed(active.scheduler(), active.version(), rating, reviewedAt);
+        } else {
+            state.review(active.scheduler(), active.version(), rating, reviewedAt);
+        }
         states.save(state);
         return new ReviewResult(memoryItemId, rating, reviewedAt, before, state.getState(), state.getStability(),
                 state.getDifficulty(), state.getDue(), active.version());

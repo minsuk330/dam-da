@@ -8,6 +8,7 @@ import com.khack.review.memory.domain.UserFsrsSettings;
 import com.khack.review.memory.domain.UserFsrsSettingsRepository;
 import io.github.openspacedrepetition.Scheduler;
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.boot.ApplicationArguments;
@@ -71,6 +72,26 @@ public class FsrsParametersService implements ApplicationRunner {
     public ParameterSet registerOptimized(double[] weights, String validation) {
         int version = parameters.findTopByOrderByVersionDesc().map(FsrsParameters::getVersion).orElse(DEFAULT_VERSION) + 1;
         return toSet(parameters.save(new FsrsParameters(version, weights, ParameterSource.OPTIMIZED, validation, clock.instant())));
+    }
+
+    /** 저장된 매개변수 버전 목록. 롤백 대상을 고를 때 쓴다. */
+    @Transactional(readOnly = true)
+    public List<ParameterSet> all() {
+        return parameters.findAllByOrderByVersionAsc().stream().map(FsrsParametersService::toSet).toList();
+    }
+
+    /**
+     * 사용자가 쓸 매개변수 버전을 바꾼다. 기본값(버전 1)으로 되돌리거나 다른 버전으로 롤백할 수 있다.
+     * 저장된 OPTIMIZED 버전은 옵티마이저 검증을 통과한 것뿐이다(스펙 §6.4.9). 기억 상태 재계산은 호출하는 쪽이 한다.
+     */
+    @Transactional
+    public ParameterSet activate(Long userId, int version) {
+        FsrsParameters target = version == DEFAULT_VERSION ? defaults() : parameters.findByVersion(version)
+                .orElseThrow(() -> new IllegalArgumentException("매개변수 버전이 없습니다: " + version));
+        settings.findById(userId).ifPresentOrElse(
+                current -> current.activate(version),
+                () -> settings.save(new UserFsrsSettings(userId, version)));
+        return toSet(target);
     }
 
     private FsrsParameters active(Long userId) {
