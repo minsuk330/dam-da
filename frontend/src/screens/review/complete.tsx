@@ -14,6 +14,8 @@ import { ThemedText } from '@/components/themed-text';
 import { formatDate } from '@/labels';
 import { colors, components, spacing } from '@/theme';
 
+import { Celebration } from './celebration';
+
 /**
  * 풀이 경로(스펙 §7 6단계). 서버 피드백의 경로를 따르고, 설명 뒤 확인 문제 결과로 최종 경로를 정한다.
  * 지식 상태 표시와 피드백에만 쓰고, FSRS 등급은 첫 무도움 시도로 서버가 정한다. `held`는 판정 보류다.
@@ -41,46 +43,50 @@ export function ReviewComplete({ results, sessionId }: { results: ItemResult[]; 
   const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing['3xl'] }]}>
-      <View style={styles.hero}>
-        <View style={styles.doneIcon}>
-          <Icon name="check" size="xl" color={colors.onPrimary} />
-        </View>
-        <ThemedText variant="display" style={styles.center}>
-          학습을 마쳤어요
-        </ThemedText>
-        {results.length > 0 && (
-          <ThemedText variant="subhead" tone="inkSecondary" style={styles.center}>
-            {results.length}문제를 풀었어요
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing['3xl'] }]}>
+        <View style={styles.hero}>
+          <View style={styles.doneIcon}>
+            <Icon name="check" size="xl" color={colors.onPrimary} />
+          </View>
+          <ThemedText variant="display" style={styles.center}>
+            학습을 마쳤어요
           </ThemedText>
-        )}
-      </View>
-
-      {/* 이미 끝난 풀이를 다시 열면 이번 풀이 기록이 없으므로 경로 집계는 숨기고 요약만 보여준다. */}
-      {results.length > 0 && (
-        <View style={styles.paths}>
-          {COUNTED.map((path) => (
-            <Card key={path} variant={path === 'independent' ? 'lavender' : 'surface'} style={styles.pathCard}>
-              <ThemedText variant="stat">{results.filter((r) => r.path === path).length}</ThemedText>
-              <ThemedText variant="caption" tone="inkSecondary">
-                {pathLabel[path]}
-              </ThemedText>
-            </Card>
-          ))}
+          {results.length > 0 && (
+            <ThemedText variant="subhead" tone="inkSecondary" style={styles.center}>
+              {results.length}문제를 풀었어요
+            </ThemedText>
+          )}
         </View>
-      )}
 
-      {sessionId !== null ? (
-        <SessionSummary sessionId={sessionId} />
-      ) : (
-        <>
-          <StreakCard />
-          <HelpedQuestions results={results} />
-        </>
-      )}
+        {/* 이미 끝난 풀이를 다시 열면 이번 풀이 기록이 없으므로 경로 집계는 숨기고 요약만 보여준다. */}
+        {results.length > 0 && (
+          <View style={styles.paths}>
+            {COUNTED.map((path) => (
+              <Card key={path} variant={path === 'independent' ? 'lavender' : 'surface'} style={styles.pathCard}>
+                <ThemedText variant="stat">{results.filter((r) => r.path === path).length}</ThemedText>
+                <ThemedText variant="caption" tone="inkSecondary">
+                  {pathLabel[path]}
+                </ThemedText>
+              </Card>
+            ))}
+          </View>
+        )}
 
-      <Button title="홈으로" onPress={() => router.navigate('/')} />
-    </ScrollView>
+        {sessionId !== null ? (
+          <SessionSummary sessionId={sessionId} />
+        ) : (
+          <>
+            <StreakCard />
+            <HelpedQuestions results={results} />
+          </>
+        )}
+
+        <Button title="홈으로" onPress={() => router.navigate('/')} />
+      </ScrollView>
+      {/* 방금 학습을 마친 순간에만 축하한다. 이미 끝난 풀이를 다시 열면 이번 풀이 기록이 없다. */}
+      {results.length > 0 && <Celebration />}
+    </View>
   );
 }
 
@@ -180,10 +186,16 @@ function StreakCard() {
         연속 학습
       </ThemedText>
       <ThemedText variant="title">{data.current}일째 이어가고 있어요</ThemedText>
-      {data.best > data.current && (
+      {data.best > data.current ? (
         <ThemedText variant="caption" tone="inkSecondary">
           최고 기록 {data.best}일
         </ThemedText>
+      ) : (
+        data.current > 1 && (
+          <ThemedText variant="caption" tone="primaryInk">
+            최고 기록을 새로 세웠어요
+          </ThemedText>
+        )
       )}
     </Card>
   );
@@ -211,6 +223,7 @@ function HelpedQuestions({ results }: { results: ItemResult[] }) {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { padding: spacing.xl, gap: spacing['2xl'] },
   hero: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.xl },
   center: { textAlign: 'center' },
