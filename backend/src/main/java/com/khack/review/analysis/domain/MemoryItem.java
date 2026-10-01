@@ -70,6 +70,38 @@ public class MemoryItem {
         status = MemoryItemStatus.EXCLUDED;
     }
 
+    /** 제외를 되돌린다. 출처 발화가 없으면 근거가 없어 되돌릴 수 없다(규칙 2). */
+    void include() {
+        if (sourceTurns.isEmpty()) {
+            throw new IllegalStateException("기억 항목 %d은(는) 출처 발화가 없어 다시 넣을 수 없습니다.".formatted(id));
+        }
+        status = MemoryItemStatus.NEW;
+    }
+
+    /** 발화가 끼워 들어가 {@code fromIndex} 이상 발화의 index가 1씩 밀렸다. */
+    void shiftSourceTurnsFrom(int fromIndex) {
+        sourceTurns.replaceAll(turn -> turn >= fromIndex ? turn + 1 : turn);
+    }
+
+    void addSourceTurn(int turn) {
+        if (!sourceTurns.contains(turn)) {
+            sourceTurns.add(turn);
+            sourceTurns.sort(null);
+        }
+    }
+
+    /** 출처에서 발화를 뺀다. 출처가 남지 않으면 근거가 없어 제외한다(규칙 2). */
+    void removeSourceTurn(int turn) {
+        sourceTurns.remove(Integer.valueOf(turn));
+        if (sourceTurns.isEmpty()) {
+            exclude();
+        }
+    }
+
+    public boolean isExcluded() {
+        return status == MemoryItemStatus.EXCLUDED;
+    }
+
     public Long getId() {
         return id;
     }
