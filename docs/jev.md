@@ -82,6 +82,27 @@ JevAnswer.Choice misread = r.choice(AnswerJudgeQuestions.MISREAD);   // misread 
 - 객관식은 Jev 없이 코드가 채점한다(`MET`/`NOT_MET`, 신뢰도 1).
 - 답을 제출하면 그 응답 안에서 판정한다. Jev 호출은 트랜잭션 밖에서 한다.
 
+## 다음 행동 선택 (스펙 §6.2, §7 5단계)
+
+질문 정의는 `practice/application/NextActionQuestions`(ai 소유), 허용할 행동은 상태 규칙 `FeedbackRules`, 호출과 신뢰도 기준 적용은 `NextActionJudge`(server 소유)다.
+
+- 선택지는 상태 규칙이 허용한 행동만 담는다. 허용된 행동이 하나면 Jev를 부르지 않는다. 신뢰도가 `review.practice.feedback.min-confidence`(0.5)보다 낮거나 호출이 실패하면 규칙의 기본 행동을 쓴다.
+- 다음 행동은 학습 흐름만 바꾸고 FSRS 등급에는 관여하지 않는다.
+- 상태(`NextActionState`)에는 시도의 경과만 있고 사용자 답과 정답 기준은 없다. 판단은 아래 원칙으로 한다(질문 문장에 담겨 있다).
+  1. `repeatedDifficulty`가 참이면: 틀렸으면 힌트 대신 개념 설명, 도움을 보고 맞혔으면 오늘 한 번 더 묻기.
+  2. 처음 틀렸으면: 첫 학습은 설명보다 힌트를 먼저, 매일 학습은 설명 없이 오늘 끝에 다시 묻기(다시 묻기를 못 하면 설명).
+  3. 도움을 보고 맞혔으면: 설명을 봤으면 오늘 한 번 더 묻기, 힌트만 봤으면 넘어가기.
+- 2026-10-02 측정(`./gradlew -q nextActionCheck`, 표본 8개): 자리표시 문구는 기대와 3/8 일치(신뢰도 0.39~0.55가 많아 기본 행동으로 물러남, 매일 학습의 첫 오답을 0.86으로 설명으로 고름) → 원칙을 넣은 뒤 8/8 일치, 신뢰도 0.63~0.99.
+
+## 힌트·개념 설명 생성 (스펙 §7 5단계)
+
+Jev가 아니라 LLM이 만든다. 포트는 `practice/application/port/out/FeedbackContentGenerator`, 구현은 `practice/adapter/out/llm/LlmFeedbackContentGenerator`와 `FeedbackPrompt`(ai 소유)다.
+
+- 힌트는 정답을 말하지 않고 떠올릴 방향만 알려 준다. 모범 답안·정답 기준·교정의 문구가 힌트에 통째로 들어 있으면 코드가 거부한다. 표현을 바꾼 노출은 코드로 잡지 못한다.
+- 개념 설명은 헷갈린 지점이면 당시 믿음(`userBelief`)과 교정을 비교한다. 근거 발화는 요청에 있던 index만 돌려준다.
+- 학습자가 기다리는 자리라 다시 요청하지 않는다. 비었거나 너무 길거나 호출이 실패하면 `FeedbackGenerationException`이고, 서버가 문제에 저장된 기본 힌트·설명으로 대신한다.
+- 결과를 눈으로 볼 때는 `./gradlew -q feedbackContentCheck -Pargs="--out build/feedback-content.json"`.
+
 ## 오류와 재시도
 
 - 실패는 `JevCallException`(`status()` = HTTP 상태, 연결 오류는 0).
@@ -97,6 +118,7 @@ JevAnswer.Choice misread = r.choice(AnswerJudgeQuestions.MISREAD);   // misread 
 | 실제 API | `./gradlew -q jevCheck -Pargs="<사용자 답변>"` | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 복습 단위 검수 실제 API | `./gradlew -q unitReviewCheck` (예시 단위 3개: 통과·복습 가치 없음·근거 연결 부족) | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 답변 판정 질문 실제 API | `./gradlew -q answerJudgeCheck` (표본 13개: 표현이 다른 정답, 누락, 번복, 모호한 답, 질문 오독, 대상 밖 오류, 믿음 반복) | `backend/.env`의 `TYPESAFE_API_KEY` |
+| 다음 행동 질문 실제 API | `./gradlew -q nextActionCheck` (표본 8개: 첫 학습·매일 학습, 처음 틀림·반복 어려움, 힌트·설명 뒤 정답) | `backend/.env`의 `TYPESAFE_API_KEY` |
 
 `./gradlew test`는 `application-test.yml`에서 키를 비워 `.env`에 키가 있어도 실제 Jev를 부르지 않는다.
 
