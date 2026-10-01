@@ -122,6 +122,8 @@ review:
     rating:
       # 등급 변환표 행 1·2의 판정 신뢰도 기준 (스펙 §6.4.5)
       min-confidence: 0.6
+      # 근거 대화가 모델이 옮겨 적은 것(커넥터 입력, model_transcribed)이면 더 높게 잡는다 (스펙 §7.3)
+      min-confidence-transcribed: 0.7
       # 문제 유형별 기준 응답 시간. 응답 시간은 Easy를 막는 보조 조건으로만 쓴다
       reference-times:
         MULTIPLE_CHOICE: 20s

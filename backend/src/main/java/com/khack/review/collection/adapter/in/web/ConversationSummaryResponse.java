@@ -6,9 +6,10 @@ import com.khack.review.collection.domain.SavedSession;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
-/** 수신 대화 목록의 한 줄. */
+/** 수신 대화 목록의 한 줄. {@code learningSessionId}는 이 대화로 만든 학습 세션이고, 아직 없으면 null이다. */
 record ConversationSummaryResponse(
         String id,
+        @Nullable Long learningSessionId,
         Instant receivedAt,
         InputPath inputPath,
         Fidelity fidelity,
@@ -17,8 +18,8 @@ record ConversationSummaryResponse(
         int reviewUnitCount,
         int warningCount) {
 
-    static ConversationSummaryResponse from(SavedSession session) {
-        return new ConversationSummaryResponse(session.id(), Instant.parse(session.receivedAt()),
+    static ConversationSummaryResponse from(SavedSession session, @Nullable Long learningSessionId) {
+        return new ConversationSummaryResponse(session.id(), learningSessionId, Instant.parse(session.receivedAt()),
                 InputPath.valueOf(session.source()), Fidelity.valueOf(session.transcription()), session.topicHint(),
                 session.userTurns().size(), session.reviewUnits().size(), session.warnings().size());
     }

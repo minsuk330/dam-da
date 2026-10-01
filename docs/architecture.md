@@ -41,6 +41,7 @@ com.khack.review
 6. `domain/`은 Spring Web, Spring AI, Playwright, HTTP 클라이언트에 의존하지 않는다. 비즈니스 규칙은 엔티티·도메인 서비스에 두고 application 서비스는 흐름 조율만 한다.
 7. 컨텍스트 간에는 엔티티를 직접 참조하지 않고 ID로 참조한다. 다른 컨텍스트의 기능은 그 컨텍스트의 application 서비스를 통해 호출한다.
 8. 컨트롤러·MCP 요청/응답은 DTO(record)로 받고 내보낸다. 엔티티를 API 밖으로 노출하지 않는다.
+9. `analysis/`는 `collection/`에 의존하고, 반대 방향은 두지 않는다. **예외:** `collection/adapter/in/web`은 대화 응답에 학습 세션 ID를 넣으려고 `analysis`의 조회 서비스(`LearningSessionQueryService`)를 부른다. collection의 application·domain은 analysis를 모른다.
 
 ## 포트 경계와 소유
 

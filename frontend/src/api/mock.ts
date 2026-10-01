@@ -18,6 +18,7 @@ const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 10
 const details: Detail[] = [
   {
     id: 'mock-innodb',
+    learningSessionId: 3,
     receivedAt: daysAgo(0),
     inputPath: 'connector',
     fidelity: 'model_transcribed',
@@ -63,6 +64,7 @@ const details: Detail[] = [
   },
   {
     id: 'mock-stats',
+    learningSessionId: 2,
     receivedAt: daysAgo(2),
     inputPath: 'share_link',
     fidelity: 'verbatim',
@@ -101,6 +103,7 @@ const details: Detail[] = [
   },
   {
     id: 'mock-react',
+    learningSessionId: 1,
     receivedAt: daysAgo(5),
     inputPath: 'paste',
     fidelity: 'model_transcribed',
@@ -141,6 +144,7 @@ const details: Detail[] = [
 /** API처럼 오래된 것부터. */
 export const mockConversations: Schemas['ConversationSummaryResponse'][] = [...details].reverse().map((d) => ({
   id: d.id,
+  learningSessionId: d.learningSessionId,
   receivedAt: d.receivedAt,
   inputPath: d.inputPath,
   fidelity: d.fidelity,
@@ -158,6 +162,7 @@ export function mockConversation(id: string): Detail | undefined {
 export const mockLearningSessions: Schemas['LearningSessionSummary'][] = [
   {
     id: 3,
+    conversationId: 'mock-innodb',
     status: 'AWAITING_CONFIRMATION',
     topicHint: 'InnoDB 잠금과 MVCC',
     inputPath: 'connector',
@@ -168,6 +173,7 @@ export const mockLearningSessions: Schemas['LearningSessionSummary'][] = [
   },
   {
     id: 2,
+    conversationId: 'mock-stats',
     status: 'QUESTIONS_READY',
     topicHint: '경영통계: 표준오차',
     inputPath: 'share_link',
@@ -178,6 +184,7 @@ export const mockLearningSessions: Schemas['LearningSessionSummary'][] = [
   },
   {
     id: 1,
+    conversationId: 'mock-react',
     status: 'IN_PROGRESS',
     topicHint: 'React 재렌더링',
     inputPath: 'paste',
@@ -215,6 +222,7 @@ export const mockNotifications: Schemas['NotificationsView'] = {
 
 export const mockIntake: Schemas['IntakeResponse'] = {
   conversationId: 'mock-innodb',
+  learningSessionId: 3,
   inputPath: 'paste',
   userTurnCount: 4,
   reviewUnitCount: 2,

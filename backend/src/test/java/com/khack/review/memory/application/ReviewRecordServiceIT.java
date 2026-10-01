@@ -12,6 +12,7 @@ import com.khack.review.memory.domain.HoldReason;
 import com.khack.review.memory.domain.MemoryStateUpdated;
 import com.khack.review.memory.domain.RatingDecision;
 import com.khack.review.memory.domain.RatingInput;
+import com.khack.review.memory.domain.RatingPolicy;
 import com.khack.review.memory.domain.ReviewContext;
 import com.khack.review.memory.domain.ReviewLog;
 import com.khack.review.memory.domain.ReviewLogRepository;
@@ -107,13 +108,13 @@ class ReviewRecordServiceIT {
 
         ReviewRecordService.Recorded recorded = reviews.record(first, input(AnswerVerdict.MET, 0.9, SelfAssessment.RECALLED_EASILY));
 
-        assertThat(recorded.decision()).isEqualTo(new RatingDecision.Rated(Rating.EASY, 6, 1));
+        assertThat(recorded.decision()).isEqualTo(new RatingDecision.Rated(Rating.EASY, 6, RatingPolicy.VERSION));
         assertThat(recorded.review()).isPresent();
         assertThat(memory.lastReviewedAt(item)).contains(AT);
         ReviewLog log = logs.findByAttemptId(first.attemptId()).orElseThrow();
         assertThat(log.getRating()).isEqualTo(Rating.EASY);
         assertThat(log.getHoldReason()).isNull();
-        assertThat(log.getPolicyVersion()).isEqualTo(1);
+        assertThat(log.getPolicyVersion()).isEqualTo(RatingPolicy.VERSION);
         assertThat(log.getParametersVersion()).isEqualTo(FsrsParametersService.DEFAULT_VERSION);
         assertThat(log.getElapsedDays()).as("첫 등급").isNull();
         assertThat(log.getPredictedRetrievability()).isEqualTo(0.8);
@@ -145,7 +146,7 @@ class ReviewRecordServiceIT {
         ReviewRecordService.Recorded second = reviews.record(context(item, AT.plus(Duration.ofDays(2))),
                 input(AnswerVerdict.UNABLE_TO_JUDGE, 0.9, SelfAssessment.RECALLED_EASILY));
 
-        assertThat(first.decision()).isEqualTo(new RatingDecision.Held(HoldReason.LOW_CONFIDENCE, 1, 1));
+        assertThat(first.decision()).isEqualTo(new RatingDecision.Held(HoldReason.LOW_CONFIDENCE, 1, RatingPolicy.VERSION));
         assertThat(first.hold()).hasValueSatisfying(hold -> assertThat(hold.autoQuestionsPaused()).isFalse());
         assertThat(second.hold()).hasValueSatisfying(hold -> assertThat(hold.autoQuestionsPaused()).isTrue());
         assertThat(memory.nextReviewAt(item)).contains(due);
@@ -172,7 +173,7 @@ class ReviewRecordServiceIT {
         reviews.record(once, input(AnswerVerdict.NOT_MET, 0.9, SelfAssessment.RECALLED_EASILY));
         ReviewRecordService.Recorded repeated = reviews.record(once, input(AnswerVerdict.MET, 0.9, SelfAssessment.RECALLED_EASILY));
 
-        assertThat(repeated.decision()).isEqualTo(new RatingDecision.Rated(Rating.AGAIN, 4, 1));
+        assertThat(repeated.decision()).isEqualTo(new RatingDecision.Rated(Rating.AGAIN, 4, RatingPolicy.VERSION));
         assertThat(repeated.review()).isEmpty();
         assertThat(logs.findByMemoryItemIdOrderByReviewedAtAscIdAsc(item)).hasSize(1);
     }

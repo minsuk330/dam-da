@@ -501,6 +501,8 @@ export interface components {
             id: string;
             /** @enum {string} */
             inputPath: "connector" | "share_link" | "paste";
+            /** Format: int64 */
+            learningSessionId: number | null;
             /** Format: date-time */
             receivedAt: string;
             reviewUnits: components["schemas"]["ReviewUnitResponse"][];
@@ -514,6 +516,8 @@ export interface components {
             id: string;
             /** @enum {string} */
             inputPath: "connector" | "share_link" | "paste";
+            /** Format: int64 */
+            learningSessionId: number | null;
             /** Format: date-time */
             receivedAt: string;
             /** Format: int32 */
@@ -625,6 +629,8 @@ export interface components {
         IntakeResponse: {
             conversationId: string;
             inputPath: string;
+            /** Format: int64 */
+            learningSessionId: number | null;
             /** Format: int32 */
             reviewUnitCount: number;
             /** Format: int32 */
@@ -675,6 +681,7 @@ export interface components {
         LearningSessionDetail: {
             /** Format: date-time */
             confirmedAt: string | null;
+            conversationId: string;
             /** Format: date-time */
             createdAt: string;
             fidelity: string;
@@ -689,6 +696,7 @@ export interface components {
             warnings: string[];
         };
         LearningSessionSummary: {
+            conversationId: string;
             /** Format: date-time */
             createdAt: string;
             fidelity: string;

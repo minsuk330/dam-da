@@ -108,6 +108,7 @@ class MemoryStateServiceIT {
     @Test
     void ratingPolicyIsBoundFromConfiguration() {
         assertThat(ratingPolicy.minConfidence()).isEqualTo(0.6);
+        assertThat(ratingPolicy.minConfidenceTranscribed()).isEqualTo(0.7);
         assertThat(ratingPolicy.referenceTimes()).containsEntry(
                 QuestionType.SHORT_ANSWER, Duration.ofSeconds(40));
         assertThat(ratingPolicy.easyMaxTimeRatio()).isEqualTo(1.5);

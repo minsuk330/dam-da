@@ -101,10 +101,14 @@ class LearningSessionApiIT {
     void userReviewsFixesAndConfirmsASession() throws Exception {
         long id = savedAndReviewed();
 
+        String conversationId = conversations.findById(sessions.findById(id).orElseThrow().getConversationId()).orElseThrow()
+                .getSessionId();
         JsonNode list = send("GET", "/api/learning-sessions", null, 200);
-        assertThat(list.valueStream().map(s -> s.get("id").asLong()).toList()).contains(id);
+        assertThat(list.valueStream().filter(s -> s.get("id").asLong() == id).findFirst()).hasValueSatisfying(
+                s -> assertThat(s.get("conversationId").asString()).as("원본 대화의 외부 ID").isEqualTo(conversationId));
 
         JsonNode detail = send("GET", "/api/learning-sessions/" + id, null, 200);
+        assertThat(detail.get("conversationId").asString()).isEqualTo(conversationId);
         assertThat(detail.get("status").asString()).isEqualTo("AWAITING_CONFIRMATION");
         assertThat(detail.get("inputPath").asString()).isEqualTo("connector");
         assertThat(detail.get("fidelity").asString()).isEqualTo("model_transcribed");

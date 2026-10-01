@@ -18,6 +18,7 @@ function turn(index: number, text: string, intent: Turn['intent'], aiVerdict: Tu
 const details: Record<number, Detail> = {
   3: {
     id: 3,
+    conversationId: 'mock-innodb',
     status: 'AWAITING_CONFIRMATION',
     topicHint: 'InnoDB 잠금과 MVCC',
     inputPath: 'connector',
@@ -59,6 +60,7 @@ const details: Record<number, Detail> = {
   },
   2: {
     id: 2,
+    conversationId: 'mock-stats',
     status: 'QUESTIONS_READY',
     topicHint: '경영통계: 표준오차',
     inputPath: 'share_link',
@@ -89,6 +91,7 @@ const details: Record<number, Detail> = {
   },
   1: {
     id: 1,
+    conversationId: 'mock-react',
     status: 'IN_PROGRESS',
     topicHint: 'React 재렌더링',
     inputPath: 'paste',
