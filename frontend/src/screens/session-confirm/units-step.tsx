@@ -8,7 +8,7 @@ import { Notice } from '@/components/notice';
 import { Chip } from '@/components/chip';
 import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
-import { itemKindLabel, unitVerdictLabel } from '@/labels';
+import { itemKindLabel, unitVerdictLabel, unitVerdictNote } from '@/labels';
 import { colors, opacity, spacing } from '@/theme';
 
 import { StepHeader } from './parts';
@@ -82,9 +82,9 @@ function UnitCard({
         </ThemedText>
         <Chip variant={unit.verdict === 'APPROVED' ? 'soft' : 'warning'} label={unitVerdictLabel[unit.verdict]} />
       </View>
-      {unit.verdictReason && (
+      {unitVerdictNote[unit.verdict] && (
         <ThemedText variant="caption" tone="inkSecondary">
-          확인 의견: {unit.verdictReason}
+          {unitVerdictNote[unit.verdict]}
         </ThemedText>
       )}
       <ThemedText variant="caption" tone="inkMuted">
