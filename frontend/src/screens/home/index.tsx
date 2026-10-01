@@ -6,6 +6,7 @@ import { useConversations } from '@/api/conversations';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Icon } from '@/components/icon';
+import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime } from '@/labels';
 import { sampleMinutes, sampleQuestions } from '@/screens/review/sample-questions';
@@ -17,13 +18,14 @@ const today = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', 
 
 export function Home() {
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const { data: conversations, isPending, isError } = useConversations();
   const recent = conversations ? [...conversations].reverse().slice(0, 3) : [];
 
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg, paddingBottom: tabBarSpace }]}>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <ThemedText variant="caption" tone="inkMuted">
@@ -121,7 +123,7 @@ export function Home() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: spacing['3xl'], gap: spacing['2xl'] },
+  content: { paddingHorizontal: spacing.xl, gap: spacing['2xl'] },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerText: { gap: 2 },
   avatar: {

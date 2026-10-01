@@ -26,7 +26,9 @@ export const colors = {
   "dangerInk": "#A8242B",
   "warning": "#F0A500",
   "warningTint": "#FFF0CC",
-  "warningInk": "#7A4D00"
+  "warningInk": "#7A4D00",
+  "glass": "#DCE4FCB8",
+  "glassItem": "#CED6EB"
 } as const;
 
 export const spacing = {
@@ -313,13 +315,21 @@ export const components = {
     "rounded": 9999
   },
   "tabBar": {
-    "backgroundColor": "#FFFFFF",
-    "textColor": "#646B88"
+    "backgroundColor": "#DCE4FCB8",
+    "rounded": 9999,
+    "padding": 8
+  },
+  "tabItem": {
+    "backgroundColor": "#CED6EB",
+    "textColor": "#3D4A6B",
+    "rounded": 9999,
+    "size": 56
   },
   "tabActive": {
     "backgroundColor": "#0B0C12",
     "textColor": "#FFFFFF",
-    "rounded": 9999
+    "rounded": 9999,
+    "size": 56
   }
 } as const;
 

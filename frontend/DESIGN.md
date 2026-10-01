@@ -30,6 +30,8 @@ colors:
   warning: "#F0A500"
   warning-tint: "#FFF0CC"
   warning-ink: "#7A4D00"
+  glass: "#DCE4FCB8"
+  glass-item: "#CED6EB"
 typography:
   display:
     fontFamily: SUIT
@@ -219,12 +221,19 @@ components:
     backgroundColor: "{colors.outline}"
     rounded: "{rounded.full}"
   tab-bar:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink-muted}"
+    backgroundColor: "{colors.glass}"
+    rounded: "{rounded.full}"
+    padding: 8px
+  tab-item:
+    backgroundColor: "{colors.glass-item}"
+    textColor: "{colors.ink-secondary}"
+    rounded: "{rounded.full}"
+    size: 56px
   tab-active:
     backgroundColor: "{colors.inverse}"
     textColor: "{colors.on-inverse}"
     rounded: "{rounded.full}"
+    size: 56px
 ---
 
 # AI Learning Companion 디자인 시스템
@@ -288,7 +297,11 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
 - **통계 카드**: 왼쪽 위 원형 아이콘, 오른쪽에 `stat` 숫자 + `caption` 단위, 아래에 `subhead` 설명. 흰 카드 또는 라벤더 카드.
 - **강조 카드**: primary 바탕 흰 글자, 오른쪽 아래 원형 이동 버튼. 화면당 하나.
 - **입력창**: `field` 바탕, 오른쪽 끝 원형 primary 보내기 버튼.
-- **탭바**: 하단 고정, 불투명 흰 바탕. 아이콘만, 활성 탭은 `inverse` 원.
+- **탭바** (레퍼런스의 떠 있는 유리 탭바, 2026-10-01 사용자 결정으로 채택): 화면 아래 가운데에 떠 있는 알약(`tab-bar`). 바탕은 반투명 `glass` + 뒤 배경 흐림(웹 `backdrop-filter`, 흐림이 안 되는 곳은 반투명 면만).
+  - 탭마다 56px 원(`tab-item`, 탭바보다 한 톤 진한 불투명 `glass-item` 면 + `ink-secondary` 아이콘). 활성 탭은 `inverse` 원 + `on-inverse` 아이콘(`tab-active`).
+  - 아이콘만 보이고 글자 라벨은 없다. 대신 접근성 라벨을 반드시 단다.
+  - 그림자는 쓰지 않는다. 떠 있어도 깊이는 흐림과 반투명으로 만든다.
+  - 탭바가 내용 위에 떠 있으므로, 탭 화면의 스크롤 내용은 아래에 탭바 높이만큼 여백을 둔다.
 - **기억 게이지** (스펙 §6.4.3, 레퍼런스에 없어 추가): 지금 떠올릴 확률 R을 보여주는 가로 막대.
   - 트랙 `primary-tint`, 채움 `primary`(`gauge-fill`), 알약형. 기본 높이 8(`gauge`, 목록 행·복습 단위), 큰 높이 12(`gauge-large`, 세션 요약·완료 화면).
   - 막대 위에 라벨과 퍼센트를 글자로 함께 쓴다("지금 기억할 확률 72%"). 막대 길이만으로 값을 전달하지 않는다. 글자는 막대가 아니라 카드 위에 있으므로 `ThemedText`로 쓴다: 기본은 `caption`·`ink-secondary`, 큰 게이지는 `subhead`·`ink`, 확인 전은 `caption`·`ink-muted`.
@@ -301,7 +314,7 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
 - Do: 한 화면에 한 가지 일. 문제 화면은 문제 하나.
 - Do: 숫자는 크게(`stat`), 단위와 설명은 작게.
 - Do: 원문 근거(발화 번호), "대화 중 AI 판정" 같은 출처를 라벨로 밝힌다.
-- Don't (레퍼런스에서 가져오지 않는 것): 반투명 유리 탭바, 화면 위쪽 블루 그라데이션 글로우, AI 오브 같은 장식 블롭, 빗금 패턴 카드. 그림자 띄운 떠 있는 탭바 대신 하단에 붙은 불투명 탭바.
+- Don't (레퍼런스에서 가져오지 않는 것): 화면 위쪽 블루 그라데이션 글로우, AI 오브 같은 장식 블롭, 빗금 패턴 카드. 반투명 유리는 탭바에만 쓰고 카드·버튼에는 쓰지 않는다.
 - Don't: 토큰에 없는 색·크기·라운드. 하드코딩 hex는 `theme/` 밖에 두지 않는다.
 - Don't: 이모지를 아이콘으로 쓰기. 아이콘은 한 가지 아이콘 세트만.
 - Don't: 모든 섹션을 카드로 감싸기, 카드 안 카드.
