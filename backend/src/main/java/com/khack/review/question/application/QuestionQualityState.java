@@ -1,6 +1,6 @@
 package com.khack.review.question.application;
 
-import com.khack.review.question.application.port.out.QuestionRequest;
+import com.khack.review.question.application.port.out.UnitQuestionRequest;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -9,7 +9,7 @@ public record QuestionQualityState(
         String item,
         String itemKind,
         @Nullable String correction,
-        List<QuestionRequest.EvidenceTurn> evidence,
+        List<UnitQuestionRequest.EvidenceTurn> evidence,
         String type,
         String question,
         List<String> choices,

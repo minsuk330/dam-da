@@ -26,7 +26,9 @@ import com.khack.review.common.json.Json;
 import com.khack.review.practice.application.LearningGoalService;
 import com.khack.review.practice.domain.LearningGoal;
 import com.khack.review.question.application.port.out.FakeQuestionGenerator;
+import com.khack.review.question.application.port.out.GeneratedQuestion;
 import com.khack.review.question.application.port.out.QuestionGenerationException;
+import com.khack.review.question.application.port.out.UnitQuestionResult;
 import com.khack.review.question.domain.Question;
 import com.khack.review.question.domain.QuestionRepository;
 import com.khack.review.question.domain.QuestionStatus;
@@ -193,8 +195,14 @@ class QuestionGenerationIT {
         assertThat(first.get("type").asString()).isEqualTo("ERROR_FINDING");
         assertThat(first.has("answerCriteria")).as("정답 기준은 내보내지 않음").isFalse();
         assertThat(first.has("modelAnswer")).isFalse();
-        assertThat(generator.calls().get(0).correction()).isEqualTo("표준오차가 준다");
+        assertThat(generator.calls()).as("같은 복습 단위는 한 번에 요청").hasSize(1);
+        assertThat(generator.calls().get(0).targets()).extracting(t -> t.type()).containsExactly(QuestionType.ERROR_FINDING, QuestionType.CASE_JUDGMENT);
+        assertThat(generator.calls().get(0).keyPoints()).as("단위의 기억 항목 전체를 오답 재료로 보냄").hasSize(3);
+        assertThat(generator.targets().get(0).correction()).isEqualTo("표준오차가 준다");
         assertThat(generator.calls().get(0).evidence()).extracting(e -> e.index()).containsExactly(2);
+        Question approved = questions.findBySessionIdAndStatusOrderByPlanPositionAscIdAsc(id, QuestionStatus.APPROVED).get(0);
+        assertThat(approved.getHint()).isNotBlank();
+        assertThat(approved.getExplanation()).isNotBlank();
     }
 
     @Test
@@ -210,7 +218,7 @@ class QuestionGenerationIT {
         List<Question> all = questions.findBySessionIdOrderByIdAsc(id);
         assertThat(all).extracting(Question::getStatus).containsExactly(QuestionStatus.REJECTED, QuestionStatus.APPROVED);
         assertThat(all).extracting(Question::getAttempt).containsExactly(2, 3);
-        assertThat(generator.calls().get(2).avoidStems()).as("떨어진 문제와 다르게 다시 만든다").contains(all.get(0).getStem());
+        assertThat(generator.targets().get(2).avoidStems()).as("떨어진 문제와 다르게 다시 만든다").contains(all.get(0).getStem());
 
         long held = confirmedSession();
         jev.qualityDefault = QUALITY_FAIL;
@@ -221,6 +229,22 @@ class QuestionGenerationIT {
         assertThat(body.get("questions")).isEmpty();
         assertThat(body.get("held")).singleElement().satisfies(slot -> assertThat(slot.get("type").asString()).isEqualTo("ERROR_FINDING"));
         assertThat(questions.findBySessionIdOrderByIdAsc(held)).hasSize(3).allMatch(q -> q.getStatus() == QuestionStatus.REJECTED);
+    }
+
+    @Test
+    void onlyTheTargetsThatFailedAreRequestedAgain() {
+        long id = confirmedSession();
+        generator.willRespond(new UnitQuestionResult(List.of(
+                UnitQuestionResult.TargetResult.failed("p0", "형식 오류"),
+                UnitQuestionResult.TargetResult.made("p1", new GeneratedQuestion("조건 문제?", List.of(), null,
+                        List.of("기준"), "모범 답안", "힌트", "설명", List.of(2))))));
+
+        goals.choose(id, List.of(LearningGoal.CORRECT_MISCONCEPTION, LearningGoal.CONDITION), null);
+        awaitStatus(() -> id, LearningSessionStatus.QUESTIONS_READY);
+
+        assertThat(generator.calls()).hasSize(2);
+        assertThat(generator.calls().get(1).targets()).extracting(t -> t.targetId()).containsExactly("p0");
+        assertThat(questions.findBySessionIdAndStatusOrderByPlanPositionAscIdAsc(id, QuestionStatus.APPROVED)).hasSize(2);
     }
 
     @Test
@@ -235,7 +259,8 @@ class QuestionGenerationIT {
         assertThat(variant.getType()).isEqualTo(QuestionType.ERROR_FINDING);
         assertThat(variant.getVariantOfId()).isEqualTo(original.getId());
         assertThat(variant.getPlanPosition()).isNull();
-        assertThat(generator.calls().getLast().avoidStems()).contains(original.getStem());
+        assertThat(generator.calls().getLast().targets()).singleElement()
+                .satisfies(target -> assertThat(target.avoidStems()).contains(original.getStem()));
 
         jev.quality.add(QUALITY_FAIL);
         Question replacement = generation.recheck(original.getId()).orElseThrow();

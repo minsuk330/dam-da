@@ -60,6 +60,14 @@ public class Question {
     @Column(nullable = false, length = 10_000)
     private String modelAnswer;
 
+    /** 정답을 말하지 않고 떠올릴 방향만 알려주는 힌트 (단계적 피드백). */
+    @Column(length = 2_000)
+    private String hint;
+
+    /** 틀렸을 때 보여줄 개념 설명 (단계적 피드백). */
+    @Column(length = 10_000)
+    private String explanation;
+
     @Convert(converter = JsonLists.Integers.class)
     @Column(nullable = false, length = 1_000)
     private List<Integer> evidenceTurns = new ArrayList<>();
@@ -86,7 +94,7 @@ public class Question {
     }
 
     public record Content(QuestionType type, String stem, List<String> choices, Integer correctChoice,
-            List<String> answerCriteria, String modelAnswer, List<Integer> evidenceTurns) {
+            List<String> answerCriteria, String modelAnswer, String hint, String explanation, List<Integer> evidenceTurns) {
     }
 
     public static Question candidate(Long userId, Long sessionId, Long memoryItemId, Integer planPosition, String learningGoal,
@@ -105,6 +113,8 @@ public class Question {
         question.correctChoice = content.correctChoice();
         question.answerCriteria = new ArrayList<>(content.answerCriteria());
         question.modelAnswer = content.modelAnswer();
+        question.hint = content.hint();
+        question.explanation = content.explanation();
         question.evidenceTurns = new ArrayList<>(content.evidenceTurns());
         question.createdAt = createdAt;
         return question;
@@ -185,6 +195,14 @@ public class Question {
 
     public String getModelAnswer() {
         return modelAnswer;
+    }
+
+    public String getHint() {
+        return hint;
+    }
+
+    public String getExplanation() {
+        return explanation;
     }
 
     public List<Integer> getEvidenceTurns() {
