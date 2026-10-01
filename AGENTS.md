@@ -8,6 +8,7 @@ AI 대화를 등록하면 학습할 지식을 추출해 문제로 만들고, FSR
 
 - 제품 개요·스택: [`README.md`](README.md)
 - 상세 기획: [`docs/spec/ai-conversation-learning-review-platform.md`](docs/spec/ai-conversation-learning-review-platform.md)
+- 페르소나와 도메인 스토리: [`docs/spec/persona-and-domain-stories.md`](docs/spec/persona-and-domain-stories.md)
 - 아키텍처 상세: [`docs/architecture.md`](docs/architecture.md)
 - 협업 규칙 상세: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - 검증 기록: [`docs/verification/results.md`](docs/verification/results.md), 계획 문서: [`docs/plans/`](docs/plans/)

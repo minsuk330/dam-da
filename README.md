@@ -21,6 +21,7 @@ AI 대화를 매일의 맞춤형 학습으로 연결하는 개인 지식 유지 
 | [`docs/architecture.md`](docs/architecture.md) | 패키지 구조와 아키텍처 규칙 상세 |
 | [`docs/jev.md`](docs/jev.md) | Jev 질문 설계·신뢰도 기준·테스트 방법 |
 | [`docs/spec/ai-conversation-learning-review-platform.md`](docs/spec/ai-conversation-learning-review-platform.md) | 상세 기획 |
+| [`docs/spec/persona-and-domain-stories.md`](docs/spec/persona-and-domain-stories.md) | 페르소나와 도메인 스토리 |
 | [`docs/verification/results.md`](docs/verification/results.md) | 검증 기록 |
 | [`docs/plans/`](docs/plans/) | 구현 계획 문서 |
 
