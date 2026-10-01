@@ -1,24 +1,82 @@
 package com.khack.review.analysis.application;
 
+import com.khack.review.analysis.domain.ConfirmationWarnings;
+import com.khack.review.analysis.domain.LearningSession;
 import com.khack.review.analysis.domain.LearningSessionRepository;
+import com.khack.review.analysis.domain.MemoryItem;
+import com.khack.review.analysis.domain.ReviewUnit;
+import com.khack.review.collection.application.ConversationQueryService;
+import com.khack.review.collection.domain.SavedSession;
+import com.khack.review.collection.domain.UserTurn;
+import com.khack.review.common.application.CurrentUser;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 학습 세션 조회. 다른 컨텍스트는 이 서비스로 세션 내용을 읽는다. */
+/** 현재 사용자의 학습 세션 조회. 다른 컨텍스트는 문제 생성 전에 {@link #requireConfirmed}로 확인 완료를 검사한다. */
 @Service
 public class LearningSessionQueryService {
 
     private final LearningSessionRepository sessions;
+    private final ConversationQueryService conversations;
+    private final CurrentUser currentUser;
 
-    public LearningSessionQueryService(LearningSessionRepository sessions) {
+    public LearningSessionQueryService(LearningSessionRepository sessions, ConversationQueryService conversations,
+            CurrentUser currentUser) {
         this.sessions = sessions;
+        this.conversations = conversations;
+        this.currentUser = currentUser;
     }
 
-    /** 없으면 {@link IllegalArgumentException}. */
+    /** 최근 것부터. */
     @Transactional(readOnly = true)
-    public SessionContent content(Long sessionId) {
+    public List<LearningSessionSummary> list() {
+        return sessions.findAllByUserIdOrderByCreatedAtDescIdDesc(currentUser.id()).stream()
+                .map(session -> {
+                    SavedSession conversation = conversations.find(session.getConversationId());
+                    return new LearningSessionSummary(session.getId(), session.getStatus(), session.getTopicHint(),
+                            conversation.source(), conversation.transcription(), session.getCreatedAt(),
+                            session.getUnits().size(), session.items().size());
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public LearningSessionDetail detail(Long sessionId) {
+        LearningSession session = owned(sessionId);
+        SavedSession conversation = conversations.find(session.getConversationId());
+        List<UserTurn> turns = conversation.userTurns();
+        return new LearningSessionDetail(session.getId(), session.getStatus(), session.getTopicHint(),
+                conversation.source(), conversation.transcription(), session.getCreatedAt(), session.getConfirmedAt(),
+                turns.stream().map(turn -> new LearningSessionDetail.Turn(turn.index(), turn.text(), turn.quotedText(),
+                        turn.intent(), turn.aiVerdict(), turn.correction())).toList(),
+                session.getUnits().stream().map(LearningSessionQueryService::unit).toList(),
+                ConfirmationWarnings.of(session, turns));
+    }
+
+    /** 문제 생성처럼 확인 이후에만 할 수 있는 일 앞에서 부른다(규칙 12). 확인 전이면 {@link IllegalStateException}. */
+    @Transactional(readOnly = true)
+    public void requireConfirmed(Long sessionId) {
+        LearningSession session = sessions.findById(sessionId).orElseThrow(() -> new LearningSessionNotFoundException(sessionId));
+        if (!session.isConfirmed()) {
+            throw new IllegalStateException("학습 세션 %d은(는) 아직 사용자 확인 전(%s)입니다. 문제는 확인 뒤에 만듭니다."
+                    .formatted(sessionId, session.getStatus()));
+        }
+    }
+
+    /** 현재 사용자의 세션 엔티티. 같은 컨텍스트의 서비스만 쓴다. 남의 세션은 없는 것으로 취급한다. */
+    public LearningSession owned(Long sessionId) {
         return sessions.findById(sessionId)
-                .map(SessionContent::of)
-                .orElseThrow(() -> new IllegalArgumentException("학습 세션 없음: " + sessionId));
+                .filter(session -> session.getUserId().equals(currentUser.id()))
+                .orElseThrow(() -> new LearningSessionNotFoundException(sessionId));
+    }
+
+    private static LearningSessionDetail.Unit unit(ReviewUnit unit) {
+        return new LearningSessionDetail.Unit(unit.getId(), unit.getTitle(), unit.isExcluded(), unit.getVerdict(),
+                unit.getVerdictReason(), unit.evidenceTurns(), unit.getItems().stream().map(LearningSessionQueryService::item).toList());
+    }
+
+    private static LearningSessionDetail.Item item(MemoryItem item) {
+        return new LearningSessionDetail.Item(item.getId(), item.getKind(), item.getContent(), item.getSourceTurns(), item.getStatus());
     }
 }

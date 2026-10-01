@@ -2,7 +2,7 @@ package com.khack.review.question.application;
 
 import com.khack.review.analysis.application.LearningSessionQueryService;
 import com.khack.review.analysis.application.SessionContent;
-import com.khack.review.analysis.domain.LearningSessionStatus;
+import com.khack.review.analysis.application.SessionContentService;
 import com.khack.review.collection.application.ConversationQueryService;
 import com.khack.review.question.domain.LearningGoal;
 import com.khack.review.question.domain.Question;
@@ -26,18 +26,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class QuestionGenerationService {
 
-    /** 문제를 만들 수 있는 세션 상태. 사용자가 복습 단위를 확인한 뒤다(스펙 규칙 12). */
-    static final LearningSessionStatus REQUIRED_STATUS = LearningSessionStatus.CONFIRMED;
-
     private final LearningSessionQueryService sessions;
+    private final SessionContentService contents;
     private final ConversationQueryService conversations;
     private final QuestionDrafter drafter;
     private final QuestionRepository questions;
     private final Clock clock;
 
-    public QuestionGenerationService(LearningSessionQueryService sessions, ConversationQueryService conversations,
-            QuestionDrafter drafter, QuestionRepository questions, Clock clock) {
+    public QuestionGenerationService(LearningSessionQueryService sessions, SessionContentService contents,
+            ConversationQueryService conversations, QuestionDrafter drafter, QuestionRepository questions, Clock clock) {
         this.sessions = sessions;
+        this.contents = contents;
         this.conversations = conversations;
         this.drafter = drafter;
         this.questions = questions;
@@ -51,11 +50,9 @@ public class QuestionGenerationService {
      * @throws IllegalStateException 세션이 아직 확인되지 않았을 때
      */
     public QuestionGenerationResult generate(Long sessionId, Collection<LearningGoal> goals) {
-        SessionContent content = sessions.content(sessionId);
-        if (content.status() != REQUIRED_STATUS) {
-            throw new IllegalStateException("학습 세션 %d: %s 상태에서는 문제를 만들 수 없습니다. %s 뒤에 만듭니다."
-                    .formatted(sessionId, content.status(), REQUIRED_STATUS));
-        }
+        // 사용자가 복습 단위를 확인한 뒤에만 만든다(스펙 규칙 12).
+        sessions.requireConfirmed(sessionId);
+        SessionContent content = contents.content(sessionId);
         QuestionSource source = QuestionSources.of(content, conversations.evidence(content.conversationId()).turns());
         QuestionPlan plan = QuestionPlanner.plan(source, goals);
 

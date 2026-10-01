@@ -5,6 +5,7 @@ import com.khack.review.analysis.domain.LearningSessionCreated;
 import com.khack.review.analysis.domain.LearningSessionRepository;
 import com.khack.review.analysis.domain.LearningSessionStatus;
 import com.khack.review.analysis.domain.ReviewUnit;
+import com.khack.review.analysis.domain.LearningSessionReadyForConfirmation;
 import com.khack.review.analysis.domain.ReviewUnitApproved;
 import com.khack.review.analysis.domain.ReviewUnitVerdict;
 import com.khack.review.collection.application.ConversationEvidence;
@@ -92,6 +93,7 @@ public class UnitReviewService {
             }
         }
         session.moveTo(LearningSessionStatus.AWAITING_CONFIRMATION);
+        events.publishEvent(new LearningSessionReadyForConfirmation(sessionId, session.getUserId(), session.getTopicHint()));
         log.info("학습 세션 {} 검수 완료: {}", sessionId, outcomes.values().stream().map(UnitReviewOutcome::verdict).toList());
     }
 

@@ -169,7 +169,7 @@ class QuestionGenerationServiceIT {
             session.moveTo(LearningSessionStatus.REVIEWING);
             session.moveTo(LearningSessionStatus.AWAITING_CONFIRMATION);
             if (status == LearningSessionStatus.CONFIRMED) {
-                session.moveTo(LearningSessionStatus.CONFIRMED);
+                session.confirm(Instant.now());
             }
             return sessions.save(session).getId();
         });
