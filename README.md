@@ -49,6 +49,7 @@ AI 대화를 매일의 맞춤형 학습으로 연결하는 개인 지식 유지 
   - 배포 서버 예: `curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://<서버>/dev/clock/travel?days=7`
   - 세션 뷰어: `http://localhost:8080/dev/sessions`
   - 시간 이동 데모: `GET /dev/clock`(현재 시각·오프셋), `POST /dev/clock/travel?days=7&hours=0`(앞으로만), `POST /dev/clock/reset`
+- 앱의 시연 도구(내 정보 → 시연 도구)는 `/api/demo/clock`을 쓴다. `.env`의 `DEMO_CLOCK_ENABLED=true`면 로그인한 사용자가 토큰 없이 서버 날짜를 옮기고 되돌린다(서버 전체에 적용).
 - 로그인은 구글·카카오 소셜 로그인이다(스펙 §7.9). 앱은 `/api/auth/options`의 `loginUrl`로 로그인하고, 돌아온 `/auth/callback?code=`를 `POST /api/auth/token`으로 Bearer 토큰으로 바꾼다. `/api/**`는 토큰이 필요하다(`/api/auth/**` 제외). 키는 `.env`(`GOOGLE_*`, `KAKAO_*`, 배포는 `AUTH_SIGNING_KEY` 필수).
 - Claude 커넥터(`/mcp`)는 MCP OAuth 2.1로 연결한다. 서버가 인가 서버를 겸하며(DCR, PKCE), 연결할 때 `/login`에서 같은 소셜 계정으로 로그인하고 `/connect/consent`에서 승인한다.
 - 시작할 때 데모 사용자(`review.demo-user.name`)를 만든다. 개발 도구가 켜져 있으면 `POST /api/auth/demo`로 데모 사용자 토큰을 받는다. 토큰 없는 `/dev/**` 요청은 개발 도구 사용자(기본 데모 사용자, `/dev/current-user`로 전환)로 처리한다.

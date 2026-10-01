@@ -60,6 +60,13 @@ class DevClockIT {
     }
 
     @Test
+    void appDemoClockIsOffUnlessEnabled() throws Exception {
+        assertThat(send("GET", "/api/demo/clock", null).statusCode()).isEqualTo(404);
+        assertThat(send("POST", "/api/demo/clock/travel?days=7", null).statusCode()).isEqualTo(404);
+        assertThat(((TimeTravelClock) clock).offset()).isZero();
+    }
+
+    @Test
     void tunneledRequestsAreHidden() throws Exception {
         assertThat(send("GET", "/dev/clock", "160.79.106.167").statusCode()).isEqualTo(404);
         assertThat(send("POST", "/dev/clock/travel?days=7", "160.79.106.167").statusCode()).isEqualTo(404);
