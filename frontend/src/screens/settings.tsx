@@ -1,15 +1,16 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
 import { hourMinute, useChangeDailySettings, useDailySettings, type DailySettings } from '@/api/settings';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { ChoiceChip } from '@/components/choice-chip';
 import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
-import { colors, components, spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 /** 고를 수 있는 하루 학습 시간(분). 서버 범위는 1~60분이다. */
 const BUDGETS = [5, 10, 15, 20, 30];
@@ -71,7 +72,7 @@ function SettingsForm({ saved }: { saved: DailySettings }) {
           </View>
           <View accessibilityRole="radiogroup" accessibilityLabel="하루 학습 시간" style={styles.pills}>
             {budgets.map((minutes) => (
-              <Pill key={minutes} label={`${minutes}분`} selected={budget === minutes} onPress={() => setBudget(minutes)} />
+              <ChoiceChip key={minutes} label={`${minutes}분`} selected={budget === minutes} onPress={() => setBudget(minutes)} />
             ))}
           </View>
         </Card>
@@ -85,9 +86,9 @@ function SettingsForm({ saved }: { saved: DailySettings }) {
           </View>
           <View accessibilityRole="radiogroup" accessibilityLabel="알림 시각" style={styles.pills}>
             {times.map((time) => (
-              <Pill key={time} label={time} selected={notifyAt === time} onPress={() => setNotifyAt(time)} />
+              <ChoiceChip key={time} label={time} selected={notifyAt === time} onPress={() => setNotifyAt(time)} />
             ))}
-            <Pill label="끄기" selected={notifyAt === null} onPress={() => setNotifyAt(null)} />
+            <ChoiceChip label="끄기" selected={notifyAt === null} onPress={() => setNotifyAt(null)} />
           </View>
         </Card>
 
@@ -112,20 +113,6 @@ function SettingsForm({ saved }: { saved: DailySettings }) {
   );
 }
 
-/** 하나만 고르는 알약형 선택지. DESIGN.md answer-option 색을 쓰고, 고른 것은 answer-option-selected로 칠한다. */
-function Pill({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityLabel={label}
-      accessibilityState={{ checked: selected }}
-      onPress={onPress}
-      style={({ pressed }) => [styles.pill, selected && styles.pillSelected, pressed && !selected && styles.pillPressed]}>
-      <ThemedText variant="subhead">{label}</ThemedText>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
@@ -133,18 +120,5 @@ const styles = StyleSheet.create({
   section: { gap: spacing.lg },
   sectionText: { gap: spacing.xs },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  pill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: components.answerOption.rounded,
-    backgroundColor: components.answerOption.backgroundColor,
-    borderWidth: components.answerOptionOutline.width,
-    borderColor: components.answerOptionOutline.backgroundColor,
-  },
-  pillSelected: {
-    backgroundColor: components.answerOptionSelected.backgroundColor,
-    borderColor: components.answerOptionSelected.backgroundColor,
-  },
-  pillPressed: { backgroundColor: colors.outline },
   footer: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
 });
