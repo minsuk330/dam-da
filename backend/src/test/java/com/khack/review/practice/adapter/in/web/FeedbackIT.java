@@ -29,6 +29,7 @@ import com.khack.review.common.json.Json;
 import com.khack.review.memory.application.MemoryStateService;
 import com.khack.review.memory.domain.ReviewLog;
 import com.khack.review.memory.domain.ReviewLogRepository;
+import com.khack.review.practice.application.AnswerJudgeFixtures;
 import com.khack.review.practice.application.AnswerJudgeQuestions;
 import com.khack.review.practice.application.LearningGoalService;
 import com.khack.review.practice.application.NextActionQuestions;
@@ -266,7 +267,7 @@ class FeedbackIT {
                 AnswerJudgeQuestions.VERDICT, new JevAnswer.Choice(verdict, Map.of(verdict, confidence), confidence),
                 AnswerJudgeQuestions.OMISSION, new JevAnswer.Noul(0.1),
                 AnswerJudgeQuestions.CONTRADICTION, new JevAnswer.Noul(0.1),
-                AnswerJudgeQuestions.MISREAD, new JevAnswer.Noul(misread),
+                AnswerJudgeQuestions.MISREAD, AnswerJudgeFixtures.misread(misread),
                 AnswerJudgeQuestions.REPEATS_USER_BELIEF, new JevAnswer.Noul(0.1),
                 AnswerJudgeQuestions.OFF_TARGET_ERROR, new JevAnswer.Noul(0.1)));
     }

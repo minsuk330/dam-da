@@ -10,11 +10,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 답변 판정 1개 (스펙 §6.4.5 Jev 출력, 기록). 시도마다 하나다. Jev 확률은 그대로 남기고, 등급 변환(#18 {@code RatingPolicy})이
- * 신뢰도 기준을 적용한다. 근거가 `model_transcribed`면 더 높은 기준을 쓰도록 {@code evidenceFidelity}를 함께 남긴다.
+ * 답변 판정 1개 (스펙 §6.4.5 Jev 출력, 기록). 시도마다 하나다. Jev의 원래 결과(확률·선택·신뢰도)는 그대로 남기고, 등급 변환
+ * ({@code RatingPolicy})이 신뢰도 기준을 적용한다. 근거가 `model_transcribed`면 더 높은 기준을 쓰도록 {@code evidenceFidelity}를
+ * 함께 남긴다. 이유(omission·contradiction 등)는 확률이 {@link ReasonBand}에서 애매하면 확정하지 않고 {@code ambiguousReasons}에 적는다.
  */
 @Entity
 @Table(name = "answer_judgment")
@@ -44,8 +47,14 @@ public class AnswerJudgment {
 
     private Double contradictionProbability;
 
-    /** `misread` 확률. 등급 변환의 `misread` 신뢰도로 쓴다. */
+    /** `misread` 질문(choice)에서 고른 선택: misread / answered_as_asked / question_unclear. Jev의 원래 선택이다. */
+    private String misreadChoice;
+
+    /** `misread` 질문의 선택 확률 중 misread의 확률. 참고용이며 신뢰도로 쓰지 않는다. */
     private Double misreadProbability;
+
+    /** `misread` 질문의 신뢰도(`verdict`와 별도). 등급 변환의 `misread` 신뢰도로 쓴다. */
+    private Double misreadConfidence;
 
     @Column(nullable = false)
     private boolean omission;
@@ -71,6 +80,10 @@ public class AnswerJudgment {
 
     private Double offTargetErrorProbability;
 
+    /** 확률이 애매해 확정하지 않은 이유(쉼표로 구분). 없으면 null. 원래 확률은 각 {@code ...Probability}에 있다. */
+    @Column(length = 200)
+    private String ambiguousReasons;
+
     /** 근거 대화의 원문 여부 ({@code verbatim} / {@code model_transcribed}). */
     @Column(nullable = false)
     private String evidenceFidelity;
@@ -86,33 +99,71 @@ public class AnswerJudgment {
     protected AnswerJudgment() {
     }
 
-    /** Jev 확률과 그 해석. {@code repeatsUserBelief}는 헷갈린 지점 항목이 아니면 null. */
-    public record Jev(AnswerVerdict verdict, double verdictConfidence, double omission, double contradiction, double misread,
+    /** `misread` 질문(choice)의 답. {@code choice}는 Jev의 원래 선택, {@code confidence}는 그 질문의 신뢰도다. */
+    public record Misread(String choice, double probability, double confidence) {
+
+        public boolean misread() {
+            return "misread".equals(choice);
+        }
+    }
+
+    /** Jev 답. {@code repeatsUserBelief}는 헷갈린 지점 항목이 아니면 null이다. */
+    public record Jev(AnswerVerdict verdict, double verdictConfidence, double omission, double contradiction, Misread misread,
             @Nullable Double repeatsUserBelief, double offTargetError, String model) {
     }
 
-    /** Jev 판정을 해석한다. 확률이 {@code failureThreshold} 이상이면 그 이유가 있다고 본다. 이유는 `not_met`일 때만 고른다. */
-    public static AnswerJudgment byJev(Long attemptId, Jev jev, double failureThreshold, String evidenceFidelity, Instant at) {
+    /**
+     * Jev 답을 해석한다. 이유는 `not_met`일 때만 확정하고, 확률이 {@code band}에서 애매하면 참·거짓으로 정하지 않고
+     * {@code ambiguousReasons}에 적는다. `misread`는 Jev가 그 선택을 고른 경우이며 신뢰도는 따로 둔다.
+     * 오개념 재발은 평가 대상의 `contradiction`이 확정된 헷갈린 지점 항목에서만 확정한다.
+     */
+    public static AnswerJudgment byJev(Long attemptId, Jev jev, ReasonBand band, String evidenceFidelity, Instant at) {
         AnswerJudgment judgment = base(attemptId, JudgmentStatus.JUDGED, JudgedBy.JEV, evidenceFidelity, at);
         judgment.verdict = jev.verdict();
         judgment.verdictConfidence = jev.verdictConfidence();
         judgment.omissionProbability = jev.omission();
         judgment.contradictionProbability = jev.contradiction();
-        judgment.misreadProbability = jev.misread();
+        judgment.misreadChoice = jev.misread().choice();
+        judgment.misreadProbability = jev.misread().probability();
+        judgment.misreadConfidence = jev.misread().confidence();
         judgment.repeatsUserBeliefProbability = jev.repeatsUserBelief();
         judgment.offTargetErrorProbability = jev.offTargetError();
         judgment.model = jev.model();
+
+        List<String> ambiguous = new ArrayList<>();
         boolean notMet = jev.verdict() == AnswerVerdict.NOT_MET;
-        judgment.omission = notMet && jev.omission() >= failureThreshold;
-        judgment.contradiction = notMet && jev.contradiction() >= failureThreshold;
-        judgment.misread = notMet && jev.misread() >= failureThreshold;
+        Boolean omission = band.decide(jev.omission());
+        Boolean contradiction = band.decide(jev.contradiction());
+        if (notMet && omission == null) {
+            ambiguous.add("omission");
+        }
+        if (notMet && contradiction == null) {
+            ambiguous.add("contradiction");
+        }
+        judgment.omission = notMet && Boolean.TRUE.equals(omission);
+        judgment.contradiction = notMet && Boolean.TRUE.equals(contradiction);
+        judgment.misread = notMet && jev.misread().misread();
         judgment.primaryFailure = judgment.contradiction ? AnswerFailure.CONTRADICTION
                 : judgment.omission ? AnswerFailure.OMISSION
                 : judgment.misread ? AnswerFailure.MISREAD
                 : null;
-        judgment.repeatsUserBelief = jev.repeatsUserBelief() == null ? null
-                : judgment.contradiction && jev.repeatsUserBelief() >= failureThreshold;
-        judgment.offTargetError = jev.offTargetError() >= failureThreshold;
+
+        if (jev.repeatsUserBelief() != null) {
+            if (!judgment.contradiction) {
+                judgment.repeatsUserBelief = false;
+            } else {
+                judgment.repeatsUserBelief = band.decide(jev.repeatsUserBelief());
+                if (judgment.repeatsUserBelief == null) {
+                    ambiguous.add("repeats_user_belief");
+                }
+            }
+        }
+        Boolean offTarget = band.decide(jev.offTargetError());
+        if (offTarget == null) {
+            ambiguous.add("off_target_error");
+        }
+        judgment.offTargetError = Boolean.TRUE.equals(offTarget);
+        judgment.ambiguousReasons = ambiguous.isEmpty() ? null : String.join(",", ambiguous);
         return judgment;
     }
 
@@ -179,8 +230,27 @@ public class AnswerJudgment {
         return contradictionProbability;
     }
 
+    public String getMisreadChoice() {
+        return misreadChoice;
+    }
+
     public Double getMisreadProbability() {
         return misreadProbability;
+    }
+
+    /** 등급 변환의 `misread` 신뢰도. 객관식 코드 채점처럼 `misread`를 묻지 않았으면 null. */
+    public Double getMisreadConfidence() {
+        return misreadConfidence;
+    }
+
+    /** 확률이 애매해 확정하지 않은 이유. */
+    public List<String> getAmbiguousReasons() {
+        return ambiguousReasons == null ? List.of() : List.of(ambiguousReasons.split(","));
+    }
+
+    /** 판정에 쓴 대화 근거가 모델이 옮겨 적은 것인가. 그러면 등급 변환이 더 높은 신뢰도 기준을 쓴다(스펙 §7.3). */
+    public boolean isTranscribedEvidence() {
+        return "model_transcribed".equals(evidenceFidelity);
     }
 
     public boolean isOmission() {

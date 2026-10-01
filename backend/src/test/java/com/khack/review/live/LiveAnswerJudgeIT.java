@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.khack.review.memory.domain.AnswerVerdict;
 import com.khack.review.practice.application.AnswerJudge;
 import com.khack.review.practice.application.AnswerJudgeState;
+import com.khack.review.practice.domain.AnswerJudgment;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -52,6 +53,22 @@ class LiveAnswerJudgeIT {
     void repeatingTheOldBeliefIsNotMet() {
         AnswerJudge.Outcome outcome = judge("틀린 곳 없다. 스캔을 다 끝내고 나서 락을 한 번에 건다.");
         assertThat(outcome.jev().verdict()).isEqualTo(AnswerVerdict.NOT_MET);
+    }
+
+    @Test
+    void repeatingTheOldBeliefIsAWrongAnswerNotAMisreading() {
+        AnswerJudgment.Jev jev = judge("틀린 곳 없다. 스캔을 다 끝내고 나서 락을 한 번에 건다.").jev();
+
+        assertThat(jev.misread().misread()).as("질문에 답하려다 틀린 답을 질문 오독으로 보면 보류되어 Again이 되지 않는다").isFalse();
+        assertThat(jev.contradiction()).isGreaterThanOrEqualTo(0.7);
+        assertThat(jev.repeatsUserBelief()).isGreaterThanOrEqualTo(0.7);
+    }
+
+    @Test
+    void answeringADifferentQuestionIsNotMet() {
+        AnswerJudgment.Jev jev = judge("FOR UPDATE는 SELECT 문 끝에 붙이는 SQL 구문이다.").jev();
+
+        assertThat(jev.verdict()).isNotEqualTo(AnswerVerdict.MET);
     }
 
     @Test

@@ -58,14 +58,15 @@ public class ReviewRecordService {
             }
             case RatingDecision.Held held -> {
                 MemoryStateService.HoldResult hold = memory.hold(context.userId(), context.memoryItemId());
-                logs.save(ReviewLog.of(context, input, decision, elapsedDays(context), null));
+                logs.save(ReviewLog.of(context, input, decision, elapsedDays(context), null, policy.minConfidenceFor(input.transcribedEvidence())));
                 return new Recorded(decision, Optional.empty(), Optional.of(hold));
             }
             case RatingDecision.Rated rated -> {
                 Double elapsedDays = elapsedDays(context);
                 MemoryStateService.ReviewResult result = memory.review(context.userId(), context.memoryItemId(),
                         rated.rating(), context.reviewedAt());
-                logs.save(ReviewLog.of(context, input, decision, elapsedDays, result.parametersVersion()));
+                logs.save(ReviewLog.of(context, input, decision, elapsedDays, result.parametersVersion(),
+                        policy.minConfidenceFor(input.transcribedEvidence())));
                 events.publishEvent(new MemoryStateUpdated(context.userId(), context.memoryItemId(), rated.rating(),
                         context.reviewedAt(), result.state(), result.stability(), result.difficulty()));
                 events.publishEvent(new ReviewScheduled(context.userId(), context.memoryItemId(), result.due()));

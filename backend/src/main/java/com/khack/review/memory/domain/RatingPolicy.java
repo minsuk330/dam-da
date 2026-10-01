@@ -20,16 +20,34 @@ import java.util.Map;
  * </ol>
  *
  * @param minConfidence    행 1·2의 신뢰도 기준
+ * @param minConfidenceTranscribed 판정에 쓴 대화 근거가 모델이 옮겨 적은 것(`model_transcribed`)일 때의 행 1·2 기준. 원문 근거보다 높게 잡는다(스펙 §7.3)
  * @param referenceTimes   문제 유형별 기준 응답 시간. 없는 유형은 Easy를 주지 않는다
  * @param easyMaxTimeRatio 응답 시간이 기준 시간의 이 배수 이하일 때만 Easy
  */
-public record RatingPolicy(double minConfidence, Map<QuestionType, Duration> referenceTimes, double easyMaxTimeRatio) {
+public record RatingPolicy(double minConfidence, double minConfidenceTranscribed, Map<QuestionType, Duration> referenceTimes,
+        double easyMaxTimeRatio) {
 
-    /** 변환표나 해석을 바꾸면 올린다. 풀이 기록에 함께 남겨 정책별 영향을 비교한다. */
-    public static final int VERSION = 1;
+    /**
+     * 변환표나 해석을 바꾸면 올린다. 풀이 기록에 함께 남겨 정책별 영향을 비교한다.
+     * 2: `misread`를 신뢰도가 있는 선택형 판정으로 읽고, 모델이 옮겨 적은 근거에는 별도 기준을 쓴다.
+     */
+    public static final int VERSION = 2;
 
     public RatingPolicy {
+        if (minConfidenceTranscribed < minConfidence) {
+            throw new IllegalArgumentException("옮겨 적은 근거의 신뢰도 기준은 원문 근거의 기준보다 낮을 수 없습니다.");
+        }
         referenceTimes = Map.copyOf(referenceTimes);
+    }
+
+    /** 출처별 기준을 따로 두지 않은 정책(두 기준이 같다). */
+    public RatingPolicy(double minConfidence, Map<QuestionType, Duration> referenceTimes, double easyMaxTimeRatio) {
+        this(minConfidence, minConfidence, referenceTimes, easyMaxTimeRatio);
+    }
+
+    /** 행 1·2에 적용하는 신뢰도 기준. */
+    public double minConfidenceFor(boolean transcribedEvidence) {
+        return transcribedEvidence ? minConfidenceTranscribed : minConfidence;
     }
 
     public RatingDecision decide(RatingInput input) {
@@ -39,6 +57,7 @@ public record RatingPolicy(double minConfidence, Map<QuestionType, Duration> ref
         if (input.verdict() == AnswerVerdict.UNABLE_TO_JUDGE) {
             return held(HoldReason.UNABLE_TO_JUDGE, 1);
         }
+        double minConfidence = minConfidenceFor(input.transcribedEvidence());
         if (input.verdictConfidence() < minConfidence) {
             return held(HoldReason.LOW_CONFIDENCE, 1);
         }

@@ -29,7 +29,7 @@ Jev는 TypeSafe의 System One 모델이다. **정해진 선택지 안의 구조�
 |---|---|---|
 | 복습 단위 검수 (복습 가치, 근거 연결) | `analysis/` | noul `worth_reviewing`, score `evidence_fit` |
 | 문제 품질 검사 (근거성, 명확성, 난이도, 중복) | `question/` | noul `grounded`, score `clarity`·`difficulty`, noul `duplicate` |
-| 답변 판정 | `practice/` | choice `verdict`, noul `omission`·`contradiction`·`misread`·`repeats_user_belief`·`off_target_error` |
+| 답변 판정 | `practice/` | choice `verdict`·`misread`, noul `omission`·`contradiction`·`repeats_user_belief`·`off_target_error` |
 | 다음 행동 선택 | `practice/` | choice `next_action` |
 
 **소유 경계:**
@@ -54,22 +54,31 @@ Jev는 TypeSafe의 System One 모델이다. **정해진 선택지 안의 구조�
 | 질문 | 유형 | 기록 |
 |---|---|---|
 | `verdict` | choice `met` / `not_met` / `unable_to_judge` | 판정과 choice 신뢰도 |
-| `omission` | noul | 필수 내용 누락 |
-| `contradiction` | noul | 평가 대상 기준을 부정하거나 틀리게 주장 |
-| `misread` | noul | 질문을 다르게 이해함. 확률을 등급 변환의 `misread` 신뢰도로 쓴다 |
-| `repeats_user_belief` | noul, 헷갈린 지점 항목만 | 틀린 주장이 대화 속 `userBelief`와 같은가. `contradiction`과 함께면 오개념 재발 |
+| `omission` | noul | 필수 기준 중 답변에 없는 것이 있음 |
+| `contradiction` | noul | 평가 대상 기준을 부정하거나 틀리게 주장. 올바른 내용을 말하고 같은 답변에서 뒤집어도 해당 |
+| `misread` | choice `misread` / `answered_as_asked` / `question_unclear` | 질문을 다르게 이해함. 선택과 그 신뢰도를 `verdict`와 따로 남긴다 |
+| `repeats_user_belief` | noul, 헷갈린 지점 항목만 | 틀린 주장이 대화 속 `userBelief`와 같은가. `contradiction`이 확정된 경우에만 오개념 재발 |
 | `off_target_error` | noul | 평가 대상 밖의 틀린 내용. 등급에 반영하지 않는다 |
 
 ```java
 // practice/application/AnswerJudge (server 소유)
 JevResult r = jev.evaluate(state, AnswerJudgeQuestions.questions(state.userBelief() != null));
 JevAnswer.Choice verdict = r.choice(AnswerJudgeQuestions.VERDICT);   // met / not_met / unable_to_judge
-double misread = r.noul(AnswerJudgeQuestions.MISREAD).probability();
+JevAnswer.Choice misread = r.choice(AnswerJudgeQuestions.MISREAD);   // misread / answered_as_asked / question_unclear
 ```
 
-- 상태(`AnswerJudgeState`): `question`, `type`, `answerCriteria`, `modelAnswer`, `answer`, `item`, 헷갈린 지점 항목이면 `userBelief`와 `correction`.
-- 이유(noul)는 확률이 `review.practice.judge.failure-threshold` 이상이고 `verdict`가 `not_met`일 때만 있다고 본다. 대표 이유는 contradiction > omission > misread.
-- 판정 서비스는 확률을 그대로 남기고 신뢰도 기준을 적용하지 않는다. 기준은 등급 변환(`RatingPolicy`, `review.memory.rating.min-confidence`)이 적용하며, 근거가 `model_transcribed`인지(`evidenceFidelity`)를 함께 남겨 더 높은 기준을 고를 수 있게 한다.
+- 상태(`AnswerJudgeState`): `question`, `type`, `answerCriteria`, `modelAnswer`, `answer`, `item`, 헷갈린 지점 항목이면 `userBelief`와 `correction`. 대화 당시의 `aiVerdict`와 근거의 원문 여부는 Jev에 보내지 않는다(전자는 현재 답변의 정오가 아니고, 후자는 코드가 기준을 고르는 데 쓴다).
+- 정오는 `answerCriteria`만으로 정한다. `modelAnswer`는 참고용이라 거기에만 있는 내용을 필수로 삼지 않는다.
+- **`misread`는 choice로 묻는다.** noul은 확률만 있고 신뢰도가 없는데, 등급 변환표 행 2는 `misread`의 신뢰도가 필요하다. noul로 물었을 때는 평범한 오답에도 확률이 0.5~0.9로 나와 오답이 보류로 빠졌다. `question_unclear`는 문제가 모호한 경우이며 학습자의 오해로 보지 않는다.
+- **이유(noul)는 애매하면 확정하지 않는다.** 확률이 `review.practice.judge.reason-yes-min`(0.7) 이상이면 있고 `reason-no-max`(0.3) 이하이면 없다. 그 사이는 참·거짓으로 정하지 않고 `AnswerJudgment.ambiguousReasons`에 적는다. 원래 확률은 `...Probability`에 그대로 남는다.
+- 이유는 `verdict`가 `not_met`일 때만 읽는다. 대표 이유는 contradiction > omission > misread. `met`에서도 `omission` 확률이 0.3~0.7로 나오는 일이 흔하므로 `met`의 이유 확률을 해석하지 않는다.
+- 판정 서비스는 신뢰도 기준을 적용하지 않는다. 기준은 등급 변환(`RatingPolicy`)이 적용한다.
+  - `review.memory.rating.min-confidence`(0.80): `verdict` 신뢰도가 이보다 낮거나 `unable_to_judge`이면 보류, `misread`가 이 이상의 신뢰도로 확인되면 보류. `not_met`에서 `misread` 신뢰도만 부족하면 Again이다.
+  - `review.memory.rating.min-confidence-transcribed`(0.85): 근거가 `model_transcribed`일 때의 기준(스펙 §7.3). **0.85는 검증하지 않은 초기값**이다.
+  - 0.80은 Jev의 채점 정확도가 80%라는 뜻이 아니라 자동 반영 여부를 정하는 초기 기준이다.
+  - 풀이 기록(`ReviewLog`)에 판정값·신뢰도·정책 버전·변환표 행과 함께 적용한 기준(`appliedMinConfidence`)과 근거의 원문 여부(`evidenceTranscribed`)를 남긴다.
+- 실제 Jev 분포는 `./gradlew -q answerJudgeCheck`로 본다(표본 13개). 2026-10-02 측정에서 표현이 다른 정답의 `verdict` 신뢰도가 0.64~0.83으로 나와, 0.80 기준에서는 맞는 답의 일부가 보류된다. 기준은 풀이 기록으로 보정한다.
+- `off_target_error`는 문구에 따라 평가 대상 안의 오류를 세거나(오탐) 진짜 대상 밖 오류를 놓쳤다. 기록 전용이며 정오와 등급에 쓰지 않는다.
 - 객관식은 Jev 없이 코드가 채점한다(`MET`/`NOT_MET`, 신뢰도 1).
 - 답을 제출하면 그 응답 안에서 판정한다. Jev 호출은 트랜잭션 밖에서 한다.
 
@@ -87,6 +96,7 @@ double misread = r.noul(AnswerJudgeQuestions.MISREAD).probability();
 | 어댑터 | `TypeSafeJevAdapterTest` (MockRestServiceServer) | 불필요 |
 | 실제 API | `./gradlew -q jevCheck -Pargs="<사용자 답변>"` | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 복습 단위 검수 실제 API | `./gradlew -q unitReviewCheck` (예시 단위 3개: 통과·복습 가치 없음·근거 연결 부족) | `backend/.env`의 `TYPESAFE_API_KEY` |
+| 답변 판정 질문 실제 API | `./gradlew -q answerJudgeCheck` (표본 13개: 표현이 다른 정답, 누락, 번복, 모호한 답, 질문 오독, 대상 밖 오류, 믿음 반복) | `backend/.env`의 `TYPESAFE_API_KEY` |
 
 `./gradlew test`는 `application-test.yml`에서 키를 비워 `.env`에 키가 있어도 실제 Jev를 부르지 않는다.
 

@@ -80,9 +80,11 @@ review:
     # 이 시간 안에 고른 객관식 정답은 추측을 의심한다 (스펙 §6.4.5 변환표 행 3)
     mc-guess-threshold: 3s
     judge:
-      # 답변 판정 이유(omission·contradiction·misread 등 noul) 확률이 이 값 이상이면 그 이유가 있다고 본다.
-      # 판정 신뢰도 기준은 등급 변환(review.memory.rating)이 적용한다
-      failure-threshold: 0.5
+      # 답변 판정 이유(omission·contradiction·repeats_user_belief·off_target_error, 예/아니오 질문)는 확률만 있고 신뢰도가 없다.
+      # 확률이 이 값 이상이면 그 이유가 있고, 이 값 이하이면 없다. 둘 사이는 확정하지 않고 애매하다고 기록한다(docs/jev.md).
+      # 판정(verdict)·질문 오독(misread)의 신뢰도 기준은 등급 변환(review.memory.rating)이 적용한다
+      reason-yes-min: 0.7
+      reason-no-max: 0.3
       # Jev 429·529 재시도 (첫 호출 포함)
       max-attempts: 3
       retry-delay: 1s
@@ -120,8 +122,11 @@ review:
       ladder-level2-min-stability-days: 3
       ladder-level3-min-stability-days: 14
     rating:
-      # 등급 변환표 행 1·2의 판정 신뢰도 기준 (스펙 §6.4.5)
-      min-confidence: 0.6
+      # 등급 변환표 행 1·2의 판정 신뢰도 기준 (스펙 §6.4.5). 자동 반영 여부를 정하는 초기 기준이며 Jev의 실제 채점 정확도를 뜻하지 않는다
+      min-confidence: 0.8
+      # 판정에 쓴 대화 근거가 모델이 옮겨 적은 것(model_transcribed)일 때의 기준 (스펙 §7.3). 원문 근거보다 높게 잡는다.
+      # 0.85는 검증하지 않은 초기값이다. 실제 풀이 기록(review_log.applied_min_confidence·evidence_transcribed)으로 보정한다
+      min-confidence-transcribed: 0.85
       # 문제 유형별 기준 응답 시간. 응답 시간은 Easy를 막는 보조 조건으로만 쓴다
       reference-times:
         MULTIPLE_CHOICE: 20s

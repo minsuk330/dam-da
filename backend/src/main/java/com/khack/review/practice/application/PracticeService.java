@@ -230,8 +230,8 @@ public class PracticeService {
         boolean guessSuspected = attempt.getQuestionType() == QuestionType.MULTIPLE_CHOICE
                 && judgment.getVerdict() == AnswerVerdict.MET && responseTime.compareTo(multipleChoiceGuessTime) < 0;
         RatingInput input = new RatingInput(attempt.getKind(), judgment.getVerdict(), judgment.getVerdictConfidence(),
-                judgment.isMisread(), judgment.getMisreadProbability() == null ? 0 : judgment.getMisreadProbability(),
-                guessSuspected, attempt.getSelfAssessment(), attempt.getQuestionType(), responseTime);
+                judgment.isMisread(), judgment.getMisreadConfidence() == null ? 0 : judgment.getMisreadConfidence(),
+                guessSuspected, attempt.getSelfAssessment(), attempt.getQuestionType(), responseTime, judgment.isTranscribedEvidence());
         List<String> failures = judgment.getJudgedBy() == JudgedBy.CODE ? null : Stream.of(
                         judgment.isOmission() ? "omission" : null,
                         judgment.isContradiction() ? "contradiction" : null,
@@ -269,7 +269,7 @@ public class PracticeService {
         }
         AnswerJudge.Outcome outcome = judge.judge(state(detail, question, attempt.getAnswerText()));
         return outcome.judged()
-                ? AnswerJudgment.byJev(attempt.getId(), outcome.jev(), judgePolicy.failureThreshold(), fidelity, clock.instant())
+                ? AnswerJudgment.byJev(attempt.getId(), outcome.jev(), judgePolicy.reasonBand(), fidelity, clock.instant())
                 : AnswerJudgment.failed(attempt.getId(), JudgedBy.JEV, outcome.failure(), fidelity, clock.instant());
     }
 
