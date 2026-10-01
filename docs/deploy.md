@@ -1,0 +1,101 @@
+# 배포
+
+백엔드(Spring + PostgreSQL)는 VPS에 Docker Compose로, 프론트엔드(Expo 웹 빌드)는 Vercel에 올린다. 앱은 Vercel 주소에서 `/api/**`를 부르고, Vercel rewrites가 이를 VPS로 넘겨 같은 출처로 동작한다.
+
+```
+브라우저 ──▶ Vercel (frontend/dist)
+              └─ /api/** ──rewrite──▶ https://hack.refit-100.site ──▶ 호스트 nginx(:443) ──▶ app(127.0.0.1:18080) ──▶ postgres
+Claude 커넥터 ──▶ https://hack.refit-100.site/mcp ─────────────────────┘
+```
+
+## 백엔드 (VPS)
+
+구성 파일은 `backend/deploy/`에 있다.
+
+| 파일 | 내용 |
+|---|---|
+| `compose.yml` | `postgres`(17, 외부 포트 없음), `app`(`backend/Dockerfile` 빌드, `127.0.0.1:${APP_PORT}`에만 열림), `caddy`(선택 프로필) |
+| `nginx.conf.example` | 호스트 nginx 사이트 예시. `/v3/api-docs`·`/swagger-ui` 차단, `/mcp` 스트리밍을 위해 버퍼링 끔 |
+| `Caddyfile` | 80·443이 비어 있는 VPS용(`--profile caddy`). `DOMAIN` 인증서 자동 발급 |
+| `.env.example` | 배포용 환경 변수. `.env`로 복사해 채운다(커밋 금지) |
+
+현재 VPS(`85.113.70.112`)는 호스트 nginx가 80·443을 쓰고 다른 서비스도 같이 돌므로 nginx 방식으로 올린다. 앱 포트 `18080`은 다른 서비스(`127.0.0.1:8080` 등)와 겹치지 않게 고른 값이다.
+
+### 준비
+
+- DNS: `hack.refit-100.site`의 A(필요하면 AAAA) 레코드가 VPS IP를 가리킨다.
+- 방화벽: 80·443 허용. 인증서 발급에 80이 필요하다.
+- Docker와 Compose 플러그인(`docker compose version`), 호스트 nginx와 certbot.
+
+### 처음 배포
+
+```bash
+cd ~/apps && git clone https://github.com/minsuk330/ku-hack.git khack && cd khack/backend/deploy
+cp .env.example .env
+# .env 채우기: DB_PASSWORD, OPENAI_API_KEY, TYPESAFE_API_KEY, DEV_TOOLS_TOKEN(openssl rand -hex 32)
+docker compose up -d --build
+docker compose ps                     # app이 healthy가 될 때까지 (첫 기동 1분 안팎)
+
+# 호스트 nginx 사이트와 인증서
+cp nginx.conf.example /etc/nginx/sites-available/hack.refit-100.site
+ln -s /etc/nginx/sites-available/hack.refit-100.site /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+certbot --nginx -d hack.refit-100.site --redirect
+curl https://hack.refit-100.site/healthz
+```
+
+80·443이 비어 있는 VPS라면 nginx 대신 `docker compose --profile caddy up -d --build`로 Caddy가 인증서까지 처리한다.
+
+빈 DB로 시작한다. 테이블은 앱이 기동하면서 만든다(`ddl-auto: update`).
+
+### 업데이트
+
+```bash
+cd ~/apps/khack && git pull
+cd backend/deploy && docker compose up -d --build app
+```
+
+### 운영
+
+```bash
+docker compose logs -f app                          # 로그
+docker compose exec postgres psql -U review review  # DB 접속
+docker compose exec -T postgres pg_dump -U review review > backup-$(date +%F).sql   # 백업
+docker compose exec -T postgres psql -U review review < backup.sql                  # 복원(빈 DB에)
+docker compose down -v                              # 전부 지우고 처음부터(DB·인증서 볼륨 삭제, 되돌릴 수 없음)
+```
+
+### 시간 이동 데모 (`/dev/**`)
+
+배포 서버의 `/dev/**`는 `X-Dev-Token` 헤더가 `.env`의 `DEV_TOOLS_TOKEN`과 같을 때만 열린다(그 외 404). 토큰은 프론트엔드 번들이나 화면에 넣지 않고 curl로만 쓴다.
+
+```bash
+export DEV_TOOLS_TOKEN=...   # .env와 같은 값
+curl -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/clock
+curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" "https://hack.refit-100.site/dev/clock/travel?days=7"
+curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/clock/reset
+```
+
+시간 이동 값은 메모리에만 있어 앱을 재시작하면 0으로 돌아간다.
+
+### 시간대
+
+매일 학습의 "오늘", 연속 학습 일수, 알림 시각은 JVM 기본 시간대를 따른다. compose가 `-Duser.timezone=Asia/Seoul`로 KST를 쓴다(로그 시각 `+09:00`). 실행 이미지에 OS 시간대 데이터가 없어 컨테이너 셸의 `date`는 UTC로 보이지만 앱과는 무관하다.
+
+### Claude 커넥터
+
+커넥터 URL은 `https://hack.refit-100.site/mcp`다. 인증이 없으므로 URL을 아는 사람은 데모 사용자에게 학습 대화를 저장할 수 있다. 데모 기간에는 URL을 공개하지 않는다.
+
+## 프론트엔드 (Vercel)
+
+- Root Directory: `frontend`. 빌드 설정은 `frontend/vercel.json`(`npx expo export -p web` → `dist`).
+- 환경 변수: `EXPO_PUBLIC_API_MOCK=false`. `EXPO_PUBLIC_API_URL`은 넣지 않는다(비우면 같은 출처 `/api`를 부른다).
+- `frontend/vercel.json` rewrites가 `/api/**`를 `https://hack.refit-100.site/api/**`로 넘긴다. 같은 출처라 백엔드 CORS는 열지 않는다(`CORS_ALLOWED_ORIGINS=`).
+
+## 배포 확인 순서
+
+1. `curl https://hack.refit-100.site/healthz` → 200
+2. `curl https://hack.refit-100.site/api/daily` → 200 JSON
+3. `curl -o /dev/null -w "%{http_code}" https://hack.refit-100.site/dev/clock` → 404(토큰 없음), 토큰을 주면 200
+4. Vercel 주소에서 `/api/daily` → 200(rewrite 경유)
+5. Claude에 커넥터 연결 → 대화 저장 → 앱에 새 학습 세션 알림
