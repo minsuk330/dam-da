@@ -82,13 +82,34 @@ public class SessionItemsQuery {
     public Optional<List<UnitItems>> activeUnits(Long userId, Long sessionId) {
         return sessions.findById(sessionId)
                 .filter(session -> Objects.equals(session.getUserId(), userId))
-                .map(session -> session.getUnits().stream()
-                        .map(unit -> new UnitItems(unit.getId(), unit.getTitle(), unit.getItems().stream()
-                                .filter(item -> item.getStatus() != MemoryItemStatus.EXCLUDED)
-                                .map(item -> new Item(item.getId(), item.getKind(), item.getContent()))
-                                .toList()))
-                        .filter(unit -> !unit.items().isEmpty())
-                        .toList());
+                .map(SessionItemsQuery::activeUnits);
+    }
+
+    private static List<UnitItems> activeUnits(LearningSession session) {
+        return session.getUnits().stream()
+                .map(unit -> new UnitItems(unit.getId(), unit.getTitle(), unit.getItems().stream()
+                        .filter(item -> item.getStatus() != MemoryItemStatus.EXCLUDED)
+                        .map(item -> new Item(item.getId(), item.getKind(), item.getContent()))
+                        .toList()))
+                .filter(unit -> !unit.items().isEmpty())
+                .toList();
+    }
+
+    /** 지식 그래프의 세션 노드 (스펙 §7.10). {@code title}은 주제, 없으면 첫 복습 단위 제목이다. */
+    public record GraphSession(Long sessionId, String title, boolean confirmed, List<UnitItems> units) {
+    }
+
+    /** 사용자의 모든 세션과 복습 단위별 제외되지 않은 기억 항목. 최근 것부터. */
+    @Transactional(readOnly = true)
+    public List<GraphSession> graphSessionsOf(Long userId) {
+        return sessions.findAllByUserIdOrderByCreatedAtDescIdDesc(userId).stream()
+                .map(session -> {
+                    List<UnitItems> units = activeUnits(session);
+                    String title = session.getTopicHint() != null && !session.getTopicHint().isBlank() ? session.getTopicHint()
+                            : session.getUnits().isEmpty() ? "학습 세션 " + session.getId() : session.getUnits().getFirst().getTitle();
+                    return new GraphSession(session.getId(), title, session.isConfirmed(), units);
+                })
+                .toList();
     }
 
     /**
