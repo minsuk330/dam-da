@@ -34,6 +34,9 @@ colors:
   warning-fill: "#B87800"
   glass: "#DCE4FCB8"
   glass-item: "#CED6EB"
+  kakao: "#FEE500"
+  kakao-pressed: "#E5CE00"
+  kakao-ink: "#000000D9"
 typography:
   display:
     fontFamily: SUIT
@@ -115,6 +118,25 @@ components:
     typography: "{typography.headline}"
     rounded: "{rounded.full}"
     height: 56px
+  button-kakao:
+    backgroundColor: "{colors.kakao}"
+    textColor: "{colors.kakao-ink}"
+    typography: "{typography.headline}"
+    rounded: "{rounded.full}"
+    height: 56px
+  button-kakao-pressed:
+    backgroundColor: "{colors.kakao-pressed}"
+    textColor: "{colors.kakao-ink}"
+    rounded: "{rounded.full}"
+  button-google:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.headline}"
+    rounded: "{rounded.full}"
+    height: 56px
+  button-google-outline:
+    backgroundColor: "{colors.outline}"
+    width: 1px
   icon-button:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
@@ -370,6 +392,11 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
 
 - **주 버튼**: primary, 흰 글자, 높이 56, 전체 폭, 알약형. 화면 하단에 하나. 누르면 `primary-pressed`로 어두워진다(크기 변화 없음).
 - **보조 버튼**: 흰 바탕, ink 글자, 알약형.
+- **소셜 로그인 버튼** (스펙 §7.9, 2026-10-02 사용자 결정: 구글·카카오만): 각 회사 브랜드 가이드를 따르고 높이·라운드만 우리 버튼과 맞춘다(56, 알약형).
+  - 카카오: `button-kakao`(노랑 `kakao` + 85% 검정 `kakao-ink`) + 검정 말풍선 심볼. 눌리면 `button-kakao-pressed`.
+  - 구글: `button-google`(흰 바탕 + 1px `button-google-outline`) + 4색 G 로고. 눌리면 `card-pressed` 면.
+  - 로고는 왼쪽, 글자는 가운데. 로고 색은 브랜드 고정색이라 토큰이 아니라 로고 컴포넌트 안에 둔다.
+  - 브랜드 버튼은 주 버튼(primary)이 아니다. 로그인 화면에는 primary 주 버튼을 두지 않는다.
 - **선택지**: `surface-soft` + 1px `outline`, 알약형, 높이 56. 선택되면 `lavender`로 채우고 테두리를 없앤다.
   - 채점 후: 정답 선택지는 `answer-option-correct` + 2px `success` 테두리 + ✓ 아이콘, 고른 오답은 `answer-option-wrong` + 2px `danger` 테두리 + ✕ 아이콘. 나머지는 그대로 둔다.
 - **채점 피드백**: 선택지 아래, 주 버튼 위에 `feedback-correct` / `feedback-wrong` 상자. 첫 줄은 결과(맞았어요 / 아쉬워요), 다음 줄부터 설명과 근거 발화. 주 버튼은 "다음"으로 바뀐다.

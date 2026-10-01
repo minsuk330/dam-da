@@ -42,10 +42,18 @@ public class FsrsParameters {
     @Column(nullable = false)
     private Instant createdAt;
 
+    /** 개인 매개변수의 주인. 기본값은 모든 사용자가 쓰므로 null이다. 다른 사용자는 이 버전을 적용할 수 없다. */
+    private Long ownerUserId;
+
     protected FsrsParameters() {
     }
 
     public FsrsParameters(int version, double[] weights, ParameterSource source, String validation, Instant createdAt) {
+        this(version, weights, source, validation, createdAt, null);
+    }
+
+    public FsrsParameters(int version, double[] weights, ParameterSource source, String validation, Instant createdAt,
+            Long ownerUserId) {
         if (weights.length != FsrsSchedulers.PARAMETER_COUNT) {
             throw new IllegalArgumentException("FSRS 매개변수는 %d개여야 합니다: %d".formatted(FsrsSchedulers.PARAMETER_COUNT, weights.length));
         }
@@ -54,6 +62,12 @@ public class FsrsParameters {
         this.source = source;
         this.validation = validation;
         this.createdAt = createdAt;
+        this.ownerUserId = ownerUserId;
+    }
+
+    /** 이 사용자가 쓸 수 있는가. 기본값은 누구나, 개인 매개변수는 주인만. */
+    public boolean usableBy(Long userId) {
+        return ownerUserId == null || ownerUserId.equals(userId);
     }
 
     public double[] weights() {
@@ -78,5 +92,9 @@ public class FsrsParameters {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Long getOwnerUserId() {
+        return ownerUserId;
     }
 }

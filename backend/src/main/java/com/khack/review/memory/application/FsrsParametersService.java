@@ -67,27 +67,30 @@ public class FsrsParametersService implements ApplicationRunner {
 
     /**
      * 옵티마이저가 검증을 통과시킨 매개변수를 새 버전으로 저장한다(스펙 §6.4.9). 적용(활성화)은 하지 않는다.
-     * 개선 여부 판정은 옵티마이저 몫이고, 여기서는 매개변수 개수만 확인한다.
+     * 개선 여부 판정은 옵티마이저 몫이고, 여기서는 매개변수 개수만 확인한다. 학습한 기록의 사용자가 주인이 된다.
      */
     @Transactional
-    public ParameterSet registerOptimized(double[] weights, String validation) {
+    public ParameterSet registerOptimized(Long ownerUserId, double[] weights, String validation) {
         int version = parameters.findTopByOrderByVersionDesc().map(FsrsParameters::getVersion).orElse(DEFAULT_VERSION) + 1;
-        return toSet(parameters.save(new FsrsParameters(version, weights, ParameterSource.OPTIMIZED, validation, clock.instant())));
+        return toSet(parameters.save(new FsrsParameters(version, weights, ParameterSource.OPTIMIZED, validation, clock.instant(),
+                ownerUserId)));
     }
 
-    /** 저장된 매개변수 버전 목록. 롤백 대상을 고를 때 쓴다. */
+    /** 이 사용자가 쓸 수 있는 매개변수 버전 목록(기본값 + 본인 것). 롤백 대상을 고를 때 쓴다. */
     @Transactional(readOnly = true)
-    public List<ParameterSet> all() {
-        return parameters.findAllByOrderByVersionAsc().stream().map(FsrsParametersService::toSet).toList();
+    public List<ParameterSet> all(Long userId) {
+        return parameters.findAllByOrderByVersionAsc().stream().filter(set -> set.usableBy(userId))
+                .map(FsrsParametersService::toSet).toList();
     }
 
     /**
-     * 사용자가 쓸 매개변수 버전을 바꾼다. 기본값(버전 1)으로 되돌리거나 다른 버전으로 롤백할 수 있다.
+     * 사용자가 쓸 매개변수 버전을 바꾼다. 기본값(버전 1)으로 되돌리거나 다른 버전으로 롤백할 수 있다. 남의 개인 매개변수는 없는 버전으로 본다.
      * 저장된 OPTIMIZED 버전은 옵티마이저 검증을 통과한 것뿐이다(스펙 §6.4.9). 기억 상태 재계산은 호출하는 쪽이 한다.
      */
     @Transactional
     public ParameterSet activate(Long userId, int version) {
         FsrsParameters target = version == DEFAULT_VERSION ? defaults() : parameters.findByVersion(version)
+                .filter(set -> set.usableBy(userId))
                 .orElseThrow(() -> new IllegalArgumentException("매개변수 버전이 없습니다: " + version));
         settings.findById(userId).ifPresentOrElse(
                 current -> current.activate(version),

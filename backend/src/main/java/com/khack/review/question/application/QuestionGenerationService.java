@@ -6,7 +6,6 @@ import com.khack.review.analysis.application.SessionProgressService;
 import com.khack.review.analysis.domain.LearningSessionStatus;
 import com.khack.review.analysis.domain.MemoryItemKind;
 import com.khack.review.analysis.domain.MemoryItemStatus;
-import com.khack.review.common.application.CurrentUser;
 import com.khack.review.question.application.port.out.GeneratedQuestion;
 import com.khack.review.question.application.port.out.QuestionGenerator;
 import com.khack.review.question.application.port.out.UnitQuestionRequest;
@@ -50,20 +49,18 @@ public class QuestionGenerationService {
     private final QuestionRepository questions;
     private final LearningSessionQueryService sessions;
     private final SessionProgressService progress;
-    private final CurrentUser currentUser;
     private final Clock clock;
     private final TransactionTemplate transaction;
 
     public QuestionGenerationService(ObjectProvider<QuestionGenerator> generator, QuestionQualityJudge judge,
             QuestionQualityPolicy policy, QuestionRepository questions, LearningSessionQueryService sessions,
-            SessionProgressService progress, CurrentUser currentUser, Clock clock, TransactionTemplate transaction) {
+            SessionProgressService progress, Clock clock, TransactionTemplate transaction) {
         this.generator = generator;
         this.judge = judge;
         this.policy = policy;
         this.questions = questions;
         this.sessions = sessions;
         this.progress = progress;
-        this.currentUser = currentUser;
         this.clock = clock;
         this.transaction = transaction;
     }
@@ -81,12 +78,12 @@ public class QuestionGenerationService {
      * 목표를 다시 고를 수 있게 한다.
      */
     public FirstStudyOutcome generateFirstStudy(Long sessionId, List<QuestionSpec> specs) {
-        LearningSessionDetail detail = sessions.detail(sessionId);
+        LearningSessionDetail detail = sessions.detailForProcessing(sessionId);
         if (detail.status() != LearningSessionStatus.CONFIRMED) {
             log.info("학습 세션 {}: {} 상태라 첫 학습 문제를 만들지 않음", sessionId, detail.status());
             return new FirstStudyOutcome(true, specs.size(), 0, null);
         }
-        Context context = Context.of(detail, currentUser.id());
+        Context context = Context.of(detail, sessions.ownerOf(sessionId));
         Map<Long, List<Slot>> byUnit = new LinkedHashMap<>();
         for (QuestionSpec spec : specs) {
             byUnit.computeIfAbsent(context.item(spec.memoryItemId()).unitId(), unit -> new ArrayList<>())
@@ -110,7 +107,7 @@ public class QuestionGenerationService {
     /** 같은 기억 항목·유형의 변형 문제(규칙 7). 기존 문제와 다른 표현을 요청하며, 기억 상태는 항목 단위라 그대로 공유된다. */
     public Optional<Question> requestVariant(Long questionId) {
         Question original = questions.findById(questionId).orElseThrow(() -> new IllegalArgumentException("문제 없음: " + questionId));
-        Context context = Context.of(sessions.detail(original.getSessionId()), currentUser.id());
+        Context context = context(original.getSessionId());
         Slot slot = new Slot("v" + original.getId(), new QuestionSpec(-1, original.getMemoryItemId(), null, original.getType(), null),
                 original.getId());
         return generate(context, context.item(original.getMemoryItemId()).unitId(), List.of(slot)).get(slot.targetId());
@@ -121,7 +118,7 @@ public class QuestionGenerationService {
      * 문제가 있으면 그 문제의 변형으로, 없으면(신규 항목) 새 문제로 요청한다. 품질 검사를 통과해야 승인되며 못 만들면 비어 있다.
      */
     public Optional<Question> requestForItem(Long sessionId, Long memoryItemId, QuestionType type) {
-        Context context = Context.of(sessions.detail(sessionId), currentUser.id());
+        Context context = context(sessionId);
         Long variantOf = questions.findByMemoryItemIdAndStatusOrderByIdAsc(memoryItemId, QuestionStatus.APPROVED).stream()
                 .map(Question::getId).findFirst().orElse(null);
         Slot slot = new Slot("d" + memoryItemId, new QuestionSpec(-1, memoryItemId, null, type, null), variantOf);
@@ -134,7 +131,7 @@ public class QuestionGenerationService {
      */
     public Optional<Question> recheck(Long questionId) {
         Question question = questions.findById(questionId).orElseThrow(() -> new IllegalArgumentException("문제 없음: " + questionId));
-        Context context = Context.of(sessions.detail(question.getSessionId()), currentUser.id());
+        Context context = context(question.getSessionId());
         QualityOutcome outcome = judge.judge(state(context, question.getMemoryItemId(), content(question),
                 approvedStems(question.getMemoryItemId(), question.getId())));
         if (outcome.approved()) {
@@ -247,6 +244,11 @@ public class QuestionGenerationService {
     }
 
     /** 세션에서 문제 요청에 필요한 복습 단위·기억 항목·근거 발화. */
+    /** 비동기에서도 불리므로 요청 사용자가 아니라 세션 소유자 기준으로 만든다. */
+    private Context context(Long sessionId) {
+        return Context.of(sessions.detailForProcessing(sessionId), sessions.ownerOf(sessionId));
+    }
+
     private record Context(Long sessionId, Long userId, @Nullable String topicHint, Map<Long, LearningSessionDetail.Unit> units,
             Map<Long, ItemContext> items, Map<Integer, LearningSessionDetail.Turn> turns) {
 

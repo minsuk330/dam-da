@@ -43,7 +43,7 @@ class DevFsrsParametersController {
 
     @GetMapping("/dev/fsrs-parameters")
     List<ParameterSet> all() {
-        return parameters.all();
+        return parameters.all(currentUser.id());
     }
 
     /** 현재 사용자에게 이 버전을 적용하고 기억 상태를 다시 계산한다. 이전 버전을 주면 롤백이다. */
@@ -63,7 +63,7 @@ class DevFsrsParametersController {
         if (request.weights() == null || request.validation() == null || !request.validation().isObject()) {
             throw new IllegalArgumentException("weights와 validation(객체)이 필요합니다");
         }
-        return parameters.registerOptimized(request.weights(), request.validation().toString());
+        return parameters.registerOptimized(currentUser.id(), request.weights(), request.validation().toString());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

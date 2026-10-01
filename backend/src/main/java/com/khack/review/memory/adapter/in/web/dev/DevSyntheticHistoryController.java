@@ -38,7 +38,7 @@ class DevSyntheticHistoryController {
 
     @PostMapping("/dev/synthetic-history")
     Imported replace(@RequestBody List<Review> reviews) {
-        if (currentUser.isDemoUser()) {
+        if (currentUser.isDemoDevUser()) {
             throw new IllegalStateException("기본 데모 사용자에게는 합성 기록을 넣지 않습니다. 먼저 POST /dev/current-user로 전환하세요.");
         }
         return history.replace(currentUser.id(), reviews.stream()

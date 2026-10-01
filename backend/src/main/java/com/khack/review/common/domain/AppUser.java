@@ -6,11 +6,16 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 
-/** 해커톤은 인증 없이 데모 사용자 1명으로 동작한다. 사용자 소유 엔티티는 이 ID를 참조한다. */
+/**
+ * 사용자. 사용자 소유 엔티티는 이 ID를 참조한다(스펙 §7.9).
+ * 소셜 로그인 사용자는 {@code provider + providerUserId}로 찾고, {@code name}은 겹치지 않는 내부 이름({@code google:123})이다.
+ * 데모·합성 사용자는 소셜 계정 없이 이름으로만 존재한다.
+ */
 @Entity
-@Table(name = "app_user")
+@Table(name = "app_user", uniqueConstraints = @UniqueConstraint(columnNames = {"provider", "provider_user_id"}))
 public class AppUser {
 
     @Id
@@ -23,12 +28,44 @@ public class AppUser {
     @Column(nullable = false)
     private Instant createdAt;
 
+    /** 소셜 로그인 제공자({@code google}, {@code kakao}). 데모·합성 사용자는 null. */
+    private String provider;
+
+    private String providerUserId;
+
+    /** 화면에 보이는 이름. 소셜 닉네임이며 없으면 {@code name}을 쓴다. */
+    private String nickname;
+
+    private String email;
+
     protected AppUser() {
     }
 
     public AppUser(String name, Instant createdAt) {
         this.name = name;
         this.createdAt = createdAt;
+    }
+
+    public static AppUser social(String provider, String providerUserId, String nickname, String email, Instant createdAt) {
+        AppUser user = new AppUser(provider + ":" + providerUserId, createdAt);
+        user.provider = provider;
+        user.providerUserId = providerUserId;
+        user.updateProfile(nickname, email);
+        return user;
+    }
+
+    /** 로그인할 때마다 제공자가 준 최신 프로필로 맞춘다. 비어 있는 값은 덮어쓰지 않는다. */
+    public void updateProfile(String nickname, String email) {
+        if (nickname != null && !nickname.isBlank()) {
+            this.nickname = nickname;
+        }
+        if (email != null && !email.isBlank()) {
+            this.email = email;
+        }
+    }
+
+    public String displayName() {
+        return nickname != null ? nickname : name;
     }
 
     public Long getId() {
@@ -41,5 +78,17 @@ public class AppUser {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public String getProviderUserId() {
+        return providerUserId;
+    }
+
+    public String getEmail() {
+        return email;
     }
 }
