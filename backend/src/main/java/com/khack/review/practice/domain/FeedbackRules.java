@@ -58,9 +58,11 @@ public final class FeedbackRules {
     }
 
     private static Plan correct(State s) {
-        // 힌트·설명을 보고 맞힌 첫 시도 뒤에는 오늘 한 번 더 확인할지 고를 수 있다.
+        // 힌트·설명을 보고 맞힌 첫 시도 뒤에는 오늘 한 번 더 확인한다. 첫 학습은 도움 뒤 정답이면 항상 다른 문제 몇 개 뒤에
+        // 확인 문제를 낸다(스펙 §7 5단계, §11.3 7단계). 매일 학습은 다시 물을지 고른다.
         if (s.aidSeen() && !s.recheck() && !s.relearnQueued() && !s.relearnCapReached()) {
-            return new Plan(EnumSet.of(FeedbackAction.ADVANCE, FeedbackAction.RELEARN_TODAY), FeedbackAction.ADVANCE);
+            return s.kind() == PracticeKind.FIRST_STUDY ? only(FeedbackAction.RELEARN_TODAY)
+                    : new Plan(EnumSet.of(FeedbackAction.ADVANCE, FeedbackAction.RELEARN_TODAY), FeedbackAction.ADVANCE);
         }
         return only(FeedbackAction.ADVANCE);
     }
