@@ -64,6 +64,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  * <p>오래 걸리는 생성(LLM)·판정(Jev)·재검사 호출은 트랜잭션 밖에서 먼저 하고, 그 결과로 도움 노출·재확인 편성·피드백 기록을
  * 한 트랜잭션에서 저장한다. 트랜잭션은 풀이 세션 행을 잠그고 상태를 다시 읽어, 같은 제시에 동시에 온 요청이 도움을 두 번 기록하거나
  * 재확인을 두 번 편성하지 않게 한다.
+ *
+ * <p>변형 문제는 재검사(LLM·Jev, 수십 초)가 끝나야 나온다. 재검사가 이미 끝났으면 바로 편성하고, 아니면 응답을 기다리게 하지 않고
+ * 재검사가 끝난 뒤 따로 오늘 큐 끝에 편성한다. 그 사이 풀이를 끝냈으면 끝난 풀이를 다시 열지 않는다.
  */
 @Service
 public class FeedbackService {
@@ -188,6 +191,9 @@ public class FeedbackService {
             log.info("피드백 제시 {}: 먼저 끝난 요청이 상태를 바꿔 {}을(를) 반영하지 않음", presentationId, choice.action());
             return view(applied.feedback(), applied.feedback().getLastAction(), null, null);
         }
+        if (prepared.variantPending()) {
+            queueVariantWhenReady(presentation, question.getId());
+        }
         PresentationFeedback feedback = applied.feedback();
         if (latest == AttemptOutcome.WRONG) {
             feedback = suggestPrerequisiteIfRepeated(feedback, presentation, question, history);
@@ -195,8 +201,15 @@ public class FeedbackService {
         return view(feedback, choice.action(), choice.decidedBy(), choice.detail());
     }
 
-    /** 행동에 필요한 외부 호출 결과. 힌트·설명 본문, 오늘 다시 낼 문제(재검사로 고른 문제 포함). */
-    private record Prepared(@Nullable FeedbackContent content, @Nullable Long relearnQuestionId) {
+    /**
+     * 행동에 필요한 외부 호출 결과. 힌트·설명 본문, 오늘 다시 낼 문제(재검사로 고른 문제 포함).
+     * {@code variantPending}이면 재검사가 아직 끝나지 않아 변형 문제를 나중에 편성한다.
+     */
+    private record Prepared(@Nullable FeedbackContent content, @Nullable Long relearnQuestionId, boolean variantPending) {
+
+        Prepared(@Nullable FeedbackContent content, @Nullable Long relearnQuestionId) {
+            this(content, relearnQuestionId, false);
+        }
     }
 
     /** 트랜잭션 밖에서 LLM(힌트·설명)과 재검사(LLM·Jev)를 부른다. 저장은 하지 않는다. */
@@ -208,7 +221,10 @@ public class FeedbackService {
             case RELEARN_TODAY -> new Prepared(null, question.getId());
             case GENERATE_VARIANT -> {
                 // 모호한 문제는 같은 문제를 다시 내지 않는다. 재검사해 쓸 수 있는 문제(수정·변형)로 오늘 안에 다시 확인한다.
-                // 답변 판정 직후 시작한 재검사가 있으면 그 결과를 쓰고(진행 중이면 기다림), 실패했으면 한 번 더 시도한다.
+                // 답변 판정 직후 시작한 재검사가 끝났으면 그 결과를 쓴다. 진행 중이거나 실패했으면 기다리지 않고 나중에 편성한다.
+                if (!rechecks.finished(question.getId())) {
+                    yield new Prepared(null, null, true);
+                }
                 Optional<Long> usable = rechecks.recheck(question.getId(), presentation.getUserId(), presentation.getId(), true);
                 if (usable.isEmpty()) {
                     log.info("제시 {}: 쓸 수 있는 변형 문제가 없어 이 항목 출제를 보류", presentation.getId());
@@ -269,6 +285,35 @@ public class FeedbackService {
         }
         feedback.observe(path, wrongAttempts, action);
         return new Applied(feedbacks.save(feedback), true);
+    }
+
+    /** 재검사가 끝나면 변형 문제를 오늘 큐 끝에 넣는다. 응답은 기다리지 않는다. */
+    private void queueVariantWhenReady(QuestionPresentation presentation, Long questionId) {
+        rechecks.recheckInBackground(questionId, presentation.getUserId(), presentation.getId())
+                .thenAccept(usable -> usable.ifPresentOrElse(variant -> queueVariant(presentation, variant),
+                        () -> log.info("제시 {}: 쓸 수 있는 변형 문제가 없어 이 항목 출제를 보류", presentation.getId())))
+                .exceptionally(e -> {
+                    log.warn("제시 {}: 변형 문제 편성 실패: {}", presentation.getId(), e.getMessage());
+                    return null;
+                });
+    }
+
+    private void queueVariant(QuestionPresentation presentation, Long variantId) {
+        Boolean queued = transaction.execute(tx -> {
+            PracticeSession session = practices.findForUpdateById(presentation.getPracticeSessionId()).orElseThrow();
+            if (session.getCompletedAt() != null) {
+                return false;
+            }
+            PresentationFeedback feedback = feedbacks.findByPresentationId(presentation.getId()).orElseThrow();
+            if (feedback.isRelearnQueued()) {
+                return false;
+            }
+            queueRelearn(session, presentation, variantId, feedback);
+            feedbacks.save(feedback);
+            return feedback.isRelearnQueued();
+        });
+        log.info("제시 {}: 변형 문제 {} {}", presentation.getId(), variantId,
+                Boolean.TRUE.equals(queued) ? "오늘 큐 끝에 편성" : "편성하지 않음(풀이 끝남·이미 편성·상한)");
     }
 
     private static boolean shownAfter(List<AidExposure> exposures, AidType type, PracticeAttempt latestAttempt) {
