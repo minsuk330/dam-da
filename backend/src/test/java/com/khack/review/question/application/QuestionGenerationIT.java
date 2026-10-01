@@ -78,14 +78,28 @@ class QuestionGenerationIT {
 
         final Deque<JevResult> quality = new ArrayDeque<>();
         volatile JevResult qualityDefault = QUALITY_PASS;
+        /** 있으면 다음 품질 검사 한 번이 이 문이 열릴 때까지 멈춘다(들어오면 {@code holding}을 연다). */
+        final java.util.concurrent.atomic.AtomicReference<java.util.concurrent.CountDownLatch> hold = new java.util.concurrent.atomic.AtomicReference<>();
+        final java.util.concurrent.CountDownLatch holding = new java.util.concurrent.CountDownLatch(1);
 
         @Override
-        public synchronized JevResult evaluate(Object state, Map<String, com.khack.review.common.application.port.out.JevQuestion> questions) {
+        public JevResult evaluate(Object state, Map<String, com.khack.review.common.application.port.out.JevQuestion> questions) {
             if (!questions.containsKey(QuestionQualityQuestions.GROUNDED)) {
                 return UNIT_PASS;
             }
-            JevResult next = quality.poll();
-            return next != null ? next : qualityDefault;
+            java.util.concurrent.CountDownLatch gate = hold.getAndSet(null);
+            if (gate != null) {
+                holding.countDown();
+                try {
+                    gate.await(15, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            synchronized (this) {
+                JevResult next = quality.poll();
+                return next != null ? next : qualityDefault;
+            }
         }
     }
 
@@ -255,6 +269,38 @@ class QuestionGenerationIT {
         assertThat(ready.get("failed").asBoolean()).isFalse();
         assertThat(ready.get("failureReason").isNull()).isTrue();
         assertThat(ready.get("questions")).hasSize(1);
+    }
+
+    @Test
+    void choosingGoalsAgainStopsTheEarlierGenerationAndKeepsOnlyTheNewPlan() throws Exception {
+        long id = confirmedSession();
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        jev.hold.set(release);
+
+        // 첫 생성은 품질 검사에서 멈춰 있다. 그 사이 목표를 다시 고르면 새 계획으로 다시 만든다.
+        goals.choose(id, List.of(LearningGoal.CORRECT_MISCONCEPTION), null);
+        assertThat(jev.holding.await(15, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        goals.choose(id, List.of(LearningGoal.CORRECT_MISCONCEPTION, LearningGoal.CONDITION), null);
+        awaitStatus(() -> id, LearningSessionStatus.QUESTIONS_READY);
+
+        // 첫 생성이 검사를 마쳐도 지난 계획의 문제는 승인하지 않고, 더 만들지도 않는다.
+        release.countDown();
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(15));
+        while (questions.findBySessionIdOrderByIdAsc(id).stream().anyMatch(q -> q.getStatus() == QuestionStatus.CANDIDATE)) {
+            assertThat(Instant.now()).as("첫 생성 마무리 대기").isBefore(deadline);
+            Thread.onSpinWait();
+        }
+        Thread.sleep(300);
+
+        List<Question> all = questions.findBySessionIdOrderByIdAsc(id);
+        assertThat(all.getFirst().getStatus()).isEqualTo(QuestionStatus.REJECTED);
+        assertThat(all.getFirst().getQualityNote()).contains("학습 목표를 다시 골라");
+        assertThat(all).filteredOn(q -> q.getStatus() == QuestionStatus.APPROVED).as("새 계획의 문제만").hasSize(2);
+        assertThat(generator.calls()).as("지난 생성은 다시 요청하지 않음").hasSize(2);
+        JsonNode body = firstStudy(id);
+        assertThat(body.get("planned").asInt()).isEqualTo(2);
+        assertThat(body.get("questions")).hasSize(2);
+        assertThat(body.get("held")).isEmpty();
     }
 
     private JsonNode awaitFailed(long sessionId) throws Exception {
