@@ -73,7 +73,23 @@ export function SkeletonList({ rows = 3, style }: { rows?: number; style?: Style
   );
 }
 
+/**
+ * 화면 전체를 불러오는 동안의 자리: 화면 여백 안에 카드 자리(`blocks`, 높이 목록) 다음 목록 자리(`rows`).
+ * 실제 화면의 위에서 아래 순서를 대략 따라 그린다.
+ */
+export function SkeletonScreen({ blocks = [], rows = 0 }: { blocks?: number[]; rows?: number }) {
+  return (
+    <View style={styles.screen}>
+      {blocks.map((height, i) => (
+        <Skeleton key={i} shape="block" height={height} />
+      ))}
+      {rows > 0 && <SkeletonList rows={rows} />}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  screen: { padding: spacing.xl, gap: spacing.md },
   list: { paddingVertical: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline },

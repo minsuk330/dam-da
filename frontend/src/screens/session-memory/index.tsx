@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDaily } from '@/api/daily';
@@ -11,9 +11,10 @@ import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
 import { Notice } from '@/components/notice';
+import { SkeletonScreen } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { itemKindLabel, nextReviewLabel } from '@/labels';
-import { colors, spacing } from '@/theme';
+import { colors, components, spacing } from '@/theme';
 
 /**
  * 세션 상세 (스펙 §6.4.3): 세션 → 복습 단위(평균 R, 가장 약한 항목) → 기억 항목(R, 다음 복습일, 아직 확인 전).
@@ -30,11 +31,7 @@ export function SessionMemory({ id }: { id: number }) {
   const serverToday = useDaily().data?.date;
 
   if (gauge.isPending || session.isPending) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonScreen blocks={[components.cardStat.height]} rows={2} />;
   }
   if (gauge.isError || session.isError) {
     return (

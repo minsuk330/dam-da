@@ -1,4 +1,4 @@
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useMemoryModel, type CurvePoint, type MemoryModel as Model } from '@/api/memory-model';
@@ -6,9 +6,10 @@ import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { percent } from '@/components/gauge';
+import { SkeletonScreen } from '@/components/skeleton';
 import { StatCard } from '@/components/stat-card';
 import { ThemedText } from '@/components/themed-text';
-import { colors, components, spacing } from '@/theme';
+import { components, spacing } from '@/theme';
 
 import { ForgettingCurve } from './forgetting-curve';
 
@@ -28,11 +29,7 @@ export function MemoryModel() {
   const model = useMemoryModel();
 
   if (model.isPending) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonScreen blocks={[components.cardStat.height, components.chart.height]} />;
   }
   if (model.isError) {
     return (

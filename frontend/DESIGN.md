@@ -430,7 +430,7 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
 - **망각 곡선 차트** (스펙 §6.4.9, 내 기억 패턴 화면): x축 일수(0~30), y축 기억할 확률(0~100%) 선 그래프.
   - 흰 카드(`chart`) 위. 선은 2px(`chart-line`), 끝점에 8px 점(`chart-marker`)과 2px `surface` 테두리.
   - 비교 곡선(기본 모델)은 강조 하나·나머지 회색 원칙으로 `chart-line-context`(ink-muted) 2px. 색 대신 범례(짧은 선 표시 + 글자)와 끝 값 글자로 구분한다.
-  - 격자는 1px `outline`(`chart-grid`), 실선. 목표 유지율 90% 선만 글자 라벨을 붙인다. 글자는 선 색이 아니라 `ink-muted`/`ink-secondary`.
+  - 격자는 1px `outline`(`chart-grid`), 실선. 목표 유지율 90% 선은 격자와 구분되게 `ink-muted` 1px 점선(점 간격 4)으로 긋고 글자 라벨을 붙인다. 글자는 선 색이 아니라 `ink-muted`/`ink-secondary`.
   - y축은 0%부터 시작한다. 축은 하나만 쓴다.
   - 차트 아래에 주요 일수(7·30일)의 값을 글자로 함께 쓴다. 선 모양만으로 값을 전달하지 않는다.
 - **눌림·비활성·제외 상태**: 버튼은 `primary-pressed`로 어둡게, 카드·행은 배경을 `card-pressed`(surface-soft)로, 강조 카드는 `card-hero-pressed`로 바꾼다. 투명도로 눌림을 표시하지 않는다. 비활성은 불투명도 0.4, 사용자가 뺀 항목은 0.6으로 흐리게 한다(이 두 값은 design.md 스키마에 투명도 토큰이 없어 `src/theme/index.ts`의 `opacity`에 둔다).

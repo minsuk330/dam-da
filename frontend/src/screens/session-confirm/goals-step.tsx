@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { Schemas } from '@/api/client';
 import { useChooseGoals, useLearningGoals, useMemoryStrength } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
 import { OptionRow } from '@/components/option-row';
 import { Notice } from '@/components/notice';
+import { SkeletonList } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { colors, spacing } from '@/theme';
+import { spacing } from '@/theme';
 
 import { StepHeader } from './parts';
 
@@ -25,11 +26,7 @@ export function GoalsStep({ sessionId, onChosen }: { sessionId: number; onChosen
   const [pickedStrength, setPickedStrength] = useState<Strength | null>(null);
 
   if (goals.isPending || strength.isPending) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonList rows={4} />;
   }
   if (goals.isError || strength.isError) {
     return (
@@ -126,7 +123,6 @@ function formatMinutes(minutes: number) {
 
 const styles = StyleSheet.create({
   step: { gap: spacing.md },
-  center: { paddingVertical: spacing['3xl'], alignItems: 'center' },
   section: { gap: spacing.sm, marginTop: spacing.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
 });

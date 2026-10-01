@@ -1,4 +1,4 @@
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ApiError, type Schemas } from '@/api/client';
 import { useConversation } from '@/api/conversations';
@@ -6,10 +6,11 @@ import { useLearningSessions } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
+import { Skeleton, SkeletonList } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { aiVerdictLabel, factKindLabel, fidelityLabel, formatDateTime, inputPathLabel, intentLabel } from '@/labels';
 import { openSession } from '@/navigation';
-import { colors, components, opacity, radius, spacing } from '@/theme';
+import { colors, components, opacity, radius, spacing, typography } from '@/theme';
 
 type Turn = Schemas['UserTurnResponse'];
 type ReviewUnit = Schemas['ReviewUnitResponse'];
@@ -20,8 +21,13 @@ export function ConversationDetail({ id }: { id: string }) {
 
   if (isPending) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Skeleton width="70%" height={typography.display.lineHeight} />
+          <Skeleton width="50%" />
+        </View>
+        <Skeleton shape="block" height={components.cardStat.height} />
+        <SkeletonList rows={3} />
       </View>
     );
   }
@@ -84,9 +90,11 @@ export function ConversationDetail({ id }: { id: string }) {
 
       <View style={styles.section}>
         <ThemedText variant="title">받은 메시지 {data.userTurns.length}개</ThemedText>
-        {data.userTurns.map((turn) => (
-          <TurnCard key={turn.index} turn={turn} />
-        ))}
+        <Card style={styles.list}>
+          {data.userTurns.map((turn, i) => (
+            <TurnRow key={turn.index} turn={turn} divided={i > 0} />
+          ))}
+        </Card>
       </View>
     </ScrollView>
   );
@@ -108,12 +116,13 @@ function ReviewUnitCard({ unit, turnsByIndex }: { unit: ReviewUnit; turnsByIndex
         const correction = turnsByIndex.get(c.turn)?.correction;
         return (
           <View key={c.turn} style={styles.confusion}>
-            <ThemedText variant="subhead" tone="dangerInk">
-              헷갈린 점 · {c.userBelief} <TurnRefs turns={[c.turn]} />
+            <Chip variant="warning" label="헷갈렸던 점" />
+            <ThemedText variant="subhead">
+              {c.userBelief} <TurnRefs turns={[c.turn]} />
             </ThemedText>
             {correction && (
               <ThemedText variant="subhead" tone="inkSecondary">
-                대화 중 교정: {correction}
+                AI가 바로잡은 내용: {correction}
               </ThemedText>
             )}
           </View>
@@ -123,20 +132,20 @@ function ReviewUnitCard({ unit, turnsByIndex }: { unit: ReviewUnit; turnsByIndex
   );
 }
 
-function TurnCard({ turn }: { turn: Turn }) {
+/** 받은 메시지 한 줄. 대화 진행 메시지는 흐리게 두고 복습에 쓰지 않는다고 밝힌다. */
+function TurnRow({ turn, divided }: { turn: Turn; divided: boolean }) {
   const verdict = aiVerdictLabel[turn.aiVerdict];
   const isMeta = turn.intent === 'meta';
   return (
-    <Card style={[styles.cardGap, isMeta && styles.muted]}>
+    <View style={[styles.turn, divided && styles.divided, isMeta && styles.muted]}>
       <View style={styles.chips}>
         <ThemedText variant="caption" tone="inkMuted">
-          #{turn.index}
+          {turn.index}번째 메시지
         </ThemedText>
         <Chip variant="soft" label={intentLabel[turn.intent]} />
-        {verdict && <Chip variant="status" label={`대화에서 AI가 ${verdict}`} />}
         {isMeta && (
           <ThemedText variant="caption" tone="inkMuted">
-            복습 근거로 쓰지 않음
+            복습에 쓰지 않음
           </ThemedText>
         )}
       </View>
@@ -148,19 +157,20 @@ function TurnCard({ turn }: { turn: Turn }) {
         </View>
       )}
       <ThemedText>{turn.text}</ThemedText>
-      {turn.correction && (
-        <ThemedText variant="subhead" tone="inkSecondary">
-          대화 중 교정: {turn.correction}
+      {verdict && (
+        <ThemedText variant="caption" tone="inkSecondary">
+          대화에서 AI가 {verdict}
+          {turn.correction ? ` · ${turn.correction}` : ''}
         </ThemedText>
       )}
-    </Card>
+    </View>
   );
 }
 
 function TurnRefs({ turns }: { turns: number[] }) {
   return (
     <ThemedText variant="caption" tone="inkMuted">
-      {turns.map((t) => `#${t}`).join(' ')}
+      메시지 {turns.join(', ')}
     </ThemedText>
   );
 }
@@ -188,7 +198,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   confusion: {
     gap: spacing.xs,
-    backgroundColor: components.answerOptionWrong.backgroundColor,
+    backgroundColor: colors.surfaceSoft,
     borderRadius: radius.sm,
     borderCurve: 'continuous',
     padding: spacing.md,
@@ -196,4 +206,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
   quote: { borderLeftWidth: 2, borderLeftColor: colors.outline, paddingLeft: spacing.md },
   muted: { opacity: opacity.excluded },
+  list: { paddingVertical: spacing.xs },
+  turn: { gap: spacing.sm, paddingVertical: spacing.lg },
+  divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline },
 });

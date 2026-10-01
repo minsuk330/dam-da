@@ -6,8 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Schemas } from '@/api/client';
 import { useFirstStudy, useLearningSession } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
+import { SkeletonScreen } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { colors, spacing } from '@/theme';
+import { colors, components, spacing } from '@/theme';
 
 import { GoalsStep } from './goals-step';
 import { PrepareStep } from './prepare-step';
@@ -45,11 +46,7 @@ export function SessionConfirm({ id }: { id: number }) {
   const plan = useFirstStudy(id, confirmed && chosenStep === null);
 
   if (isPending || (confirmed && chosenStep === null && plan.isPending)) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonScreen blocks={[components.cardStat.height]} rows={3} />;
   }
   if (isError) {
     return (

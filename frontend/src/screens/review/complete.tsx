@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Schemas } from '@/api/client';
@@ -10,6 +10,7 @@ import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
 import { Icon, type IconName } from '@/components/icon';
+import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { formatDate } from '@/labels';
 import { colors, components, spacing } from '@/theme';
@@ -123,7 +124,7 @@ function SessionSummary({ sessionId }: { sessionId: number }) {
   const { data, isPending, isError, refetch } = useFirstStudySummary(sessionId);
   const target = useTargetRetention(sessionId);
 
-  if (isPending) return <ActivityIndicator color={colors.primary} />;
+  if (isPending) return <Skeleton shape="block" height={components.cardStat.height} />;
   if (isError) {
     return (
       <View style={styles.section}>

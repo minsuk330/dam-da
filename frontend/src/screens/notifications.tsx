@@ -1,11 +1,12 @@
 import { Stack } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useDaily } from '@/api/daily';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/api/notifications';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Icon } from '@/components/icon';
+import { SkeletonScreen } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { formatRelativeTime } from '@/labels';
 import { openNotification } from '@/navigation';
@@ -20,11 +21,7 @@ export function Notifications() {
   const markAll = useMarkAllNotificationsRead();
 
   if (isPending) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonScreen rows={4} />;
   }
   if (isError) {
     return (

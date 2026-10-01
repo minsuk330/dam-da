@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
@@ -9,8 +9,9 @@ import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { ChoiceChip } from '@/components/choice-chip';
 import { Notice } from '@/components/notice';
+import { SkeletonScreen } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { colors, spacing } from '@/theme';
+import { components, spacing } from '@/theme';
 
 /** 고를 수 있는 하루 학습 시간(분). 서버 범위는 1~60분이다. */
 const BUDGETS = [5, 10, 15, 20, 30];
@@ -27,11 +28,7 @@ export function Settings() {
   const { data, isPending, isError, refetch } = useDailySettings();
 
   if (isPending) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SkeletonScreen blocks={[components.cardStat.height, components.cardStat.height]} />;
   }
   if (isError) {
     return (
