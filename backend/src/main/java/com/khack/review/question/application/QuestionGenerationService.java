@@ -15,6 +15,7 @@ import com.khack.review.question.domain.Question;
 import com.khack.review.question.domain.QuestionRepository;
 import com.khack.review.question.domain.QuestionSpec;
 import com.khack.review.question.domain.QuestionStatus;
+import com.khack.review.question.domain.QuestionType;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -98,6 +99,18 @@ public class QuestionGenerationService {
         Slot slot = new Slot("v" + original.getId(), new QuestionSpec(-1, original.getMemoryItemId(), null, original.getType(), null),
                 original.getId());
         return generate(context, context.item(original.getMemoryItemId()).unitId(), List.of(slot)).get(slot.targetId());
+    }
+
+    /**
+     * 기억 항목에 지정한 유형의 문제를 새로 만든다(매일 학습에서 쓸 승인 문제가 없을 때, 스펙 §6.4.4). 항목에 이미 승인된
+     * 문제가 있으면 그 문제의 변형으로, 없으면(신규 항목) 새 문제로 요청한다. 품질 검사를 통과해야 승인되며 못 만들면 비어 있다.
+     */
+    public Optional<Question> requestForItem(Long sessionId, Long memoryItemId, QuestionType type) {
+        Context context = Context.of(sessions.detail(sessionId), currentUser.id());
+        Long variantOf = questions.findByMemoryItemIdAndStatusOrderByIdAsc(memoryItemId, QuestionStatus.APPROVED).stream()
+                .map(Question::getId).findFirst().orElse(null);
+        Slot slot = new Slot("d" + memoryItemId, new QuestionSpec(-1, memoryItemId, null, type, null), variantOf);
+        return generate(context, context.item(memoryItemId).unitId(), List.of(slot)).get(slot.targetId());
     }
 
     /**
