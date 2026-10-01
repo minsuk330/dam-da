@@ -420,6 +420,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["settings"];
+        put: operations["change"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/streak": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["streak"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -450,10 +482,6 @@ export interface components {
             rating: "AGAIN" | "HARD" | "GOOD" | "EASY" | null;
             /** Format: int64 */
             responseTimeMs: number;
-        };
-        ChooseRequest: {
-            /** @enum {string} */
-            strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
         };
         Composition: {
             goals: components["schemas"]["GoalSummary"][];
@@ -496,6 +524,24 @@ export interface components {
             /** Format: int32 */
             warningCount: number;
         };
+        DailyItemView: {
+            /** Format: int64 */
+            estimatedSeconds: number;
+            held: boolean;
+            /** @enum {string} */
+            kind: "FACT" | "WARNING" | "PRACTICE" | "CONFUSION";
+            /** Format: int64 */
+            learningSessionId: number;
+            /** Format: int64 */
+            memoryItemId: number;
+            /** @enum {string} */
+            questionType: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
+            relearnToday: boolean;
+            /** Format: double */
+            retrievability: number | null;
+            /** @enum {string} */
+            source: "REVIEW" | "NEW";
+        };
         DailyView: {
             /** Format: int32 */
             carriedOver: number;
@@ -504,7 +550,7 @@ export interface components {
             date: string;
             /** Format: int64 */
             estimatedSeconds: number;
-            items: components["schemas"]["ItemView"][];
+            items: components["schemas"]["DailyItemView"][];
             /** Format: int32 */
             newCount: number;
             /** Format: int64 */
@@ -563,6 +609,11 @@ export interface components {
             /** Format: int32 */
             number: number;
         };
+        GoalsRequest: {
+            goals: ("KEY_RECALL" | "PRINCIPLE" | "DISTINGUISH" | "CONDITION" | "APPLY_CASE" | "CORRECT_MISCONCEPTION" | "EXPLAIN_OWN_WORDS")[];
+            /** @enum {string} */
+            strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
+        };
         HeldSlot: {
             /** Format: int64 */
             memoryItemId: number;
@@ -600,22 +651,12 @@ export interface components {
             retrievability: number | null;
         };
         ItemView: {
-            /** Format: int64 */
-            estimatedSeconds: number;
-            held: boolean;
+            content: string;
+            gauge: components["schemas"]["ItemGauge"];
             /** @enum {string} */
             kind: "FACT" | "WARNING" | "PRACTICE" | "CONFUSION";
             /** Format: int64 */
-            learningSessionId: number;
-            /** Format: int64 */
             memoryItemId: number;
-            /** @enum {string} */
-            questionType: "MULTIPLE_CHOICE" | "SHORT_ANSWER" | "ESSAY" | "ERROR_FINDING" | "CASE_JUDGMENT" | "CASE_APPLICATION";
-            relearnToday: boolean;
-            /** Format: double */
-            retrievability: number | null;
-            /** @enum {string} */
-            source: "REVIEW" | "NEW";
         };
         JudgmentView: {
             judged: boolean;
@@ -708,8 +749,8 @@ export interface components {
             strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
         };
         Options: {
-            /** @enum {string} */
-            current: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
+            /** @enum {string|null} */
+            current: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER" | null;
             /** Format: int32 */
             itemCount: number;
             options: components["schemas"]["Option"][];
@@ -791,8 +832,32 @@ export interface components {
             sessionId: number;
             units: components["schemas"]["UnitView"][];
         };
+        Settings: {
+            /** Format: int32 */
+            budgetMinutes: number;
+            /** Format: time-local */
+            notifyAt: string | null;
+        };
+        SettingsRequest: {
+            /** Format: int32 */
+            budgetMinutes: number;
+            /** Format: time-local */
+            notifyAt: string | null;
+        };
         ShareLinkRequest: {
             url: string;
+        };
+        Streak: {
+            /** Format: int32 */
+            best: number;
+            /** Format: int32 */
+            current: number;
+            /** @enum {string|null} */
+            today: "COMPLETED" | "EMPTY" | null;
+        };
+        StrengthRequest: {
+            /** @enum {string} */
+            strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
         };
         Submission: {
             answer: string | null;
@@ -1478,7 +1543,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ChooseRequest"];
+                "application/json": components["schemas"]["GoalsRequest"];
             };
         };
         responses: {
@@ -1548,7 +1613,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ChooseRequest"];
+                "application/json": components["schemas"]["StrengthRequest"];
             };
         };
         responses: {
@@ -1558,6 +1623,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
+                };
+            };
+        };
+    };
+    change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
+                };
+            };
+        };
+    };
+    streak: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Streak"];
+                };
             };
         };
     };

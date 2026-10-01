@@ -718,7 +718,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ChooseRequest"
+                "$ref" : "#/components/schemas/GoalsRequest"
               }
             }
           },
@@ -807,7 +807,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ChooseRequest"
+                "$ref" : "#/components/schemas/StrengthRequest"
               }
             }
           },
@@ -819,6 +819,68 @@
           }
         },
         "tags" : [ "memory-strength-controller" ]
+      }
+    },
+    "/api/settings/daily" : {
+      "get" : {
+        "operationId" : "settings",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-habit-controller" ]
+      },
+      "put" : {
+        "operationId" : "change",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-habit-controller" ]
+      }
+    },
+    "/api/streak" : {
+      "get" : {
+        "operationId" : "streak",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Streak"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "daily-habit-controller" ]
       }
     }
   },
@@ -886,16 +948,6 @@
           }
         },
         "required" : [ "attemptId", "correct", "evaluated", "holdReason", "judgment", "kind", "rating", "responseTimeMs" ]
-      },
-      "ChooseRequest" : {
-        "type" : "object",
-        "properties" : {
-          "strength" : {
-            "type" : "string",
-            "enum" : [ "LIGHT", "UNDERSTAND", "APPLY", "MASTER" ]
-          }
-        },
-        "required" : [ "strength" ]
       },
       "Composition" : {
         "type" : "object",
@@ -1017,6 +1069,46 @@
         },
         "required" : [ "fidelity", "id", "inputPath", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
       },
+      "DailyItemView" : {
+        "type" : "object",
+        "properties" : {
+          "estimatedSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "held" : {
+            "type" : "boolean"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FACT", "WARNING", "PRACTICE", "CONFUSION" ]
+          },
+          "learningSessionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "memoryItemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "questionType" : {
+            "type" : "string",
+            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
+          },
+          "relearnToday" : {
+            "type" : "boolean"
+          },
+          "retrievability" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "REVIEW", "NEW" ]
+          }
+        },
+        "required" : [ "estimatedSeconds", "held", "kind", "learningSessionId", "memoryItemId", "questionType", "relearnToday", "retrievability", "source" ]
+      },
       "DailyView" : {
         "type" : "object",
         "properties" : {
@@ -1038,7 +1130,7 @@
           "items" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/ItemView"
+              "$ref" : "#/components/schemas/DailyItemView"
             }
           },
           "newCount" : {
@@ -1200,6 +1292,23 @@
         },
         "required" : [ "description", "goal", "label", "number" ]
       },
+      "GoalsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "goals" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "KEY_RECALL", "PRINCIPLE", "DISTINGUISH", "CONDITION", "APPLY_CASE", "CORRECT_MISCONCEPTION", "EXPLAIN_OWN_WORDS" ]
+            }
+          },
+          "strength" : {
+            "type" : "string",
+            "enum" : [ "LIGHT", "UNDERSTAND", "APPLY", "MASTER" ]
+          }
+        },
+        "required" : [ "goals", "strength" ]
+      },
       "HeldSlot" : {
         "type" : "object",
         "properties" : {
@@ -1296,42 +1405,22 @@
       "ItemView" : {
         "type" : "object",
         "properties" : {
-          "estimatedSeconds" : {
-            "type" : "integer",
-            "format" : "int64"
+          "content" : {
+            "type" : "string"
           },
-          "held" : {
-            "type" : "boolean"
+          "gauge" : {
+            "$ref" : "#/components/schemas/ItemGauge"
           },
           "kind" : {
             "type" : "string",
             "enum" : [ "FACT", "WARNING", "PRACTICE", "CONFUSION" ]
           },
-          "learningSessionId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "memoryItemId" : {
             "type" : "integer",
             "format" : "int64"
-          },
-          "questionType" : {
-            "type" : "string",
-            "enum" : [ "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "ERROR_FINDING", "CASE_JUDGMENT", "CASE_APPLICATION" ]
-          },
-          "relearnToday" : {
-            "type" : "boolean"
-          },
-          "retrievability" : {
-            "type" : [ "number", "null" ],
-            "format" : "double"
-          },
-          "source" : {
-            "type" : "string",
-            "enum" : [ "REVIEW", "NEW" ]
           }
         },
-        "required" : [ "estimatedSeconds", "held", "kind", "learningSessionId", "memoryItemId", "questionType", "relearnToday", "retrievability", "source" ]
+        "required" : [ "content", "gauge", "kind", "memoryItemId" ]
       },
       "JudgmentView" : {
         "type" : "object",
@@ -1580,7 +1669,7 @@
         "type" : "object",
         "properties" : {
           "current" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "LIGHT", "UNDERSTAND", "APPLY", "MASTER" ]
           },
           "itemCount" : {
@@ -1813,6 +1902,34 @@
         },
         "required" : [ "sessionId", "units" ]
       },
+      "Settings" : {
+        "type" : "object",
+        "properties" : {
+          "budgetMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "notifyAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "time-local"
+          }
+        },
+        "required" : [ "budgetMinutes", "notifyAt" ]
+      },
+      "SettingsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "budgetMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "notifyAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "time-local"
+          }
+        },
+        "required" : [ "budgetMinutes", "notifyAt" ]
+      },
       "ShareLinkRequest" : {
         "type" : "object",
         "properties" : {
@@ -1821,6 +1938,34 @@
           }
         },
         "required" : [ "url" ]
+      },
+      "Streak" : {
+        "type" : "object",
+        "properties" : {
+          "best" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "current" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "today" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "COMPLETED", "EMPTY" ]
+          }
+        },
+        "required" : [ "best", "current", "today" ]
+      },
+      "StrengthRequest" : {
+        "type" : "object",
+        "properties" : {
+          "strength" : {
+            "type" : "string",
+            "enum" : [ "LIGHT", "UNDERSTAND", "APPLY", "MASTER" ]
+          }
+        },
+        "required" : [ "strength" ]
       },
       "Submission" : {
         "type" : "object",

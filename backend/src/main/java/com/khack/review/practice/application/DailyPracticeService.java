@@ -70,7 +70,7 @@ public class DailyPracticeService {
      * 큐 항목 1개. {@code source}는 복습/신규, {@code retrievability}는 지금 R(첫 등급 전이면 null)이다.
      * 문제 내용은 시작 전에 보이지 않는다.
      */
-    public record ItemView(Long memoryItemId, Long learningSessionId, MemoryItemKind kind, QuestionType questionType,
+    public record DailyItemView(Long memoryItemId, Long learningSessionId, MemoryItemKind kind, QuestionType questionType,
             DailyQueuePlanner.Source source, boolean held, boolean relearnToday, @Nullable Double retrievability,
             long estimatedSeconds) {
     }
@@ -81,12 +81,17 @@ public class DailyPracticeService {
      * {@code carriedOver}는 예산·하루 1개·신규 상한으로 다음 큐로 넘어간 후보 수, {@code unavailable}은 문제를 만들 수 없어 뺀 항목이다.
      */
     public record DailyView(LocalDate date, @Nullable Long practiceId, boolean started, boolean completed, int total,
-            int reviewCount, int newCount, long estimatedSeconds, List<ItemView> items, int carriedOver, List<Long> unavailable) {
+            int reviewCount, int newCount, long estimatedSeconds, List<DailyItemView> items, int carriedOver, List<Long> unavailable) {
     }
 
     @Transactional(readOnly = true)
     public DailyView today() {
-        Long userId = currentUser.id();
+        return today(currentUser.id());
+    }
+
+    /** 사용자의 오늘의 학습. 매일 학습 알림이 예상 시간을 보여줄 때도 쓴다. */
+    @Transactional(readOnly = true)
+    public DailyView today(Long userId) {
         Optional<PracticeSession> existing = todaysSession(userId);
         if (existing.isPresent()) {
             return startedView(existing.get(), List.of());
@@ -175,7 +180,7 @@ public class DailyPracticeService {
 
     private static DailyView previewView(DailyQueueService.DailyQueue queue, @Nullable Long practiceId, List<Long> unavailable) {
         DailyQueuePlanner.Plan plan = queue.plan();
-        List<ItemView> items = plan.entries().stream().map(e -> new ItemView(e.itemId(), e.sessionId(), e.kind(), e.type(),
+        List<DailyItemView> items = plan.entries().stream().map(e -> new DailyItemView(e.itemId(), e.sessionId(), e.kind(), e.type(),
                 e.source(), e.held(), e.relearnToday(), e.retrievability(), e.estimated().toSeconds())).toList();
         return new DailyView(queue.date(), practiceId, false, false, items.size(), plan.reviewCount(), plan.newCount(),
                 plan.estimatedTime().toSeconds(), items, plan.carriedOver().size(), List.copyOf(unavailable));

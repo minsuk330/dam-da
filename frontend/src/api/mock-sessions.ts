@@ -240,9 +240,17 @@ export const mockSessionApi = {
     const pick = chosen[id]
     if (pick && session.status === 'CONFIRMED' && Date.now() - pick.at > GENERATION_MS) setStatus(session, 'QUESTIONS_READY')
     if (session.status === 'CONFIRMED') {
-      return { sessionStatus: session.status, generating: !!pick, planned: pick ? 7 : 0, questions: [], held: [] }
+      return { sessionStatus: session.status, generating: !!pick, failed: false, failureReason: null, planned: pick ? 7 : 0, questions: [], held: [] }
     }
-    return { sessionStatus: session.status, generating: false, planned: 7, questions: SAMPLE_QUESTIONS, held: SAMPLE_HELD }
+    return {
+      sessionStatus: session.status,
+      generating: false,
+      failed: false,
+      failureReason: null,
+      planned: 7,
+      questions: SAMPLE_QUESTIONS,
+      held: SAMPLE_HELD,
+    }
   },
 }
 

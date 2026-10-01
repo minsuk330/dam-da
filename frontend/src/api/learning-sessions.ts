@@ -137,8 +137,7 @@ export function useChooseGoals(id: number) {
   return useMutation({
     mutationFn: async ({ goals, strength }: { goals: Goal[]; strength: Strength }) => {
       if (mockEnabled) return mockCall(() => mockSessionApi.chooseGoals(id, goals, strength))
-      // 계약의 ChooseRequest가 기억 강도 API의 같은 이름 record와 합쳐져 goals가 빠져 있다. 실제 요청은 goals를 받는다.
-      const body = { goals, strength } as Schemas['ChooseRequest']
+      const body: Schemas['GoalsRequest'] = { goals, strength }
       return unwrap(await api.PUT('/api/sessions/{sessionId}/learning-goals', { params: { path: { sessionId: id } }, body }))
     },
     onSuccess: () => {

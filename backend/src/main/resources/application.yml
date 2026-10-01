@@ -137,6 +137,11 @@ review:
         CASE_APPLICATION: 120s
       # 응답 시간이 기준의 이 배수 이하일 때만 Easy
       easy-max-time-ratio: 1.5
+  engagement:
+    reminder:
+      # 매일 학습 알림 확인 (스펙 §7.7). 시각은 Clock 기준이라 시간 이동 뒤 다음 확인에서 반영된다
+      enabled: true
+      interval: 30s
   jev:
     api-key: ${TYPESAFE_API_KEY:}
     base-url: https://api.typesafe.ai
