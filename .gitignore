@@ -14,6 +14,11 @@ backend/build/
 backend/.gradle/
 backend/data/
 
+# optimizer
+optimizer/.venv/
+optimizer/**/__pycache__/
+optimizer/.pytest_cache/
+
 # frontend
 frontend/node_modules/
 frontend/dist/

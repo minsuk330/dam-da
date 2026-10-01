@@ -45,13 +45,41 @@ public class FsrsParametersService implements ApplicationRunner {
         defaults();
     }
 
+    /** 매개변수 묶음 하나. 옵티마이저가 비교 기준으로 읽는다. */
+    public record ParameterSet(int version, ParameterSource source, double[] weights) {
+    }
+
     @Transactional
     public Active activeFor(Long userId, double desiredRetention) {
-        int version = settings.findById(userId).map(UserFsrsSettings::getActiveParametersVersion).orElse(DEFAULT_VERSION);
-        FsrsParameters active = version == DEFAULT_VERSION ? defaults() : parameters.findByVersion(version).orElseThrow();
-        Scheduler scheduler = schedulers.computeIfAbsent(version + "@" + desiredRetention,
+        FsrsParameters active = active(userId);
+        Scheduler scheduler = schedulers.computeIfAbsent(active.getVersion() + "@" + desiredRetention,
                 key -> FsrsSchedulers.create(active.weights(), desiredRetention));
-        return new Active(version, scheduler);
+        return new Active(active.getVersion(), scheduler);
+    }
+
+    /** 사용자가 지금 쓰는 매개변수 묶음. */
+    @Transactional
+    public ParameterSet activeParameters(Long userId) {
+        return toSet(active(userId));
+    }
+
+    /**
+     * 옵티마이저가 검증을 통과시킨 매개변수를 새 버전으로 저장한다(스펙 §6.4.9). 적용(활성화)은 하지 않는다.
+     * 개선 여부 판정은 옵티마이저 몫이고, 여기서는 매개변수 개수만 확인한다.
+     */
+    @Transactional
+    public ParameterSet registerOptimized(double[] weights, String validation) {
+        int version = parameters.findTopByOrderByVersionDesc().map(FsrsParameters::getVersion).orElse(DEFAULT_VERSION) + 1;
+        return toSet(parameters.save(new FsrsParameters(version, weights, ParameterSource.OPTIMIZED, validation, clock.instant())));
+    }
+
+    private FsrsParameters active(Long userId) {
+        int version = settings.findById(userId).map(UserFsrsSettings::getActiveParametersVersion).orElse(DEFAULT_VERSION);
+        return version == DEFAULT_VERSION ? defaults() : parameters.findByVersion(version).orElseThrow();
+    }
+
+    private static ParameterSet toSet(FsrsParameters set) {
+        return new ParameterSet(set.getVersion(), set.getSource(), set.weights());
     }
 
     private FsrsParameters defaults() {
