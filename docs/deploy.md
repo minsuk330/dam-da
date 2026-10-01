@@ -67,7 +67,9 @@ docker compose down -v                              # 전부 지우고 처음부
 
 ### 시간 이동 데모 (`/dev/**`)
 
-배포 서버의 `/dev/**`는 `X-Dev-Token` 헤더가 `.env`의 `DEV_TOOLS_TOKEN`과 같을 때만 열린다(그 외 404). 토큰은 코드·프론트엔드 번들에 넣지 않는다. curl로 쓰거나, 앱의 내 정보 → 시연 도구에서 시연자가 직접 입력한다(그 브라우저에만 저장). Vercel은 `/dev/**`도 `/api/**`처럼 서버로 넘긴다(`frontend/vercel.json`).
+배포 서버의 `/dev/**`는 `X-Dev-Token` 헤더가 `.env`의 `DEV_TOOLS_TOKEN`과 같을 때만 열린다(그 외 404). 토큰은 코드·프론트엔드 번들에 넣지 않는다. Vercel은 `/dev/**`도 `/api/**`처럼 서버로 넘긴다(`frontend/vercel.json`).
+
+앱의 내 정보 → 시연 도구는 토큰 없이 `/api/demo/clock`을 쓴다. `.env`에 `DEMO_CLOCK_ENABLED=true`를 넣으면 로그인한 사용자 누구나 서버 날짜를 옮기고 되돌릴 수 있다(서버 전체에 적용). 시연 기간에만 켠다.
 
 ```bash
 export DEV_TOOLS_TOKEN=...   # .env와 같은 값

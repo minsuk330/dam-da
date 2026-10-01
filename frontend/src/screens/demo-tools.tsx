@@ -1,14 +1,13 @@
-import { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
-import { offsetDays, useDevClock, useDevToken, useMoveDevClock } from '@/api/dev-clock';
+import { offsetDays, useDevClock, useMoveDevClock } from '@/api/dev-clock';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Notice } from '@/components/notice';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { components, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
 
 const STEPS = [1, 3, 7];
 
@@ -22,14 +21,12 @@ const serverDate = new Intl.DateTimeFormat('ko-KR', {
 
 /**
  * 시연 도구 (스펙 §11.3 시간 이동 데모): 서버 시계를 며칠 앞으로 옮겨 기억 게이지가 떨어지고 복습으로 회복하는 장면을 보여준다.
- * 개발 도구가 켜진 서버에서만 동작하고, 배포 서버는 시연자가 입력한 토큰이 맞아야 한다. 시계는 서버 전체가 함께 움직인다.
+ * 로그인한 사용자면 토큰 없이 쓴다. 서버가 시연 도구를 켰을 때(DEMO_CLOCK_ENABLED)만 동작한다. 시계는 서버 전체가 함께 움직인다.
  */
 export function DemoTools() {
-  const { token, save, clear } = useDevToken();
-  const clock = useDevClock(token);
-  const move = useMoveDevClock(token);
-  const denied = clock.error instanceof ApiError && (clock.error.status === 404 || clock.error.status === 403);
-  const askToken = (!clock.isFetching && clock.data === undefined && !clock.isError) || denied;
+  const clock = useDevClock();
+  const move = useMoveDevClock();
+  const disabled = clock.error instanceof ApiError && clock.error.status === 404;
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -40,8 +37,8 @@ export function DemoTools() {
         </ThemedText>
       </View>
 
-      {askToken ? (
-        <TokenForm denied={denied} onSave={save} />
+      {disabled ? (
+        <Notice tone="danger">이 서버에서는 시연 도구가 꺼져 있어요.</Notice>
       ) : (
         <Card style={styles.card}>
           <ThemedText variant="caption" tone="inkMuted">
@@ -62,7 +59,7 @@ export function DemoTools() {
         </Card>
       )}
 
-      {!askToken && (
+      {!disabled && (
         <View style={styles.actions}>
           <View style={styles.steps}>
             {STEPS.map((days) => (
@@ -89,34 +86,7 @@ export function DemoTools() {
 
       <Notice>서버 시계는 모든 사용자에게 함께 적용돼요. 시연용 서버에서만 쓰세요.</Notice>
 
-      {token && <Button variant="secondary" title="저장한 토큰 지우기" onPress={clear} />}
     </ScrollView>
-  );
-}
-
-/** 개발 도구 토큰 입력. 토큰은 이 브라우저에만 저장하고 코드·번들에는 넣지 않는다. */
-function TokenForm({ denied, onSave }: { denied: boolean; onSave: (token: string) => void }) {
-  const [value, setValue] = useState('');
-  return (
-    <Card style={styles.card}>
-      <ThemedText variant="headline">개발 도구 토큰</ThemedText>
-      <ThemedText variant="subhead" tone="inkSecondary">
-        서버의 DEV_TOOLS_TOKEN을 입력해 주세요. 이 브라우저에만 저장돼요.
-      </ThemedText>
-      <TextInput
-        accessibilityLabel="개발 도구 토큰"
-        value={value}
-        onChangeText={setValue}
-        secureTextEntry
-        autoCapitalize="none"
-        autoCorrect={false}
-        placeholder="토큰"
-        placeholderTextColor={components.fieldPlaceholder.textColor}
-        style={styles.field}
-      />
-      {denied && <Notice tone="danger">토큰이 맞지 않거나 이 서버에서 개발 도구가 꺼져 있어요.</Notice>}
-      <Button title="저장" disabled={value.trim().length === 0} onPress={() => onSave(value.trim())} />
-    </Card>
   );
 }
 
@@ -128,12 +98,4 @@ const styles = StyleSheet.create({
   actions: { gap: spacing.sm },
   steps: { flexDirection: 'row', gap: spacing.sm },
   step: { flex: 1 },
-  field: {
-    ...components.field.typography,
-    color: components.field.textColor,
-    backgroundColor: components.field.backgroundColor,
-    borderRadius: components.field.rounded,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
 });
