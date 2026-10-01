@@ -3,6 +3,8 @@ package com.khack.review.analysis.domain;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -41,6 +43,14 @@ public class ReviewUnit {
     @Column(nullable = false)
     private boolean excluded;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReviewUnitVerdict verdict = ReviewUnitVerdict.PENDING;
+
+    /** 검수 결과의 이유. 확인 화면과 디버깅용이다. */
+    @Column(length = 2_000)
+    private String verdictReason;
+
     @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position")
     private List<MemoryItem> items = new ArrayList<>();
@@ -73,6 +83,12 @@ public class ReviewUnit {
         items.forEach(MemoryItem::exclude);
     }
 
+    /** Jev 검수 결과를 기록한다. 판정만 남기고 제외 여부는 바꾸지 않는다. */
+    public void recordVerdict(ReviewUnitVerdict verdict, String reason) {
+        this.verdict = verdict;
+        this.verdictReason = reason;
+    }
+
     public Long getId() {
         return id;
     }
@@ -91,6 +107,14 @@ public class ReviewUnit {
 
     public boolean isExcluded() {
         return excluded;
+    }
+
+    public ReviewUnitVerdict getVerdict() {
+        return verdict;
+    }
+
+    public String getVerdictReason() {
+        return verdictReason;
     }
 
     public List<MemoryItem> getItems() {
