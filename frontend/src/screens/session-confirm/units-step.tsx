@@ -1,11 +1,13 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { Schemas } from '@/api/client';
+import { useChooseField } from '@/api/fields';
 import { useEditLearningSession } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Notice } from '@/components/notice';
 import { Chip } from '@/components/chip';
+import { FieldPicker } from '@/components/field-picker';
 import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
 import { itemKindLabel, unitVerdictLabel, unitVerdictNote } from '@/labels';
@@ -22,6 +24,7 @@ type Unit = Schemas['Unit'];
  */
 export function UnitsStep({ session, onBack, onConfirmed }: { session: Detail; onBack: () => void; onConfirmed: () => void }) {
   const edit = useEditLearningSession(session.id);
+  const chooseField = useChooseField(session.id);
   const items = session.units.flatMap((u) => u.items);
   const included = items.filter((i) => i.status !== 'EXCLUDED').length;
 
@@ -33,6 +36,11 @@ export function UnitsStep({ session, onBack, onConfirmed }: { session: Detail; o
         title="복습할 내용을 골라요"
         description="대화에서 뽑은 내용이에요. 복습하고 싶지 않은 것은 빼 주세요."
       />
+
+      <Card>
+        <FieldPicker value={session.field} busy={chooseField.isPending} onChoose={(code) => chooseField.mutate(code)} />
+      </Card>
+      {chooseField.error && <Notice tone="danger">{chooseField.error.message}</Notice>}
 
       {session.warnings.map((warning) => (
         <Notice key={warning}>{warning}</Notice>

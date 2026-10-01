@@ -323,6 +323,30 @@ components:
   chart-marker:
     backgroundColor: "{colors.primary}"
     size: 8px
+  graph:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink-secondary}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.lg}"
+    height: 380px
+  graph-edge:
+    backgroundColor: "{colors.lavender}"
+    width: 1px
+  graph-node-field:
+    size: 36px
+  graph-node-subfield:
+    size: 24px
+  graph-node-session:
+    size: 16px
+  graph-node-unit:
+    size: 10px
+  graph-node-growth:
+    size: 2px
+  graph-node-unchecked:
+    backgroundColor: "{colors.stage}"
+  graph-node-selected:
+    backgroundColor: "{colors.inverse}"
+    width: 2px
   tab-bar:
     backgroundColor: "{colors.glass}"
     rounded: "{rounded.full}"
@@ -433,6 +457,15 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
   - 격자는 1px `outline`(`chart-grid`), 실선. 목표 유지율 90% 선은 격자와 구분되게 `ink-muted` 1px 점선(점 간격 4)으로 긋고 글자 라벨을 붙인다. 글자는 선 색이 아니라 `ink-muted`/`ink-secondary`.
   - y축은 0%부터 시작한다. 축은 하나만 쓴다.
   - 차트 아래에 주요 일수(7·30일)의 값을 글자로 함께 쓴다. 선 모양만으로 값을 전달하지 않는다.
+- **지식 그래프** (스펙 §7.10, 기억 탭 `목록 | 그래프`, 2026-10-02 사용자 결정: Quartz 그래프 UI): 분야 → 세부 분야 → 학습 → 주제를 점과 선으로 잇는 그래프.
+  - 웹은 [Quartz](https://github.com/jackyzha0/quartz) v4 그래프 컴포넌트를 옮겨 쓴다(MIT, `src/screens/memory/graph-canvas.web.tsx`에 저작권 고지). 점을 끌어 옮기고, 휠·두 손가락으로 확대/이동한다(0.25~4배). 네이티브는 같은 힘으로 한 번 계산한 고정 배치를 SVG로 그린다.
+  - 흰 카드(`graph`, 높이 380) 안에 그린다. 선은 1px `graph-edge`(lavender), 고른 점과 이어진 선은 `ink-muted`. 그림자·글로우는 쓰지 않는다.
+  - 점 지름은 단계별 기본값(`graph-node-field` 36 / `graph-node-subfield` 24 / `graph-node-session` 16 / `graph-node-unit` 10)에 기억할 내용 수의 제곱근 × `graph-node-growth`(2)를 더한다.
+  - 점 색은 기억 게이지 세 단계의 채움색(`gauge-fill` / `gauge-review-fill` / `gauge-low-fill`)이다. 확인된 항목이 없으면 `graph-node-unchecked`(회색). 고른 점은 2px `graph-node-selected` 테두리.
+  - 점을 누르면(웹은 가리켜도) 그 점과 바로 이웃만 또렷하고 나머지 점·선은 20%로 흐려진다(0.2초 전환). 분야·세부 분야 이름은 늘 보이고, 학습·주제 이름은 고른 점의 이웃이거나 확대할수록 나타난다(`caption`).
+  - 사용자가 끌거나 확대하기 전까지는 배치가 자리 잡는 동안 모든 점과 이름이 카드 안에 들어오도록 자동으로 맞춘다. 움직임 줄이기가 켜져 있으면 배치를 미리 끝까지 계산해 멈춘 상태로 그린다.
+  - 색만으로 뜻을 전하지 않는다. 그래프 아래 범례(색 점 + 글자)와, 고른 점의 경로·이름·기억 게이지(라벨·퍼센트·단계 칩)를 흰 카드에 보여주고, 학습·주제면 "학습 열기" 보조 버튼을 둔다.
+  - 캔버스 점은 화면 읽기 프로그램이 읽지 못하므로, 웹은 점마다 숨은 버튼(이름, 지금 기억할 확률 또는 아직 확인 전)을 함께 둔다.
 - **눌림·비활성·제외 상태**: 버튼은 `primary-pressed`로 어둡게, 카드·행은 배경을 `card-pressed`(surface-soft)로, 강조 카드는 `card-hero-pressed`로 바꾼다. 투명도로 눌림을 표시하지 않는다. 비활성은 불투명도 0.4, 사용자가 뺀 항목은 0.6으로 흐리게 한다(이 두 값은 design.md 스키마에 투명도 토큰이 없어 `src/theme/index.ts`의 `opacity`에 둔다).
 - **아이콘**: 크기는 `icon-small`(16) / `icon`(20) / `icon-large`(24) / `icon-xl`(32)만 쓴다. 아이콘을 담는 원은 `icon-circle`(44), 완료 표시는 `done-mark`(72).
 - **축하 애니메이션** (2026-10-02 사용자 결정): 학습 완료·연속 학습 달성처럼 무언가를 이룬 순간에만 `assets/animations/confetti.lottie`를 한 번 재생한다. 색은 파일 원본 그대로 쓴다.
