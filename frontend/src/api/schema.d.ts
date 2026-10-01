@@ -601,7 +601,7 @@ export interface components {
             hint: string | null;
             /** @enum {string|null} */
             path: "INDEPENDENT" | "AFTER_HINT" | "AFTER_EXPLANATION" | "REPEATED_WRONG" | null;
-            prerequisite: components["schemas"]["Prerequisite"];
+            prerequisite: components["schemas"]["Prerequisite"] | null;
             /** Format: int64 */
             presentationId: number;
             reason: string | null;
@@ -763,7 +763,7 @@ export interface components {
         };
         Next: {
             done: boolean;
-            presentation: components["schemas"]["PresentationView"];
+            presentation: components["schemas"]["PresentationView"] | null;
         };
         NotificationView: {
             body: string;
