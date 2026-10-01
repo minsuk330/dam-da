@@ -2,62 +2,50 @@ package com.khack.review.collection.adapter.in.web.dev;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.khack.review.collection.application.ConnectorIntakeService;
+import com.khack.review.collection.application.ConversationQueryService;
 import com.khack.review.collection.domain.AiVerdict;
 import com.khack.review.collection.domain.FactKind;
 import com.khack.review.collection.domain.Intent;
 import com.khack.review.collection.domain.KeyPoint;
 import com.khack.review.collection.domain.ReviewUnit;
 import com.khack.review.collection.domain.SessionInput;
-import com.khack.review.collection.domain.SessionStore;
 import com.khack.review.collection.domain.UserTurn;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class DevSessionsIT {
 
-    static final Path SESSIONS = createTempSessionsFile();
-
-    static Path createTempSessionsFile() {
-        try {
-            return Files.createTempDirectory("dev-sessions-").resolve("sessions.jsonl");
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    @DynamicPropertySource
-    static void properties(DynamicPropertyRegistry registry) {
-        registry.add("review.sessions-file", SESSIONS::toString);
-    }
 
     @Value("${local.server.port}")
     int port;
 
     @Autowired
-    SessionStore store;
+    ConnectorIntakeService intake;
+
+    @Autowired
+    ConversationQueryService conversations;
+
+    /** 다른 테스트와 DB를 공유하므로, 비어 있는지와 상관없이 이 클래스의 예시 대화를 한 번 넣는다. */
+    static boolean seeded;
 
     @BeforeEach
     void seed() {
-        if (store.list().isEmpty()) {
+        if (!seeded) {
+            seeded = true;
             UserTurn turn = new UserTurn(1, "<b>잠궈?</b> 원문", null, Intent.understanding_check, AiVerdict.corrected, "요약 & 정리");
-            store.save(new SessionInput(List.of(turn),
+            intake.intake(new SessionInput(List.of(turn),
                     List.of(new ReviewUnit("잠금 & 순서", List.of(new KeyPoint("주의 <RC>", List.of(1), FactKind.warning)), null)),
-                    "InnoDB"), List.of());
+                    "InnoDB"));
         }
     }
 
@@ -85,6 +73,14 @@ class DevSessionsIT {
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.headers().firstValue("Content-Type")).hasValueSatisfying(v -> assertThat(v).startsWith("text/markdown"));
         assertThat(response.body()).startsWith("# 커넥터 수신 세션").contains("<b>잠궈?</b> 원문");
+    }
+
+    @Test
+    void localJsonReturnsSavedSessionsForTools() throws Exception {
+        HttpResponse<String> response = get("/dev/sessions.json", null);
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.body()).contains("\"source\":\"connector\"", "\"transcription\":\"model_transcribed\"",
+                "<b>잠궈?</b> 원문", "\"topicHint\":\"InnoDB\"");
     }
 
     @Test

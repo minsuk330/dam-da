@@ -1,11 +1,9 @@
 package com.khack.review.tools.verify;
 
 import com.khack.review.collection.domain.SavedSession;
-import com.khack.review.collection.domain.SessionStore;
 import com.khack.review.collection.domain.UserTurn;
 import com.khack.review.common.json.Json;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,10 +18,7 @@ public final class ConnectorCheckCli {
             System.exit(1);
         }
         ConversationScript script = ConversationScript.load(Path.of(args[0]));
-        SessionStore store = new SessionStore(Path.of(System.getProperty("review.sessions-file", "data/sessions.jsonl")), Clock.systemUTC());
-        Optional<SavedSession> session = args.length > 1
-                ? store.list().stream().filter(s -> s.id().equals(args[1])).findFirst()
-                : store.latest();
+        Optional<SavedSession> session = SessionSource.find(args, 1);
         if (session.isEmpty()) {
             System.err.println("No saved connector session found.");
             System.exit(1);

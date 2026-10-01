@@ -56,10 +56,11 @@ server/ai 두 영역은 `port/out`에서 만난다.
 `tools/`는 스펙 §9 컨텍스트가 아니라 `./gradlew benchmark`, `connectorCheck`, `shareVerify` 등 Gradle `JavaExec` CLI를 모은 개발 도구다.
 
 - `tools/benchmark/`: 커넥터 추출 고정 벤치마크 (ai 소유).
+- 저장된 대화는 DB에 있으므로 CLI는 실행 중인 서버의 `/dev/sessions.json`에서 읽는다(`tools/verify/SessionSource`). 서버 주소는 `-Pserver=`(기본 `http://localhost:8080`), 원격이면 `DEV_TOOLS_TOKEN` 환경 변수를 헤더로 보낸다.
 - `tools/verify/`: 입력 경로 검증 CLI와 비교기.
 - Spring 빈을 두지 않는다. 런타임 코드(컨텍스트 패키지)는 `tools/`에 의존하지 않는다. `tools/`는 컨텍스트를 자유롭게 쓴다.
 
 ## 임시 상태
 
-- `collection/domain/SessionStore`는 JSONL 파일 저장소다. PostgreSQL을 정한 뒤 JPA 리포지토리로 바꾼다.
+- 학습 대화의 복습 단위·경고는 `learning_conversation` 테이블에 커넥터가 보낸 JSON 모양 그대로 보관한다. 분석 컨텍스트(#6)가 엔티티로 옮긴다.
 - 커넥터 스키마 검증(`SessionValidator`)은 스펙 §9.2상 analysis 소관이지만, analysis 코드가 생길 때까지 `collection/`에 둔다.

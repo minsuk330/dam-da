@@ -2,10 +2,10 @@ package com.khack.review.collection.adapter.in.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.khack.review.collection.application.ConversationQueryService;
 import com.khack.review.collection.domain.FactKind;
 import com.khack.review.collection.domain.Intent;
 import com.khack.review.collection.domain.SavedSession;
-import com.khack.review.collection.domain.SessionStore;
 import com.khack.review.collection.domain.UserTurn;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -14,14 +14,10 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -31,32 +27,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class LearningSessionToolsIT {
 
-    static final Path SESSIONS = createTempSessionsFile();
-
-    static Path createTempSessionsFile() {
-        try {
-            return Files.createTempDirectory("sessions-").resolve("sessions.jsonl");
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    @DynamicPropertySource
-    static void properties(DynamicPropertyRegistry registry) {
-        registry.add("review.sessions-file", SESSIONS::toString);
-    }
 
     @Value("${local.server.port}")
     int port;
 
     @Autowired
-    SessionStore store;
+    ConversationQueryService conversations;
+
+    private SavedSession latest() {
+        List<SavedSession> all = conversations.list();
+        return all.get(all.size() - 1);
+    }
 
     McpSyncClient client;
 
@@ -138,7 +123,7 @@ class LearningSessionToolsIT {
         CallToolResult result = call(client, validArgs());
 
         assertThat(result.isError()).isNotEqualTo(Boolean.TRUE);
-        SavedSession saved = store.latest().orElseThrow();
+        SavedSession saved = latest();
         assertThat(saved.userTurns()).extracting(UserTurn::intent)
                 .containsExactly(Intent.understanding_check, Intent.info_request, Intent.meta);
         assertThat(saved.userTurns().get(1).aiVerdict()).isNull();
@@ -150,7 +135,7 @@ class LearningSessionToolsIT {
 
     @Test
     void rejectsStructuralErrorsWithFixHintsAndSavesNothing() {
-        int before = store.list().size();
+        int before = conversations.list().size();
         Map<String, Object> args = new java.util.HashMap<>(validArgs());
         args.put("reviewUnits", List.of(Map.of("title", "t", "keyPoints", List.of(Map.of("point", "p", "turns", List.of(9))))));
 
@@ -158,12 +143,12 @@ class LearningSessionToolsIT {
 
         assertThat(result.isError()).isTrue();
         assertThat(text(result)).contains("reviewUnits[0].keyPoints[0].turns", "9");
-        assertThat(store.list()).hasSize(before);
+        assertThat(conversations.list()).hasSize(before);
     }
 
     @Test
     void rejectsUnknownIntentValue() {
-        int before = store.list().size();
+        int before = conversations.list().size();
         Map<String, Object> args = new java.util.HashMap<>(validArgs());
         args.put("userTurns", List.of(Map.of("index", 1, "text", "q", "intent", "curiosity")));
         boolean rejected;
@@ -173,7 +158,7 @@ class LearningSessionToolsIT {
             rejected = true;
         }
         assertThat(rejected).isTrue();
-        assertThat(store.list()).hasSize(before);
+        assertThat(conversations.list()).hasSize(before);
     }
 
     @Test
@@ -186,7 +171,7 @@ class LearningSessionToolsIT {
         CallToolResult result = call(client, args);
 
         assertThat(result.isError()).isNotEqualTo(Boolean.TRUE);
-        assertThat(store.latest().orElseThrow().warnings()).anyMatch(w -> w.startsWith("userTurns[1]") && w.contains("반영"));
+        assertThat(latest().warnings()).anyMatch(w -> w.startsWith("userTurns[1]") && w.contains("반영"));
         assertThat(text(result)).contains("경고 1건");
     }
 

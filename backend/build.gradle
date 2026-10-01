@@ -53,6 +53,8 @@ def cli = { String taskName, String main ->
 		mainClass = main
 		workingDir = projectDir
 		args = ((project.findProperty('args') ?: '') as String).tokenize()
+		// 저장된 대화를 읽을 서버 (tools/verify/SessionSource). 예: -Pserver=http://localhost:8081
+		systemProperty 'review.server', (project.findProperty('server') ?: 'http://localhost:8080')
 	}
 }
 cli('longScript', 'com.khack.review.tools.verify.LongScriptGenerator')

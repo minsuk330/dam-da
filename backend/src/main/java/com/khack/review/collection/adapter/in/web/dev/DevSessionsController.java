@@ -1,7 +1,9 @@
 package com.khack.review.collection.adapter.in.web.dev;
 
-import com.khack.review.collection.domain.SessionStore;
+import com.khack.review.collection.application.ConversationQueryService;
+import com.khack.review.collection.domain.SavedSession;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,21 +18,27 @@ class DevSessionsController {
 
     private static final MediaType MARKDOWN = new MediaType("text", "markdown", StandardCharsets.UTF_8);
 
-    private final SessionStore store;
+    private final ConversationQueryService conversations;
 
-    DevSessionsController(SessionStore store) {
-        this.store = store;
+    DevSessionsController(ConversationQueryService conversations) {
+        this.conversations = conversations;
     }
 
     @GetMapping("/dev/sessions")
     ResponseEntity<String> page() {
         return ResponseEntity.ok()
                 .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
-                .body(SessionPage.render(store.list()));
+                .body(SessionPage.render(conversations.list()));
     }
 
     @GetMapping("/dev/sessions.md")
     ResponseEntity<String> markdown() {
-        return ResponseEntity.ok().contentType(MARKDOWN).body(SessionMarkdown.render(store.list()));
+        return ResponseEntity.ok().contentType(MARKDOWN).body(SessionMarkdown.render(conversations.list()));
+    }
+
+    /** tools CLI(벤치마크, 커넥터 검증, Markdown 내보내기)가 읽는 원본. */
+    @GetMapping("/dev/sessions.json")
+    List<SavedSession> json() {
+        return conversations.list();
     }
 }

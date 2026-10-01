@@ -19,7 +19,7 @@ AI 대화를 등록하면 학습할 지식을 추출해 문제로 만들고, FSR
 cd backend
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # 시스템 기본 JDK가 21이 아니면 반드시 지정
 ./gradlew test        # PR 전 필수. 실제 LLM 호출 없이 fake로 통과해야 한다
-./gradlew benchmark   # 실제 LLM 호출. 로컬 수동 실행 (backend/.env 필요)
+./gradlew benchmark   # 커넥터 저장 결과 채점. 서버(bootRun, DEV_TOOLS_ENABLED=true)가 떠 있어야 함. 다른 포트면 -Pserver=
 ./gradlew bootRun     # :8080
 ```
 

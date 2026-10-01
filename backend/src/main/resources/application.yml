@@ -35,7 +35,6 @@ review:
     token: ${DEV_TOOLS_TOKEN:}
   demo-user:
     name: 지원
-  sessions-file: data/sessions.jsonl
   jev:
     api-key: ${TYPESAFE_API_KEY:}
     base-url: https://api.typesafe.ai
