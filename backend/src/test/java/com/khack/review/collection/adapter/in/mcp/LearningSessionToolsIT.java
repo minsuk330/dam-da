@@ -46,7 +46,7 @@ class LearningSessionToolsIT {
     ConversationQueryService conversations;
 
     private SavedSession latest() {
-        List<SavedSession> all = conversations.list();
+        List<SavedSession> all = conversations.all();
         return all.get(all.size() - 1);
     }
 
@@ -160,7 +160,7 @@ class LearningSessionToolsIT {
 
     @Test
     void rejectsStructuralErrorsWithFixHintsAndSavesNothing() {
-        int before = conversations.list().size();
+        int before = conversations.all().size();
         Map<String, Object> args = new java.util.HashMap<>(validArgs());
         args.put("reviewUnits", List.of(Map.of("title", "t", "keyPoints", List.of(Map.of("point", "p", "turns", List.of(9))))));
 
@@ -168,12 +168,12 @@ class LearningSessionToolsIT {
 
         assertThat(result.isError()).isTrue();
         assertThat(text(result)).contains("reviewUnits[0].keyPoints[0].turns", "9");
-        assertThat(conversations.list()).hasSize(before);
+        assertThat(conversations.all()).hasSize(before);
     }
 
     @Test
     void rejectsUnknownIntentValue() {
-        int before = conversations.list().size();
+        int before = conversations.all().size();
         Map<String, Object> args = new java.util.HashMap<>(validArgs());
         args.put("userTurns", List.of(Map.of("index", 1, "text", "q", "intent", "curiosity")));
         boolean rejected;
@@ -183,7 +183,7 @@ class LearningSessionToolsIT {
             rejected = true;
         }
         assertThat(rejected).isTrue();
-        assertThat(conversations.list()).hasSize(before);
+        assertThat(conversations.all()).hasSize(before);
     }
 
     @Test
