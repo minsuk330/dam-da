@@ -4,8 +4,6 @@ import com.khack.review.analysis.application.SessionContent;
 import com.khack.review.analysis.domain.LearningSession;
 import com.khack.review.collection.domain.SavedSession;
 import com.khack.review.collection.domain.SessionInput;
-import com.khack.review.common.adapter.out.openai.OpenAiLlmAdapter;
-import com.khack.review.common.application.port.out.LlmPort;
 import com.khack.review.common.json.Json;
 import com.khack.review.question.application.QuestionDrafter;
 import com.khack.review.question.application.QuestionSources;
@@ -13,10 +11,9 @@ import com.khack.review.question.domain.LearningGoal;
 import com.khack.review.question.domain.QuestionPlan;
 import com.khack.review.question.domain.QuestionPlanner;
 import com.khack.review.question.domain.QuestionSource;
+import com.khack.review.tools.verify.OpenAiCli;
 import com.khack.review.tools.verify.SessionSource;
 import java.io.IOException;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -24,10 +21,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
 
 /**
  * 실제 LLM으로 문제 후보를 만들어 출력한다. DB에 저장하지 않는다. 프롬프트를 바꿀 때 결과를 눈으로 보는 용도다.
@@ -42,8 +35,6 @@ import org.springframework.ai.openai.OpenAiChatOptions;
  */
 public final class QuestionGenCli {
 
-    private static final String DEFAULT_MODEL = "gpt-6-luna";
-
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
             System.err.println("usage: ./gradlew -q questionGen -Pargs=\"<session.json|sessionId|latest> <GOAL[,GOAL]> [--plan] [--out <file>]\"");
@@ -53,46 +44,18 @@ public final class QuestionGenCli {
         QuestionSource source = load(args[0]);
         List<LearningGoal> goals = Arrays.stream(args[1].split(",")).map(String::strip).map(LearningGoal::valueOf).toList();
         List<String> options = List.of(args).subList(2, args.length);
-        boolean planOnly = options.contains("--plan");
-        int out = options.indexOf("--out");
-        if (out >= 0 && out + 1 >= options.size()) {
-            System.err.println("--out 뒤에 파일 경로가 필요합니다.");
-            System.exit(1);
-        }
 
         QuestionPlan plan = QuestionPlanner.plan(source, goals);
         Map<String, Object> output = new LinkedHashMap<>();
         output.put("source", args[0]);
         output.put("plan", plan);
-        if (!planOnly) {
-            Properties env = loadEnv();
-            String apiKey = value(env, "OPENAI_API_KEY", "");
-            if (apiKey.isBlank()) {
-                System.err.println("OPENAI_API_KEY가 없습니다. backend/.env에 넣으세요.");
-                System.exit(1);
-            }
-            String model = value(env, "OPENAI_MODEL", DEFAULT_MODEL);
-            output.put("model", model);
-            QuestionDrafter.Result result = new QuestionDrafter(llm(apiKey, model)).draft(source, plan.targets());
+        if (!options.contains("--plan")) {
+            output.put("model", OpenAiCli.model());
+            QuestionDrafter.Result result = new QuestionDrafter(OpenAiCli.llm()).draft(source, plan.targets());
             output.put("drafts", result.drafts());
             output.put("failures", result.failures());
         }
-        String json = Json.MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(output);
-        if (out >= 0) {
-            Path file = Path.of(options.get(out + 1)).toAbsolutePath();
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, json, StandardCharsets.UTF_8);
-            System.out.println("wrote " + file);
-        } else {
-            System.out.println(json);
-        }
-    }
-
-    private static LlmPort llm(String apiKey, String model) {
-        OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                .options(OpenAiChatOptions.builder().apiKey(apiKey).model(model).build())
-                .build();
-        return new OpenAiLlmAdapter(ChatClient.builder(chatModel));
+        OpenAiCli.print(output, options);
     }
 
     private static QuestionSource load(String arg) throws IOException {
@@ -110,27 +73,5 @@ public final class QuestionGenCli {
     static QuestionSource source(SessionInput input) {
         LearningSession session = LearningSession.create(0L, 0L, input, Instant.EPOCH);
         return QuestionSources.of(SessionContent.of(session), input.userTurns());
-    }
-
-    private static Properties loadEnv() throws IOException {
-        Properties properties = new Properties();
-        Path env = Path.of(".env");
-        if (Files.exists(env)) {
-            try (Reader reader = Files.newBufferedReader(env)) {
-                properties.load(reader);
-            }
-        }
-        return properties;
-    }
-
-    private static String value(Properties env, String name, String fallback) {
-        String value = env.getProperty(name, "").strip();
-        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
-            value = value.substring(1, value.length() - 1);
-        }
-        if (value.isBlank()) {
-            value = System.getenv().getOrDefault(name, "");
-        }
-        return value.isBlank() ? fallback : value;
     }
 }
