@@ -24,7 +24,7 @@ class MemoryStrengthController {
         this.currentUser = currentUser;
     }
 
-    record ChooseRequest(MemoryStrength strength) {
+    record StrengthRequest(MemoryStrength strength) {
     }
 
     @GetMapping("/api/sessions/{sessionId}/memory-strength")
@@ -33,7 +33,7 @@ class MemoryStrengthController {
     }
 
     @PutMapping("/api/sessions/{sessionId}/memory-strength")
-    ResponseEntity<Void> choose(@PathVariable Long sessionId, @RequestBody ChooseRequest request) {
+    ResponseEntity<Void> choose(@PathVariable Long sessionId, @RequestBody StrengthRequest request) {
         if (request.strength() == null) {
             return ResponseEntity.badRequest().build();
         }

@@ -26,6 +26,7 @@ import com.khack.review.practice.domain.JudgedBy;
 import com.khack.review.practice.domain.JudgmentStatus;
 import com.khack.review.practice.domain.PracticeAttempt;
 import com.khack.review.practice.domain.PracticeAttemptRepository;
+import com.khack.review.practice.domain.DailyPracticeCompleted;
 import com.khack.review.practice.domain.PracticeKind;
 import com.khack.review.practice.domain.PracticeQueueEntry;
 import com.khack.review.practice.domain.PracticeSession;
@@ -46,6 +47,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -75,12 +77,14 @@ public class PracticeService {
     private final AnswerJudgePolicy judgePolicy;
     private final TransactionTemplate transaction;
     private final Duration multipleChoiceGuessTime;
+    private final ApplicationEventPublisher events;
 
     public PracticeService(PracticeSessionRepository practices, QuestionPresentationRepository presentations,
             AidExposureRepository aids, PracticeAttemptRepository attempts, SessionProgressService progress, FirstStudyQueryService firstStudy, QuestionQueryService questions,
             MemoryStateService memory, ReviewRecordService reviews, CurrentUser currentUser, Clock clock,
             AnswerJudgmentRepository judgments, LearningSessionQueryService sessions, AnswerJudge judge, AnswerJudgePolicy judgePolicy,
-            TransactionTemplate transaction, @Value("${review.practice.mc-guess-threshold:3s}") Duration multipleChoiceGuessTime) {
+            TransactionTemplate transaction, @Value("${review.practice.mc-guess-threshold:3s}") Duration multipleChoiceGuessTime,
+            ApplicationEventPublisher events) {
         this.practices = practices;
         this.presentations = presentations;
         this.aids = aids;
@@ -98,6 +102,7 @@ public class PracticeService {
         this.judgePolicy = judgePolicy;
         this.transaction = transaction;
         this.multipleChoiceGuessTime = multipleChoiceGuessTime;
+        this.events = events;
     }
 
     public record PracticeView(Long practiceId, PracticeKind kind, @Nullable Long learningSessionId, int total,
@@ -190,7 +195,12 @@ public class PracticeService {
                     memory.retrievability(question.getMemoryItemId()).orElse(null), entry.getRecheckOfPresentationId()));
             return new Next(false, view(practice, presented, question));
         }
+        boolean firstCompletion = practice.getCompletedAt() == null;
         practice.complete(clock.instant());
+        if (firstCompletion && practice.getKind() == PracticeKind.DAILY) {
+            events.publishEvent(new DailyPracticeCompleted(practice.getUserId(), practice.getId(),
+                    practice.getStartedAt().atZone(clock.getZone()).toLocalDate()));
+        }
         return new Next(true, null);
     }
 

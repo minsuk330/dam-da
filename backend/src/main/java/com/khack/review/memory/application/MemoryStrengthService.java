@@ -8,6 +8,7 @@ import com.khack.review.memory.domain.SessionMemorySettingsRepository;
 import com.khack.review.memory.domain.WorkloadSimulation;
 import java.util.Arrays;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +43,7 @@ public class MemoryStrengthService {
     }
 
     /** {@code current}는 아직 고르지 않았으면 null. */
-    public record Options(MemoryStrength current, int itemCount, int simulationDays, List<Option> options) {
+    public record Options(@Nullable MemoryStrength current, int itemCount, int simulationDays, List<Option> options) {
     }
 
     @Transactional(readOnly = true)

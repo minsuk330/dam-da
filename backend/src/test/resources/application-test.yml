@@ -16,3 +16,7 @@ review:
   # backend/.env에 키가 있어도 테스트는 실제 Jev를 부르지 않는다. 검수는 UNAVAILABLE로 끝난다.
   jev:
     api-key: ""
+  # 테스트는 매일 학습 알림을 직접 호출한다
+  engagement:
+    reminder:
+      enabled: false
