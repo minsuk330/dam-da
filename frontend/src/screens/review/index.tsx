@@ -60,10 +60,11 @@ function outcomeOf(attempt: Attempt, feedback: Feedback): Outcome {
  * 화면에 남길 풀이 경로. 확인 문제는 원래 문제의 경로(`earlier`)를 마저 정한다.
  * 설명 뒤 확인 문제를 맞히면 설명 후 맞힘, 보류(변형 문제로 다시 묻기) 뒤 확인 문제를 맞히면 혼자 맞힘이다.
  */
-function pathOf(outcome: Outcome, feedback: Feedback, earlier: Path | undefined): Path {
+function pathOf(outcome: Outcome, feedback: Feedback, earlier: ItemResult | undefined): Path {
   if (outcome === 'uncertain' || outcome === 'ambiguous') return 'held';
   if (outcome === 'wrong') return 'repeatedWrong';
-  if (earlier) return earlier === 'held' ? 'independent' : 'afterExplanation';
+  // 설명 없이 다시 물은 경우(매일 학습의 오늘 한 번 더)는 처음에 틀렸으므로 다시 볼 항목으로 둔다.
+  if (earlier) return earlier.path === 'held' ? 'independent' : earlier.explained ? 'afterExplanation' : 'repeatedWrong';
   if (feedback.path === 'AFTER_EXPLANATION') return 'afterExplanation';
   return feedback.path === 'AFTER_HINT' ? 'afterHint' : 'independent';
 }
@@ -96,7 +97,7 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
     if (next.done || !next.presentation) {
       setPhase({ kind: 'done' });
       // 풀이가 기억 상태를 바꿨으므로 게이지·요약·세션 상태를 다시 읽는다.
-      for (const key of ['memory-gauge', 'first-study-summary', 'learning-sessions']) {
+      for (const key of ['memory-gauge', 'first-study-summary', 'learning-sessions', 'daily', 'streak']) {
         queryClient.invalidateQueries({ queryKey: [key] });
       }
       return;
@@ -196,10 +197,16 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
       setResults((prev) => {
         const map = new Map(prev);
         const earlier = map.get(presentation.questionId);
-        const path = pathOf(outcome, feedback, recheck ? earlier?.path : undefined);
+        const path = pathOf(outcome, feedback, recheck ? earlier : undefined);
+        const explained = (earlier?.explained ?? false) || feedback.action === 'EXPLAIN_CONCEPT';
         // 확인 문제가 보류되면 원래 문제의 경로를 그대로 둔다.
         if (!(recheck && path === 'held' && earlier)) {
-          map.set(presentation.questionId, { questionId: presentation.questionId, stem: earlier?.stem ?? presentation.stem, path });
+          map.set(presentation.questionId, {
+            questionId: presentation.questionId,
+            stem: earlier?.stem ?? presentation.stem,
+            path,
+            explained,
+          });
         }
         return map;
       });
@@ -341,7 +348,9 @@ function ResultView({
               ? '힌트를 보고 한 번 더 풀어 볼까요?'
               : feedback.action === 'EXPLAIN_CONCEPT'
                 ? '개념을 다시 짚어 볼게요.'
-                : '다음 학습에서 다시 볼게요.'}
+                : feedback.action === 'RELEARN_TODAY'
+                  ? '남은 문제를 푼 뒤에 오늘 한 번 더 물어볼게요.'
+                  : '다음 학습에서 다시 볼게요.'}
           </ThemedText>
         </View>
       )}
