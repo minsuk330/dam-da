@@ -26,7 +26,10 @@ cd frontend
 npm run build         # frontend/ 변경 PR 전 필수 (tsc -b + vite build)
 npm run lint
 npm run dev           # :5173, /api는 localhost:8080으로 proxy
+npm run api:types     # API 계약(frontend/openapi.json) 바뀌면 타입 재생성
 ```
+
+API 계약: 백엔드 DTO가 기준이고 `OpenApiSpecIT`가 `frontend/openapi.json`을 갱신한다. 프론트엔드 타입(`src/api/schema.d.ts`)은 손으로 고치지 않는다. 절차는 README 참고.
 
 ## Hard 제약
 

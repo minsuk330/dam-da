@@ -39,7 +39,9 @@ AI 대화를 매일의 맞춤형 학습으로 연결하는 개인 지식 유지 
 | 공유 링크 수집 | Playwright for Java | 1.63.0 |
 | 빌드 | Gradle (Groovy DSL) + `io.spring.dependency-management` | 1.1.7 |
 | 테스트 | JUnit 5 (`spring-boot-starter-webmvc-test`) | Spring Boot BOM 관리 |
-| 프론트엔드 | Vite + React + TypeScript (`frontend/`), Vercel 배포 | `frontend/package.json` 기준 |
+| API 문서·계약 | springdoc-openapi (`springdoc-openapi-starter-webmvc-ui`) | 3.1.1 |
+| 프론트엔드 | Vite + React + TypeScript, TanStack Query, React Router, Tailwind CSS (`frontend/`), Vercel 배포 | `frontend/package.json` 기준 |
+| API 클라이언트 | openapi-typescript(타입 생성) + openapi-fetch | `frontend/package.json` 기준 |
 
 - 스키마는 해커톤 단계에서 JPA `ddl-auto: update`로 엔티티 기준 자동 갱신한다. 운영 전 마이그레이션 도구로 바꾼다.
 - 개발 도구 `/dev/**`는 `.env`의 `DEV_TOOLS_ENABLED=true`일 때만 열린다. 이 기기에서 직접 온 요청은 그대로 허용하고, 원격(배포 서버·터널 경유)은 `X-Dev-Token` 헤더가 `DEV_TOOLS_TOKEN`과 같을 때만 허용한다. 그 외는 404.
@@ -73,10 +75,19 @@ Playwright 버전을 올리면 `backend/Dockerfile`의 `mcr.microsoft.com/playwr
 ```bash
 cd frontend
 npm install
-npm run dev     # :5173, /api·/healthz는 Vite proxy로 localhost:8080에 전달
+npm run dev     # :5173, /api·/healthz는 Vite proxy로 localhost:8080에 전달 (다른 포트면 API_PROXY_TARGET=http://localhost:8081)
 npm run build   # 타입 검사 + 빌드 (PR 전 필수)
 npm run lint
+npm run api:types   # frontend/openapi.json → src/api/schema.d.ts
 ```
+
+API 계약은 백엔드 코드가 기준이다.
+
+1. `/api/**` 컨트롤러나 응답 DTO record를 바꾸고 `./gradlew test`를 돌리면 `OpenApiSpecIT`가 `frontend/openapi.json`을 다시 쓰고 한 번 실패한다. 다시 돌리면 통과한다.
+2. `frontend`에서 `npm run api:types`로 타입을 다시 만들고, `openapi.json`과 `schema.d.ts`를 함께 커밋한다.
+3. DTO record의 null 가능 필드는 `org.jspecify.annotations.Nullable`로 표시한다. 표시 없는 필드는 계약에서 null이 아닌 값이 된다(`RecordNullabilityConverter`).
+
+- Swagger UI(`/swagger-ui/index.html`)와 `/v3/api-docs`는 `API_DOCS_ENABLED=true`일 때만 열린다. 배포 서버에서는 켜지 않는다.
 
 - 배포: 프론트엔드는 Vercel(Root Directory `frontend`), 백엔드는 VPS에 따로 올린다.
 - 백엔드 API는 `/api/**` 접두사를 쓴다. Vercel에서는 `frontend/vercel.json` rewrites로 `/api/**`를 VPS로 넘겨 같은 출처로 호출한다(VPS 도메인이 정해지면 추가).

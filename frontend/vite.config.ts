@@ -1,14 +1,17 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// 로컬 개발: Spring(:8080)으로 프록시해 CORS 없이 같은 출처로 호출한다.
+// 로컬 개발: Spring으로 프록시해 CORS 없이 같은 출처로 호출한다. 다른 포트면 API_PROXY_TARGET으로 바꾼다.
 // 배포(Vercel)에서는 vercel.json rewrites가 같은 역할을 한다.
+const apiTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:8080'
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api': 'http://localhost:8080',
-      '/healthz': 'http://localhost:8080',
+      '/api': apiTarget,
+      '/healthz': apiTarget,
     },
   },
 })
