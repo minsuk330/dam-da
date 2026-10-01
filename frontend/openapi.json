@@ -332,6 +332,34 @@
         "tags" : [ "field-controller" ]
       }
     },
+    "/api/knowledge-graph" : {
+      "get" : {
+        "operationId" : "graph",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/KnowledgeGraph"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          }
+        },
+        "tags" : [ "knowledge-graph-controller" ]
+      }
+    },
     "/api/learning-sessions" : {
       "get" : {
         "operationId" : "list_1",
@@ -1748,6 +1776,18 @@
         },
         "required" : [ "carriedOver", "completed", "date", "estimatedSeconds", "items", "newCount", "practiceId", "reviewCount", "started", "total", "unavailable" ]
       },
+      "Edge" : {
+        "type" : "object",
+        "properties" : {
+          "source" : {
+            "type" : "string"
+          },
+          "target" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "source", "target" ]
+      },
       "ErrorResponse" : {
         "type" : "object",
         "properties" : {
@@ -2116,6 +2156,24 @@
         },
         "required" : [ "kind", "point", "turns" ]
       },
+      "KnowledgeGraph" : {
+        "type" : "object",
+        "properties" : {
+          "edges" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Edge"
+            }
+          },
+          "nodes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Node"
+            }
+          }
+        },
+        "required" : [ "edges", "nodes" ]
+      },
       "LearningSessionDetail" : {
         "type" : "object",
         "properties" : {
@@ -2339,6 +2397,45 @@
           }
         },
         "required" : [ "done", "presentation" ]
+      },
+      "Node" : {
+        "type" : "object",
+        "properties" : {
+          "checkedItems" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "FIELD", "SUBFIELD", "SESSION", "UNIT" ]
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "parentId" : {
+            "type" : [ "string", "null" ]
+          },
+          "retrievability" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "sessionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "targetRetention" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "totalItems" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "checkedItems", "id", "kind", "label", "parentId", "retrievability", "sessionId", "targetRetention", "totalItems" ]
       },
       "NotificationView" : {
         "type" : "object",

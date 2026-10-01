@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/knowledge-graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["graph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning-sessions": {
         parameters: {
             query?: never;
@@ -690,6 +706,10 @@ export interface components {
             total: number;
             unavailable: number[];
         };
+        Edge: {
+            source: string;
+            target: string;
+        };
         ErrorResponse: {
             code: string;
             message: string;
@@ -822,6 +842,10 @@ export interface components {
             point: string;
             turns: number[];
         };
+        KnowledgeGraph: {
+            edges: components["schemas"]["Edge"][];
+            nodes: components["schemas"]["Node"][];
+        };
         LearningSessionDetail: {
             /** Format: date-time */
             confirmedAt: string | null;
@@ -897,6 +921,23 @@ export interface components {
         Next: {
             done: boolean;
             presentation: components["schemas"]["PresentationView"] | null;
+        };
+        Node: {
+            /** Format: int32 */
+            checkedItems: number;
+            id: string;
+            /** @enum {string} */
+            kind: "FIELD" | "SUBFIELD" | "SESSION" | "UNIT";
+            label: string;
+            parentId: string | null;
+            /** Format: double */
+            retrievability: number | null;
+            /** Format: int64 */
+            sessionId: number | null;
+            /** Format: double */
+            targetRetention: number;
+            /** Format: int32 */
+            totalItems: number;
         };
         NotificationView: {
             body: string;
@@ -1457,6 +1498,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FieldOption"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    graph: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeGraph"];
                 };
             };
             /** @description Unauthorized */
