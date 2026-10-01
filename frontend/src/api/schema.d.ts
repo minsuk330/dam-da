@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/practice/presentations/{presentationId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["current"];
+        put?: never;
+        post: operations["decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/practice/{practiceId}/next": {
         parameters: {
             query?: never;
@@ -502,6 +518,22 @@ export interface components {
         };
         ExclusionRequest: {
             excluded: boolean;
+        };
+        FeedbackView: {
+            /** @enum {string|null} */
+            action: "ADVANCE" | "RETRY" | "GIVE_HINT" | "EXPLAIN_CONCEPT" | "GENERATE_VARIANT" | "RELEARN_TODAY" | "REQUEST_CONFIRMATION" | null;
+            /** @enum {string|null} */
+            decidedBy: "RULE" | "JEV" | "FALLBACK" | null;
+            evidenceTurns: number[];
+            explanation: string | null;
+            hint: string | null;
+            /** @enum {string|null} */
+            path: "INDEPENDENT" | "AFTER_HINT" | "AFTER_EXPLANATION" | "REPEATED_WRONG" | null;
+            prerequisite: components["schemas"]["Prerequisite"];
+            /** Format: int64 */
+            presentationId: number;
+            reason: string | null;
+            recheckQueued: boolean;
         };
         FirstStudy: {
             failed: boolean;
@@ -715,6 +747,10 @@ export interface components {
             practiceId: number;
             /** Format: int32 */
             total: number;
+        };
+        Prerequisite: {
+            concept: string;
+            reason: string;
         };
         PresentationView: {
             choices: string[];
@@ -1273,6 +1309,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttemptView"];
+                };
+            };
+        };
+    };
+    current: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                presentationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackView"];
+                };
+            };
+        };
+    };
+    decide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                presentationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackView"];
                 };
             };
         };

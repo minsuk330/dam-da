@@ -517,6 +517,58 @@
         "tags" : [ "practice-controller" ]
       }
     },
+    "/api/practice/presentations/{presentationId}/feedback" : {
+      "get" : {
+        "operationId" : "current",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "presentationId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeedbackView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "feedback-controller" ]
+      },
+      "post" : {
+        "operationId" : "decide",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "presentationId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeedbackView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "feedback-controller" ]
+      }
+    },
     "/api/practice/{practiceId}/next" : {
       "get" : {
         "operationId" : "next",
@@ -1026,6 +1078,51 @@
           }
         },
         "required" : [ "excluded" ]
+      },
+      "FeedbackView" : {
+        "type" : "object",
+        "properties" : {
+          "action" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "ADVANCE", "RETRY", "GIVE_HINT", "EXPLAIN_CONCEPT", "GENERATE_VARIANT", "RELEARN_TODAY", "REQUEST_CONFIRMATION" ]
+          },
+          "decidedBy" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "RULE", "JEV", "FALLBACK" ]
+          },
+          "evidenceTurns" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "explanation" : {
+            "type" : [ "string", "null" ]
+          },
+          "hint" : {
+            "type" : [ "string", "null" ]
+          },
+          "path" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "INDEPENDENT", "AFTER_HINT", "AFTER_EXPLANATION", "REPEATED_WRONG" ]
+          },
+          "prerequisite" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Prerequisite"
+          },
+          "presentationId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          },
+          "recheckQueued" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "action", "decidedBy", "evidenceTurns", "explanation", "hint", "path", "prerequisite", "presentationId", "reason", "recheckQueued" ]
       },
       "FirstStudy" : {
         "type" : "object",
@@ -1587,6 +1684,18 @@
           }
         },
         "required" : [ "completed", "kind", "learningSessionId", "practiceId", "total" ]
+      },
+      "Prerequisite" : {
+        "type" : "object",
+        "properties" : {
+          "concept" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "concept", "reason" ]
       },
       "PresentationView" : {
         "type" : "object",
