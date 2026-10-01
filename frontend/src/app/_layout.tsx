@@ -47,6 +47,7 @@ export default function RootLayout() {
           <Stack.Screen name="conversations/[id]" options={{ title: '대화 확인' }} />
           <Stack.Screen name="sessions/[id]/index" options={{ title: '학습 내용 확인' }} />
           <Stack.Screen name="sessions/[id]/memory" options={{ title: '기억 상태' }} />
+          <Stack.Screen name="memory-model" options={{ title: '내 기억 패턴' }} />
           <Stack.Screen name="notifications" options={{ title: '알림' }} />
           <Stack.Screen name="review" options={{ title: '오늘의 복습' }} />
         </Stack>
