@@ -17,15 +17,18 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Fallback;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
  * LLM으로 원문 대화에서 커넥터 스키마 v5를 추출한다(스펙 §6.1, §7.5). 공유 링크는 발화자가 구분되어 있으므로
  * 사용자 발화 원문은 모델에게 다시 쓰게 하지 않고 서버가 채운다. 구조 오류가 있으면 오류를 알려 한 번 더 요청한다.
- * 다른 구현(테스트 fake)이 있으면 그쪽을 쓴다.
+ * 다른 구현(테스트 fake)이 있으면 그쪽을 쓴다. {@code ./gradlew test}에서는 실제 LLM을 부르지 않도록 빈을 만들지 않고,
+ * live 테스트에서만 만든다.
  */
 @Component
 @Fallback
+@Profile("!test | live")
 public class LlmConversationExtractor implements ConversationExtractor {
 
     /** 모델에 보내는 대화 JSON의 글자 수 상한. */

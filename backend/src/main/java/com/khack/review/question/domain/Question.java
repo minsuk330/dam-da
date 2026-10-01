@@ -10,12 +10,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 
 /**
- * 기억 항목 하나를 대상으로 생성한 문제. 같은 항목의 문제와 변형 문제는 기억 상태를 공유한다(스펙 규칙 17).
- * 학습 세션과 기억 항목은 분석 컨텍스트의 것이며 ID로만 참조한다.
+ * 문제 1개 (스펙 §8.3 "문제 후보", "복습 문제"). 기억 항목 1개를 대상으로 하며(§6.4.1), 같은 항목의 변형 문제는
+ * 기억 상태를 공유한다(규칙 7, 17). 품질 검사를 통과해 승인된 문제만 사용자에게 보인다(규칙 3).
  */
 @Entity
 @Table(name = "question")
@@ -34,50 +34,58 @@ public class Question {
     @Column(nullable = false)
     private Long memoryItemId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private LearningGoal goal;
+    /** 첫 학습 계획의 순서. 매일 학습·변형 문제는 null. */
+    private Integer planPosition;
+
+    /** 첫 학습 문제면 학습 목표 이름. */
+    private String learningGoal;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QuestionType type;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private QuestionStatus status;
+    @Column(nullable = false, length = 10_000)
+    private String stem;
 
-    @Column(nullable = false, columnDefinition = "text")
-    private String body;
+    @Convert(converter = JsonLists.Strings.class)
+    @Column(nullable = false, length = 10_000)
+    private List<String> choices = new ArrayList<>();
 
-    /** 객관식만 값이 있다. */
-    @Convert(converter = JsonListConverters.Strings.class)
-    @Column(nullable = false, columnDefinition = "text")
-    private List<String> choices;
+    private Integer correctChoice;
 
-    /** 객관식 정답의 {@code choices} 위치(0부터). 객관식이 아니면 null. */
-    private @Nullable Integer correctChoiceIndex;
+    @Convert(converter = JsonLists.Strings.class)
+    @Column(nullable = false, length = 10_000)
+    private List<String> answerCriteria = new ArrayList<>();
 
-    /** 답변 판정(Jev)에 쓰는 필수 기준. 사용자에게 보여주지 않는다. */
-    @Convert(converter = JsonListConverters.Strings.class)
-    @Column(nullable = false, columnDefinition = "text")
-    private List<String> answerCriteria;
-
-    @Column(nullable = false, columnDefinition = "text")
+    @Column(nullable = false, length = 10_000)
     private String modelAnswer;
 
-    @Column(nullable = false, columnDefinition = "text")
+    /** 정답을 말하지 않고 떠올릴 방향만 알려주는 힌트 (단계적 피드백). */
+    @Column(length = 2_000)
     private String hint;
 
-    @Column(nullable = false, columnDefinition = "text")
+    /** 틀렸을 때 보여줄 개념 설명 (단계적 피드백). */
+    @Column(length = 10_000)
     private String explanation;
 
-    /** 원문 근거 발화 index. 비어 있을 수 없다(스펙 규칙 2·15). */
-    @Convert(converter = JsonListConverters.Integers.class)
-    @Column(nullable = false)
-    private List<Integer> evidenceTurns;
+    @Convert(converter = JsonLists.Integers.class)
+    @Column(nullable = false, length = 1_000)
+    private List<Integer> evidenceTurns = new ArrayList<>();
 
+    /** 변형 문제면 원래 문제 ID. */
+    private Long variantOfId;
+
+    /** 같은 계획 위치·변형 요청 안에서 몇 번째 생성인지. */
     @Column(nullable = false)
-    private String promptVersion;
+    private int attempt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private QuestionStatus status = QuestionStatus.CANDIDATE;
+
+    /** 품질 검사 결과 요약. */
+    @Column(length = 2_000)
+    private String qualityNote;
 
     @Column(nullable = false)
     private Instant createdAt;
@@ -85,44 +93,60 @@ public class Question {
     protected Question() {
     }
 
-    private Question(Long userId, Long sessionId, Long memoryItemId, QuestionTarget target, Content content,
-            String promptVersion, Instant createdAt) {
-        if (target.evidenceTurns().isEmpty()) {
-            throw new IllegalArgumentException("문제는 원문 근거 발화를 가져야 합니다.");
+    public record Content(QuestionType type, String stem, List<String> choices, Integer correctChoice,
+            List<String> answerCriteria, String modelAnswer, String hint, String explanation, List<Integer> evidenceTurns) {
+    }
+
+    public static Question candidate(Long userId, Long sessionId, Long memoryItemId, Integer planPosition, String learningGoal,
+            Long variantOfId, int attempt, Content content, Instant createdAt) {
+        Question question = new Question();
+        question.userId = userId;
+        question.sessionId = sessionId;
+        question.memoryItemId = memoryItemId;
+        question.planPosition = planPosition;
+        question.learningGoal = learningGoal;
+        question.variantOfId = variantOfId;
+        question.attempt = attempt;
+        question.type = content.type();
+        question.stem = content.stem();
+        question.choices = new ArrayList<>(content.choices());
+        question.correctChoice = content.correctChoice();
+        question.answerCriteria = new ArrayList<>(content.answerCriteria());
+        question.modelAnswer = content.modelAnswer();
+        question.hint = content.hint();
+        question.explanation = content.explanation();
+        question.evidenceTurns = new ArrayList<>(content.evidenceTurns());
+        question.createdAt = createdAt;
+        return question;
+    }
+
+    public void approve(String note) {
+        requireStatus(QuestionStatus.CANDIDATE, QuestionStatus.APPROVED);
+        status = QuestionStatus.APPROVED;
+        qualityNote = truncate(note);
+    }
+
+    public void reject(String note) {
+        requireStatus(QuestionStatus.CANDIDATE, QuestionStatus.APPROVED);
+        status = QuestionStatus.REJECTED;
+        qualityNote = truncate(note);
+    }
+
+    /** 보류 후 재검사에서 떨어진 승인 문제를 더 쓰지 않는다. */
+    public void retire(String note) {
+        requireStatus(QuestionStatus.APPROVED);
+        status = QuestionStatus.RETIRED;
+        qualityNote = truncate(note);
+    }
+
+    private void requireStatus(QuestionStatus... allowed) {
+        if (!List.of(allowed).contains(status)) {
+            throw new IllegalStateException("문제 %d: %s 상태에서는 할 수 없습니다.".formatted(id, status));
         }
-        this.userId = userId;
-        this.sessionId = sessionId;
-        this.memoryItemId = memoryItemId;
-        this.goal = target.goal();
-        this.type = target.type();
-        this.status = QuestionStatus.CANDIDATE;
-        this.body = content.body();
-        this.choices = List.copyOf(content.choices());
-        this.correctChoiceIndex = content.correctChoiceIndex();
-        this.answerCriteria = List.copyOf(content.answerCriteria());
-        this.modelAnswer = content.modelAnswer();
-        this.hint = content.hint();
-        this.explanation = content.explanation();
-        this.evidenceTurns = List.copyOf(target.evidenceTurns());
-        this.promptVersion = promptVersion;
-        this.createdAt = createdAt;
     }
 
-    /** 품질 검사 전의 문제 후보를 만든다. */
-    public static Question candidate(Long userId, Long sessionId, Long memoryItemId, QuestionTarget target,
-            Content content, String promptVersion, Instant createdAt) {
-        return new Question(userId, sessionId, memoryItemId, target, content, promptVersion, createdAt);
-    }
-
-    /** LLM이 생성한 문제 내용. */
-    public record Content(
-            String body,
-            List<String> choices,
-            @Nullable Integer correctChoiceIndex,
-            List<String> answerCriteria,
-            String modelAnswer,
-            String hint,
-            String explanation) {
+    private static String truncate(String note) {
+        return note == null || note.length() <= 2_000 ? note : note.substring(0, 2_000);
     }
 
     public Long getId() {
@@ -141,32 +165,32 @@ public class Question {
         return memoryItemId;
     }
 
-    public LearningGoal getGoal() {
-        return goal;
+    public Integer getPlanPosition() {
+        return planPosition;
+    }
+
+    public String getLearningGoal() {
+        return learningGoal;
     }
 
     public QuestionType getType() {
         return type;
     }
 
-    public QuestionStatus getStatus() {
-        return status;
-    }
-
-    public String getBody() {
-        return body;
+    public String getStem() {
+        return stem;
     }
 
     public List<String> getChoices() {
-        return choices;
+        return List.copyOf(choices);
     }
 
-    public @Nullable Integer getCorrectChoiceIndex() {
-        return correctChoiceIndex;
+    public Integer getCorrectChoice() {
+        return correctChoice;
     }
 
     public List<String> getAnswerCriteria() {
-        return answerCriteria;
+        return List.copyOf(answerCriteria);
     }
 
     public String getModelAnswer() {
@@ -182,11 +206,23 @@ public class Question {
     }
 
     public List<Integer> getEvidenceTurns() {
-        return evidenceTurns;
+        return List.copyOf(evidenceTurns);
     }
 
-    public String getPromptVersion() {
-        return promptVersion;
+    public Long getVariantOfId() {
+        return variantOfId;
+    }
+
+    public int getAttempt() {
+        return attempt;
+    }
+
+    public QuestionStatus getStatus() {
+        return status;
+    }
+
+    public String getQualityNote() {
+        return qualityNote;
     }
 
     public Instant getCreatedAt() {
