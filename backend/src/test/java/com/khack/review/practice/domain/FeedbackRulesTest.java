@@ -81,15 +81,23 @@ class FeedbackRulesTest {
     }
 
     @Test
-    void correctAfterAidMayBeRecheckedButUnassistedCorrectJustAdvances() {
+    void correctAfterAidIsRecheckedButUnassistedCorrectJustAdvances() {
         assertThat(FeedbackRules.plan(state(PracticeKind.FIRST_STUDY, AttemptOutcome.CORRECT)).allowed())
                 .containsExactly(FeedbackAction.ADVANCE);
-        State aided = new State(PracticeKind.FIRST_STUDY, false, AttemptOutcome.CORRECT, true, true, false, false, false, false);
 
-        Plan plan = FeedbackRules.plan(aided);
+        // 첫 학습은 도움 뒤 정답이면 Jev에 묻지 않고 확인 문제를 편성한다(§11.3 7단계).
+        State firstStudy = new State(PracticeKind.FIRST_STUDY, false, AttemptOutcome.CORRECT, true, true, false, false, false, false);
+        assertThat(FeedbackRules.plan(firstStudy)).isEqualTo(new Plan(Set.of(FeedbackAction.RELEARN_TODAY), FeedbackAction.RELEARN_TODAY));
 
+        // 매일 학습은 다시 물을지 Jev가 고른다.
+        State daily = new State(PracticeKind.DAILY, false, AttemptOutcome.CORRECT, true, true, false, false, false, false);
+        Plan plan = FeedbackRules.plan(daily);
         assertThat(plan.allowed()).containsExactlyInAnyOrder(FeedbackAction.ADVANCE, FeedbackAction.RELEARN_TODAY);
         assertThat(plan.fallback()).isEqualTo(FeedbackAction.ADVANCE);
+
+        // 이미 편성했거나 상한이면 넘어간다.
+        State queued = new State(PracticeKind.FIRST_STUDY, false, AttemptOutcome.CORRECT, true, true, false, false, true, false);
+        assertThat(FeedbackRules.plan(queued).allowed()).containsExactly(FeedbackAction.ADVANCE);
     }
 
     @Test

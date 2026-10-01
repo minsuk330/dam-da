@@ -362,6 +362,7 @@ class FeedbackIT {
         jev.nextAction.set(null);
         JsonNode second = nextPresentation(practiceId);
         long p2 = second.get("presentationId").asLong();
+        long q2 = second.get("questionId").asLong();
         JsonNode wrong = answer(p2, "{\"choiceIndex\":1,\"selfAssessment\":\"RECALLED_EASILY\"}");
         assertThat(wrong.get("correct").asBoolean()).isFalse();
         assertThat(wrong.get("rating").asString()).isEqualTo("AGAIN");
@@ -379,9 +380,12 @@ class FeedbackIT {
         assertThat(retried.get("kind").asString()).isEqualTo("ASSISTED_RETRY");
         assertThat(retried.get("correct").asBoolean()).isTrue();
         assertThat(retried.get("rating").isNull()).isTrue();
+        // 첫 학습은 힌트 후 정답이면 Jev에 묻지 않고 다른 문제 몇 개 뒤에 확인 문제를 낸다(§11.3 7단계).
         JsonNode afterHint = decide(p2);
-        assertThat(afterHint.get("action").asString()).isEqualTo("ADVANCE");
+        assertThat(afterHint.get("action").asString()).isEqualTo("RELEARN_TODAY");
+        assertThat(afterHint.get("decidedBy").asString()).isEqualTo("RULE");
         assertThat(afterHint.get("path").asString()).isEqualTo("AFTER_HINT");
+        assertThat(afterHint.get("recheckQueued").asBoolean()).isTrue();
 
         List<ReviewLog> logs = reviewLogs.findByMemoryItemIdOrderByReviewedAtAscIdAsc(itemId);
         assertThat(logs).as("힌트 후 정답은 복습 기록을 만들지 않음").singleElement()
@@ -390,7 +394,7 @@ class FeedbackIT {
 
         // 확인 문제: 큐 끝(다른 문제 뒤)에 새 제시로 나오고 답·힌트·설명은 없다. 지연된 무도움 재확인으로 평가한다.
         assertThat(practices.findById(practiceId).orElseThrow().getQueue()).extracting(PracticeQueueEntry::getQuestionId)
-                .hasSize(3).last().isEqualTo(q1);
+                .hasSize(4).endsWith(q1, q2);
         clock.travel(Duration.ofMinutes(2));
         JsonNode recheck = nextPresentation(practiceId);
         long p3 = recheck.get("presentationId").asLong();
@@ -412,7 +416,20 @@ class FeedbackIT {
         assertThat(repeated.get("action").asString()).isEqualTo("ADVANCE");
         assertThat(repeated.get("prerequisite").get("concept").asString()).startsWith("선행:");
         assertThat(generator.prerequisiteRequests()).hasSize(1);
-        assertThat(practices.findById(practiceId).orElseThrow().getQueue()).hasSize(3);
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue()).hasSize(4);
+
+        // 힌트 후 맞힌 2번의 확인 문제: 도움 없이 맞히면 같은 날 재확인으로 평가해 기록한다. 더 편성하지 않는다.
+        JsonNode recheck2 = nextPresentation(practiceId);
+        long p4 = recheck2.get("presentationId").asLong();
+        assertThat(recheck2.get("questionId").asLong()).isEqualTo(q2);
+        assertThat(recheck2.get("sameDayRecheck").asBoolean()).isTrue();
+        JsonNode confirmed = answer(p4, "{\"choiceIndex\":0,\"selfAssessment\":\"RECALLED_WITH_EFFORT\"}");
+        assertThat(confirmed.get("kind").asString()).isEqualTo("DELAYED_RECHECK");
+        assertThat(confirmed.get("evaluated").asBoolean()).isTrue();
+        assertThat(confirmed.get("correct").asBoolean()).isTrue();
+        assertThat(reviewLogs.findByMemoryItemIdOrderByReviewedAtAscIdAsc(itemId)).as("같은 날 재확인 기록").hasSize(2);
+        assertThat(decide(p4).get("action").asString()).isEqualTo("ADVANCE");
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue()).hasSize(4);
         assertThat(ok("GET", "/api/practice/%d/next".formatted(practiceId), null).get("done").asBoolean()).isTrue();
     }
 
@@ -460,7 +477,7 @@ class FeedbackIT {
     }
 
     @Test
-    void jevCanChooseRelearnTodayAfterAHintedCorrectAnswer() throws Exception {
+    void firstStudyHintedCorrectAnswerAlwaysQueuesARecheck() throws Exception {
         long practiceId = startPractice(PracticeKind.FIRST_STUDY);
         JsonNode first = nextPresentation(practiceId);
         long p1 = first.get("presentationId").asLong();
@@ -468,11 +485,12 @@ class FeedbackIT {
         assertThat(decide(p1).get("action").asString()).isEqualTo("GIVE_HINT");
         JsonNode retry = answerJudged(p1, "{\"answer\":\"표본이 커져도 표준편차는 그대로\"}", "CORRECT");
 
-        jev.nextAction.set("relearn_today");
+        // Jev가 넘어가자고 해도 첫 학습은 규칙이 확인 문제를 정한다(Jev에 묻지 않음).
+        jev.nextAction.set("advance");
         JsonNode view = decide(p1);
 
         assertThat(view.get("action").asString()).isEqualTo("RELEARN_TODAY");
-        assertThat(view.get("decidedBy").asString()).isEqualTo("JEV");
+        assertThat(view.get("decidedBy").asString()).isEqualTo("RULE");
         assertThat(view.get("path").asString()).isEqualTo("AFTER_HINT");
         assertThat(view.get("recheckQueued").asBoolean()).isTrue();
         assertThat(practices.findById(practiceId).orElseThrow().getQueue()).hasSize(3);
