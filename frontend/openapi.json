@@ -1030,6 +1030,12 @@
       "FirstStudy" : {
         "type" : "object",
         "properties" : {
+          "failed" : {
+            "type" : "boolean"
+          },
+          "failureReason" : {
+            "type" : [ "string", "null" ]
+          },
           "generating" : {
             "type" : "boolean"
           },
@@ -1054,7 +1060,7 @@
             "enum" : [ "RECEIVED", "REVIEWING", "AWAITING_CONFIRMATION", "CONFIRMED", "QUESTIONS_READY", "IN_PROGRESS" ]
           }
         },
-        "required" : [ "generating", "held", "planned", "questions", "sessionStatus" ]
+        "required" : [ "failed", "failureReason", "generating", "held", "planned", "questions", "sessionStatus" ]
       },
       "GoalSummary" : {
         "type" : "object",

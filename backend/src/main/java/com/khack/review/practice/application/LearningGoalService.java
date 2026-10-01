@@ -92,7 +92,8 @@ public class LearningGoalService {
         if (strength != null) {
             strengths.choose(userId, sessionId, strength);
         }
-        events.publishEvent(new LearningGoalSet(sessionId, userId, saved.getId(), List.copyOf(goals), composition.questions().size()));
+        events.publishEvent(new LearningGoalSet(sessionId, userId, saved.getId(), List.copyOf(goals), composition.questions().size(),
+                saved.getGeneration()));
         return composition;
     }
 

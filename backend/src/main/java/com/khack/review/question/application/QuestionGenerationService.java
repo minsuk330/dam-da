@@ -69,14 +69,22 @@ public class QuestionGenerationService {
     }
 
     /**
-     * 첫 학습 계획의 문제를 만든다. 확인 완료 상태의 세션만 하며(규칙 12), 끝나면 세션을 문제 준비로 넘긴다.
-     * 승인되지 못한 자리는 출제를 보류한다(그 항목은 신규로 남는다).
+     * 첫 학습 문제 생성 결과. {@code skipped}면 세션이 확인 완료 상태가 아니라 만들지 않았다.
+     * 승인된 문제가 없으면 {@code failure}에 이유가 있다.
      */
-    public void generateFirstStudy(Long sessionId, List<QuestionSpec> specs) {
+    public record FirstStudyOutcome(boolean skipped, int planned, int approved, @Nullable String failure) {
+    }
+
+    /**
+     * 첫 학습 계획의 문제를 만든다. 확인 완료 상태의 세션만 하며(규칙 12), 승인된 문제가 하나라도 있으면 세션을 문제 준비로 넘긴다.
+     * 승인되지 못한 자리는 출제를 보류한다(그 항목은 신규로 남는다). 하나도 승인되지 않으면 세션을 확인 완료에 두어
+     * 목표를 다시 고를 수 있게 한다.
+     */
+    public FirstStudyOutcome generateFirstStudy(Long sessionId, List<QuestionSpec> specs) {
         LearningSessionDetail detail = sessions.detail(sessionId);
         if (detail.status() != LearningSessionStatus.CONFIRMED) {
             log.info("학습 세션 {}: {} 상태라 첫 학습 문제를 만들지 않음", sessionId, detail.status());
-            return;
+            return new FirstStudyOutcome(true, specs.size(), 0, null);
         }
         Context context = Context.of(detail, currentUser.id());
         Map<Long, List<Slot>> byUnit = new LinkedHashMap<>();
@@ -88,8 +96,15 @@ public class QuestionGenerationService {
         for (Map.Entry<Long, List<Slot>> unit : byUnit.entrySet()) {
             approved += (int) generate(context, unit.getKey(), unit.getValue()).values().stream().filter(Optional::isPresent).count();
         }
-        progress.markQuestionsReady(sessionId);
         log.info("학습 세션 {} 첫 학습 문제: 계획 {}, 승인 {}, 보류 {}", sessionId, specs.size(), approved, specs.size() - approved);
+        if (approved == 0) {
+            String failure = specs.isEmpty() ? "계획된 문제가 없습니다."
+                    : generator.getIfAvailable() == null ? "문제 생성기가 구성되지 않았습니다."
+                    : "품질 검사를 통과한 문제가 없습니다.";
+            return new FirstStudyOutcome(false, specs.size(), 0, failure + " 학습 목표를 다시 고르면 다시 만듭니다.");
+        }
+        progress.markQuestionsReady(sessionId);
+        return new FirstStudyOutcome(false, specs.size(), approved, null);
     }
 
     /** 같은 기억 항목·유형의 변형 문제(규칙 7). 기존 문제와 다른 표현을 요청하며, 기억 상태는 항목 단위라 그대로 공유된다. */

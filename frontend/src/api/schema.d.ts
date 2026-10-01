@@ -504,6 +504,8 @@ export interface components {
             excluded: boolean;
         };
         FirstStudy: {
+            failed: boolean;
+            failureReason: string | null;
             generating: boolean;
             held: components["schemas"]["HeldSlot"][];
             /** Format: int32 */

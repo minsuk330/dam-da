@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * 학습 세션의 학습 목표와 첫 학습 문제 계획 (스펙 §7 3·4단계, §7.8). 세션은 ID로만 참조한다.
@@ -53,6 +54,18 @@ public class FirstStudyPlan {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    /** 문제 생성 상태. 이 필드를 넣기 전에 만든 계획이면 null이다. */
+    @Enumerated(EnumType.STRING)
+    private GenerationStatus generationStatus;
+
+    @Column(length = 2_000)
+    private String generationFailure;
+
+    /** 목표를 고를 때마다 오른다. 늦게 끝난 옛 생성이 새 계획의 상태를 덮어쓰지 않게 한다. */
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    private int generation;
+
     protected FirstStudyPlan() {
     }
 
@@ -67,6 +80,27 @@ public class FirstStudyPlan {
         this.questions.clear();
         IntStream.range(0, planned.size()).forEach(i -> this.questions.add(new PlannedQuestionEntry(i, planned.get(i))));
         this.updatedAt = at;
+        this.generationStatus = GenerationStatus.GENERATING;
+        this.generationFailure = null;
+        this.generation++;
+    }
+
+    /** {@code generation}회차 생성이 끝났다. 그 사이 목표를 다시 골랐으면 아무것도 하지 않는다. */
+    public boolean finishGeneration(int generation, int approved, String failureIfNone) {
+        if (generation != this.generation) {
+            return false;
+        }
+        generationStatus = approved > 0 ? GenerationStatus.READY : GenerationStatus.FAILED;
+        generationFailure = approved > 0 ? null : truncate(failureIfNone);
+        return true;
+    }
+
+    public boolean failGeneration(int generation, String failure) {
+        return finishGeneration(generation, 0, failure);
+    }
+
+    private static String truncate(String text) {
+        return text == null || text.length() <= 2_000 ? text : text.substring(0, 2_000);
     }
 
     public Long getId() {
@@ -91,5 +125,17 @@ public class FirstStudyPlan {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public GenerationStatus getGenerationStatus() {
+        return generationStatus;
+    }
+
+    public String getGenerationFailure() {
+        return generationFailure;
+    }
+
+    public int getGeneration() {
+        return generation;
     }
 }
