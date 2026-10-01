@@ -1,4 +1,5 @@
 import { router, Stack } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -74,8 +75,9 @@ const errorMessage = (error: unknown) =>
  * 풀이 (스펙 §7 5·6단계). 문제·판정·다음 행동은 서버가 정한다.
  * 오답이면 서버가 힌트(재도전) 또는 개념 설명을 고르고, 설명 뒤 확인 문제는 서버가 큐 끝에 넣는다.
  */
-export function Review({ practiceId }: { practiceId: number | null }) {
+export function Review({ practiceId, sessionId }: { practiceId: number | null; sessionId: number | null }) {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const scroll = useRef<ScrollView>(null);
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
@@ -93,6 +95,10 @@ export function Review({ practiceId }: { practiceId: number | null }) {
   const show = useCallback((next: Next) => {
     if (next.done || !next.presentation) {
       setPhase({ kind: 'done' });
+      // 풀이가 기억 상태를 바꿨으므로 게이지·요약·세션 상태를 다시 읽는다.
+      for (const key of ['memory-gauge', 'first-study-summary', 'learning-sessions']) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
       return;
     }
     setPresentation(next.presentation);
@@ -104,7 +110,7 @@ export function Review({ practiceId }: { practiceId: number | null }) {
     firstInputAt.current = null;
     setPhase({ kind: 'answering', retry: false });
     scroll.current?.scrollTo({ y: 0, animated: false });
-  }, []);
+  }, [queryClient]);
 
   const fail = useCallback((e: unknown) => setError(errorMessage(e)), []);
 
@@ -135,7 +141,7 @@ export function Review({ practiceId }: { practiceId: number | null }) {
     return (
       <View style={styles.screen}>
         <Stack.Screen options={{ title: '학습 완료' }} />
-        <ReviewComplete results={[...results.values()]} />
+        <ReviewComplete results={[...results.values()]} sessionId={sessionId} />
       </View>
     );
   }
