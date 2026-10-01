@@ -62,12 +62,27 @@ review:
   practice:
     # 첫 학습 문제 상한 (스펙 §7.8)
     first-study-max-questions: 12
+    # 이 시간 안에 고른 객관식 정답은 추측을 의심한다 (스펙 §6.4.5 변환표 행 3)
+    mc-guess-threshold: 3s
   memory:
     # 기억 강도를 정하기 전의 기본 목표 유지율 (스펙 §6.4.7)
     default-retention: 0.9
     # 기억 강도별 예상 하루 부담 시뮬레이션 기간과 복습 1회 예상 시간(분)
     simulation-days: 30
     minutes-per-review: 0.75
+    rating:
+      # 등급 변환표 행 1·2의 판정 신뢰도 기준 (스펙 §6.4.5)
+      min-confidence: 0.6
+      # 문제 유형별 기준 응답 시간. 응답 시간은 Easy를 막는 보조 조건으로만 쓴다
+      reference-times:
+        MULTIPLE_CHOICE: 20s
+        SHORT_ANSWER: 40s
+        ESSAY: 90s
+        ERROR_FINDING: 60s
+        CASE_JUDGMENT: 90s
+        CASE_APPLICATION: 120s
+      # 응답 시간이 기준의 이 배수 이하일 때만 Easy
+      easy-max-time-ratio: 1.5
   jev:
     api-key: ${TYPESAFE_API_KEY:}
     base-url: https://api.typesafe.ai

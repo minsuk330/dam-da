@@ -73,6 +73,26 @@ public class MemoryStateService {
         }
     }
 
+    /** 보류 기록 결과. {@code autoQuestionsPaused}면 자동 출제에서 빠져 사용자 확인 대상이다. */
+    public record HoldResult(Long memoryItemId, int consecutiveHolds, boolean autoQuestionsPaused) {
+    }
+
+    /** 등급 변환이 보류됐다(스펙 §6.4.5 보류 처리). FSRS 상태는 바꾸지 않는다. 상태가 없으면 만든다. */
+    @Transactional
+    public HoldResult hold(Long userId, Long memoryItemId) {
+        MemoryState state = states.findByMemoryItemId(memoryItemId)
+                .orElseGet(() -> new MemoryState(userId, memoryItemId, defaultRetention, clock.instant()));
+        state.hold();
+        states.save(state);
+        return new HoldResult(memoryItemId, state.getConsecutiveHolds(), state.isAutoQuestionsPaused());
+    }
+
+    /** 마지막으로 등급을 받은 시각. 아직 없으면 비어 있다. */
+    @Transactional(readOnly = true)
+    public Optional<Instant> lastReviewedAt(Long memoryItemId) {
+        return states.findByMemoryItemId(memoryItemId).map(MemoryState::getLastReview);
+    }
+
     /** 등급을 한 번이라도 받았는가. 기억 강도만 정해 둔 상태 행은 아직 받지 않은 것이다. */
     @Transactional(readOnly = true)
     public boolean isReviewed(Long memoryItemId) {

@@ -162,11 +162,10 @@ class LearningGoalIT {
             assertThat(e.plannedQuestions()).isEqualTo(3);
         });
 
-        assertThat(send("PUT", "/api/sessions/%d/learning-goals".formatted(id), "{\"goals\":[\"PRINCIPLE\"]}").statusCode()).isEqualTo(200);
-        assertThat(plans.findBySessionId(id).orElseThrow().getGoals()).containsExactly(LearningGoal.PRINCIPLE);
+        // 목표를 고르면 문제 생성이 바로 시작되므로(#15) 다시 고를 수 있는 시간은 정해져 있지 않다. 다시 열면 저장된 선택이 보인다.
         JsonNode reopened = Json.MAPPER.readTree(send("GET", "/api/sessions/%d/learning-goals".formatted(id), null).body());
         assertThat(reopened.get("saved").asBoolean()).isTrue();
-        assertThat(reopened.get("selected").get(0).asString()).isEqualTo("PRINCIPLE");
+        assertThat(reopened.get("selected").get(0).asString()).isEqualTo("CORRECT_MISCONCEPTION");
     }
 
     @Test
