@@ -42,6 +42,10 @@ AI 대화를 매일의 맞춤형 학습으로 연결하는 개인 지식 유지 
 | 프론트엔드 | TBD (`frontend/`) | - |
 
 - 스키마는 해커톤 단계에서 JPA `ddl-auto: update`로 엔티티 기준 자동 갱신한다. 운영 전 마이그레이션 도구로 바꾼다.
+- 개발 도구 `/dev/**`는 `.env`의 `DEV_TOOLS_ENABLED=true`일 때만 열린다. 이 기기에서 직접 온 요청은 그대로 허용하고, 원격(배포 서버·터널 경유)은 `X-Dev-Token` 헤더가 `DEV_TOOLS_TOKEN`과 같을 때만 허용한다. 그 외는 404.
+  - 배포 서버 예: `curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://<서버>/dev/clock/travel?days=7`
+  - 세션 뷰어: `http://localhost:8080/dev/sessions`
+  - 시간 이동 데모: `GET /dev/clock`(현재 시각·오프셋), `POST /dev/clock/travel?days=7&hours=0`(앞으로만), `POST /dev/clock/reset`
 - 인증은 없다. 시작할 때 데모 사용자 1명(`review.demo-user.name`)을 만들고 `CurrentUser`가 그 ID를 돌려준다.
 
 의존성 버전은 `backend/build.gradle`이 기준이다. 표와 다르면 build.gradle을 따르고 표를 고친다.
