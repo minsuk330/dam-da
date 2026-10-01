@@ -83,5 +83,8 @@ if (status.confidence() < minConfidence) {
 | 판정 서비스 | `FakeJevPort().willReturn(...)` / `willFail(...)` | 불필요 |
 | 어댑터 | `TypeSafeJevAdapterTest` (MockRestServiceServer) | 불필요 |
 | 실제 API | `./gradlew -q jevCheck -Pargs="<사용자 답변>"` | `backend/.env`의 `TYPESAFE_API_KEY` |
+| 복습 단위 검수 실제 API | `./gradlew -q unitReviewCheck` (예시 단위 3개: 통과·복습 가치 없음·근거 연결 부족) | `backend/.env`의 `TYPESAFE_API_KEY` |
+
+`./gradlew test`는 `application-test.yml`에서 키를 비워 `.env`에 키가 있어도 실제 Jev를 부르지 않는다.
 
 `jevCheck`는 예시 질문(답변 상태·관련성·명확성)으로 실제 API를 한 번 호출하고 결과를 출력한다. 질문 설계를 바꿀 때 실제 확률·신뢰도 분포를 보는 용도다. 로컬 수동 실행만 한다.

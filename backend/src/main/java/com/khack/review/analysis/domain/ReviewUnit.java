@@ -3,6 +3,8 @@ package com.khack.review.analysis.domain;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +17,7 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * 복습 단위: 하나의 개념 또는 기술 (스펙 §8.3). 기억 상태는 소속 기억 항목별로 관리한다.
@@ -40,6 +43,16 @@ public class ReviewUnit {
 
     @Column(nullable = false)
     private boolean excluded;
+
+    /** DB 기본값은 이 컬럼이 생기기 전 행을 PENDING으로 채우기 위한 것이다(ddl-auto: update). */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @ColumnDefault("'PENDING'")
+    private ReviewUnitVerdict verdict = ReviewUnitVerdict.PENDING;
+
+    /** 검수 결과의 이유. 확인 화면과 디버깅용이다. */
+    @Column(length = 2_000)
+    private String verdictReason;
 
     @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position")
@@ -73,6 +86,12 @@ public class ReviewUnit {
         items.forEach(MemoryItem::exclude);
     }
 
+    /** Jev 검수 결과를 기록한다. 판정만 남기고 제외 여부는 바꾸지 않는다. */
+    public void recordVerdict(ReviewUnitVerdict verdict, String reason) {
+        this.verdict = verdict;
+        this.verdictReason = reason;
+    }
+
     public Long getId() {
         return id;
     }
@@ -91,6 +110,14 @@ public class ReviewUnit {
 
     public boolean isExcluded() {
         return excluded;
+    }
+
+    public ReviewUnitVerdict getVerdict() {
+        return verdict;
+    }
+
+    public String getVerdictReason() {
+        return verdictReason;
     }
 
     public List<MemoryItem> getItems() {

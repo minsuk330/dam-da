@@ -35,6 +35,19 @@ review:
     token: ${DEV_TOOLS_TOKEN:}
   demo-user:
     name: 지원
+  analysis:
+    # 복습 단위 검수 기준 (docs/jev.md). 실제 판정 분포를 보고 맞춘다.
+    min-confidence: 0.5
+    # 커넥터 입력(model_transcribed)은 기준을 더 높게 잡는다(스펙 §7.3).
+    min-confidence-transcribed: 0.6
+    # 복습 가치(noul) 확률이 이 구간이면 보류
+    hold-band-low: 0.3
+    hold-band-high: 0.7
+    # 근거 연결 점수(0~1 환산) 통과 기준
+    min-evidence-fit: 0.5
+    # 429·529 재시도 (첫 호출 포함)
+    max-attempts: 3
+    retry-delay: 1s
   jev:
     api-key: ${TYPESAFE_API_KEY:}
     base-url: https://api.typesafe.ai
