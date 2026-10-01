@@ -86,6 +86,12 @@ public class ReviewUnit {
         items.forEach(MemoryItem::exclude);
     }
 
+    /** 제외를 되돌린다. 출처 발화가 남은 기억 항목만 다시 넣는다. */
+    void include() {
+        excluded = false;
+        items.stream().filter(item -> !item.getSourceTurns().isEmpty()).forEach(MemoryItem::include);
+    }
+
     /** Jev 검수 결과를 기록한다. 판정만 남기고 제외 여부는 바꾸지 않는다. */
     public void recordVerdict(ReviewUnitVerdict verdict, String reason) {
         this.verdict = verdict;

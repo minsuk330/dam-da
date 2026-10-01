@@ -97,4 +97,77 @@ class LearningSessionTest {
         }
         assertThatThrownBy(() -> session.moveTo(LearningSessionStatus.RECEIVED)).isInstanceOf(IllegalStateException.class);
     }
+
+    static LearningSession awaitingConfirmation() {
+        LearningSession session = create(List.of(new com.khack.review.collection.domain.ReviewUnit("표준오차",
+                List.of(new KeyPoint("표준오차는 표본평균의 퍼짐", List.of(1, 2), null),
+                        new KeyPoint("EXPLAIN의 type ALL을 확인한다", List.of(3), FactKind.practice)),
+                List.of(new ConfusionPoint(2, "표본이 크면 표준편차가 준다")))));
+        session.moveTo(LearningSessionStatus.REVIEWING);
+        session.moveTo(LearningSessionStatus.AWAITING_CONFIRMATION);
+        return session;
+    }
+
+    @Test
+    void editsAreAllowedOnlyWhileAwaitingConfirmation() {
+        LearningSession received = create(List.of(new com.khack.review.collection.domain.ReviewUnit("표준오차",
+                List.of(new KeyPoint("표준오차는 표본평균의 퍼짐", List.of(1), null)), null)));
+
+        assertThatThrownBy(received::requireEditable).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> received.turnInserted(2, List.of())).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> received.confirm(NOW)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void insertedTurnShiftsLaterSources() {
+        LearningSession session = awaitingConfirmation();
+
+        session.turnInserted(2, List.of());
+
+        assertThat(session.items()).extracting(MemoryItem::getSourceTurns)
+                .containsExactly(List.of(1, 3), List.of(4), List.of(3));
+    }
+
+    @Test
+    void turnBecomingMetaLeavesSourcesAndExcludesItemsWithoutEvidence() {
+        LearningSession session = awaitingConfirmation();
+
+        session.turnBecameMeta(3);
+
+        MemoryItem practice = session.items().get(1);
+        assertThat(practice.getSourceTurns()).isEmpty();
+        assertThat(practice.isExcluded()).isTrue();
+        assertThat(session.items().get(0).isExcluded()).isFalse();
+    }
+
+    @Test
+    void confirmingClosesEditsAndOpensQuestionGeneration() {
+        LearningSession session = awaitingConfirmation();
+        assertThat(session.isConfirmed()).isFalse();
+
+        session.confirm(NOW);
+
+        assertThat(session.getStatus()).isEqualTo(LearningSessionStatus.CONFIRMED);
+        assertThat(session.getConfirmedAt()).isEqualTo(NOW);
+        assertThat(session.isConfirmed()).isTrue();
+        assertThatThrownBy(session::requireEditable).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void warningsPointAtTurnsTheUserCanFix() {
+        LearningSession session = awaitingConfirmation();
+        List<UserTurn> turns = List.of(
+                new UserTurn(1, "표준오차가 뭐야?", null, Intent.info_request, null, null),
+                new UserTurn(2, "그럼 표본이 크면 표준편차도 줄어?", null, Intent.understanding_check, AiVerdict.corrected, null),
+                new UserTurn(3, "EXPLAIN은 어떻게 봐?", null, Intent.info_request, null, null),
+                new UserTurn(4, "이 경우도 같아?", null, Intent.understanding_check, AiVerdict.partial, "조건이 다르다"),
+                new UserTurn(5, "복습에 넣어줘", null, Intent.meta, null, null));
+
+        assertThat(ConfirmationWarnings.of(session, turns)).containsExactly(
+                "2번 발화: AI가 바로잡았다고 표시됐지만 교정 내용이 비어 있습니다.",
+                "4번 발화: 어느 기억 항목에도 연결되지 않았습니다.");
+
+        session.getUnits().get(0).exclude();
+        assertThat(ConfirmationWarnings.of(session, turns)).hasSize(5);
+    }
 }
