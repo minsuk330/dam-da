@@ -16,7 +16,7 @@ import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime } from '@/labels';
 import { openNotification } from '@/navigation';
-import { profile } from '@/profile';
+import { useProfile } from '@/profile';
 import { colors, components, spacing } from '@/theme';
 
 import { StatCard } from '@/components/stat-card';
@@ -28,6 +28,7 @@ const openPractice = (practiceId: number) =>
 
 /** 홈: 새 세션 알림 → 오늘의 학습 → 연속 학습 일수 → 기억 게이지 요약 → 최근 받은 대화 (스펙 §6.4.3, §7.7). */
 export function Home() {
+  const profile = useProfile();
   const insets = useSafeAreaInsets();
   const tabBarSpace = useTabBarSpace();
   const daily = useDaily();
@@ -215,6 +216,7 @@ function TodayStudy({
  * 메뉴 화면이 없어 메뉴는 받은 학습 대화 목록으로 보낸다. 알림은 알림 목록으로, 프로필은 내 정보로 간다.
  */
 function HomeHeader() {
+  const profile = useProfile();
   const { data } = useNotifications();
   const unread = data?.items.some((n) => !n.read);
 

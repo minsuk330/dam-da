@@ -1,65 +1,142 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { Linking } from 'react-native'
 
+import { api, unwrap, type Schemas } from './client'
 import { mockEnabled, mockResponse } from './mock'
 
 // 앱 로그인 상태 (스펙 §7.9). 구글·카카오 소셜 로그인만 둔다. 소셜 인증은 서버가 하고 앱은 서버가 준 토큰을 쓴다.
-// 서버 쪽(#95)이 나오기 전이라 mock에서만 로그인 게이트를 켠다. 실제 API 빌드는 게이트 없이 데모 사용자로 동작한다.
+// 흐름: 로그인 버튼 → 서버 loginUrl(구글·카카오) → 서버가 {앱}/auth/callback?code=…로 돌려보냄 → POST /api/auth/token으로
+// 앱 토큰을 받아 저장 → 모든 /api 요청에 Bearer로 붙인다. 401이 오면 로그아웃해 메인 화면으로 돌아간다.
 
 export type Provider = 'google' | 'kakao' | 'demo'
+export type AuthToken = Schemas['AuthToken']
+export type LoginOptions = Schemas['LoginOptions']
 
-/** 로그인 게이트를 켤지. #95(앱 토큰 발급)가 나오면 실제 API에서도 켠다. */
-export const authGateEnabled = mockEnabled
-
-/** "데모 계정으로 시작"을 보일지. 스펙상 개발 도구가 켜진 서버에서만이고, 그 여부는 #95에서 서버가 알려준다. */
-export const demoLoginAvailable = mockEnabled
-
-const STORAGE_KEY = 'khack.signedIn'
+const STORAGE_KEY = 'khack.auth'
 
 /** 웹은 새로고침해도 로그인 상태를 유지한다. 저장소를 못 쓰면(사생활 보호 모드 등) 이번 방문 동안만 유지한다. */
-function readStored(): boolean {
+function readStored(): AuthToken | null {
   try {
-    return globalThis.localStorage?.getItem(STORAGE_KEY) === 'true'
+    const raw = globalThis.localStorage?.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const token = JSON.parse(raw) as AuthToken
+    return Date.parse(token.expiresAt) > Date.now() ? token : null
   } catch {
-    return false
+    return null
   }
 }
 
-function store(signedIn: boolean) {
+function store(token: AuthToken | null) {
   try {
-    if (signedIn) globalThis.localStorage?.setItem(STORAGE_KEY, 'true')
+    if (token) globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(token))
     else globalThis.localStorage?.removeItem(STORAGE_KEY)
   } catch {
     // 저장하지 못해도 화면 상태는 바뀐다.
   }
 }
 
+// 요청마다 토큰을 붙이는 미들웨어는 React 밖에 있으므로 현재 토큰과 401 처리기를 모듈에 둔다.
+let current: AuthToken | null = readStored()
+let onUnauthorized: () => void = () => {}
+
+api.use({
+  onRequest({ request }) {
+    if (current) request.headers.set('Authorization', `Bearer ${current.accessToken}`)
+    return request
+  },
+  onResponse({ request, response }) {
+    // 로그인 API 자체의 401(코드 만료 등)은 화면이 오류로 보여준다.
+    if (response.status === 401 && current && !new URL(request.url, 'http://local').pathname.startsWith('/api/auth/')) {
+      onUnauthorized()
+    }
+    return response
+  },
+})
+
+const MOCK_OPTIONS: LoginOptions = {
+  providers: [
+    { id: 'kakao', name: '카카오', loginUrl: '' },
+    { id: 'google', name: '구글', loginUrl: '' },
+  ],
+  demoLogin: true,
+}
+
+function mockToken(): AuthToken {
+  return { accessToken: 'mock', expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), user: { id: 1, name: '지원' } }
+}
+
+/** 켜진 로그인 제공자와 데모 로그인 여부. 데모 로그인은 개발 도구가 켜진 서버에서만 열린다. */
+export function useLoginOptions() {
+  return useQuery({
+    queryKey: ['auth', 'options'],
+    queryFn: async () => (mockEnabled ? mockResponse(MOCK_OPTIONS) : unwrap(await api.GET('/api/auth/options'))),
+    staleTime: Infinity,
+  })
+}
+
+/** 서버가 돌려보낸 1회용 코드를 앱 토큰으로 바꾼다(/auth/callback). */
+export async function exchangeCode(code: string): Promise<AuthToken> {
+  if (mockEnabled) return mockResponse(mockToken())
+  return unwrap(await api.POST('/api/auth/token', { body: { code } }))
+}
+
 type Session = {
   signedIn: boolean
-  signIn: (provider: Provider) => Promise<void>
+  user: AuthToken['user'] | null
+  /** 데모는 바로 토큰을 받고, 구글·카카오는 서버 로그인 페이지로 떠난다(돌아오면 /auth/callback). */
+  signIn: (provider: Provider, options?: LoginOptions) => Promise<void>
+  /** /auth/callback에서 받은 토큰으로 로그인 상태를 만든다. */
+  complete: (token: AuthToken) => void
   signOut: () => void
 }
 
 const SessionContext = createContext<Session | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [signedIn, setSignedIn] = useState(() => !authGateEnabled || readStored())
+  const queryClient = useQueryClient()
+  const [token, setToken] = useState<AuthToken | null>(current)
 
-  async function signIn(provider: Provider) {
-    if (!mockEnabled) {
-      // #95 전에는 서버에 소셜 로그인이 없다. 실제 API 빌드는 게이트가 꺼져 있어 여기 오지 않는다.
-      throw new Error(`${provider} 로그인은 아직 서버에서 지원하지 않아요.`)
+  const apply = useCallback(
+    (next: AuthToken | null) => {
+      // 다른 계정의 데이터가 남지 않게 로그인·로그아웃 때 불러온 데이터를 비운다.
+      if (next?.accessToken !== current?.accessToken) queryClient.clear()
+      current = next
+      store(next)
+      setToken(next)
+    },
+    [queryClient],
+  )
+
+  useEffect(() => {
+    onUnauthorized = () => apply(null)
+    return () => {
+      onUnauthorized = () => {}
     }
-    await mockResponse(null)
-    store(true)
-    setSignedIn(true)
+  }, [apply])
+
+  async function signIn(provider: Provider, options?: LoginOptions) {
+    if (mockEnabled) {
+      apply(await mockResponse(mockToken()))
+      return
+    }
+    if (provider === 'demo') {
+      apply(unwrap(await api.POST('/api/auth/demo')))
+      return
+    }
+    const loginUrl = options?.providers.find((p) => p.id === provider)?.loginUrl
+    if (!loginUrl) throw new Error('이 로그인 방법은 지금 쓸 수 없어요.')
+    // 웹은 같은 창에서 서버 로그인으로 이동한다. 끝나면 /auth/callback으로 돌아온다.
+    if (typeof window !== 'undefined' && window.location) window.location.assign(loginUrl)
+    else await Linking.openURL(loginUrl)
   }
 
-  function signOut() {
-    store(false)
-    setSignedIn(false)
-  }
-
-  return <SessionContext.Provider value={{ signedIn, signIn, signOut }}>{children}</SessionContext.Provider>
+  return (
+    <SessionContext.Provider
+      value={{ signedIn: token !== null, user: token?.user ?? null, signIn, complete: apply, signOut: () => apply(null) }}>
+      {children}
+    </SessionContext.Provider>
+  )
 }
 
 export function useSession(): Session {

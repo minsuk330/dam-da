@@ -1,5 +1,7 @@
-/**
- * 데모 사용자 표시값. 사용자 이름을 주는 API가 없어 페르소나(도메인 스토리의 지원)를 한곳에 고정해 둔다.
- * 로그인이 생기면 서버 값으로 바꾼다.
- */
-export const profile = { name: '지원', initial: '지' } as const
+import { useSession } from '@/api/session'
+
+/** 화면에 보일 로그인 사용자 이름과 머리글자. 서버가 준 이름(소셜 닉네임)을 쓰고, 없으면 "나"로 둔다. */
+export function useProfile() {
+  const name = useSession().user?.name?.trim() || '나'
+  return { name, initial: Array.from(name)[0] }
+}

@@ -57,6 +57,8 @@ function AppStack() {
         headerTitleStyle: { fontFamily: typography.headline.fontFamily, fontSize: typography.headline.fontSize },
         contentStyle: { backgroundColor: colors.canvas },
       }}>
+      {/* 서버 로그인에서 돌아오는 곳. 로그인 전후 모두 열려 있어야 한다. */}
+      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
       </Stack.Protected>
