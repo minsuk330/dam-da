@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 
 import { ApiError } from '@/api/client';
 import { PhoneFrame } from '@/components/phone-frame';
+import { MockBadge } from '@/screens/mock-badge';
 import { colors, fonts, typography } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -53,6 +54,7 @@ export default function RootLayout() {
           <Stack.Screen name="settings" options={{ title: '매일 학습 설정' }} />
           <Stack.Screen name="review" options={{ title: '오늘의 복습' }} />
         </Stack>
+        <MockBadge />
       </PhoneFrame>
     </QueryClientProvider>
   );
