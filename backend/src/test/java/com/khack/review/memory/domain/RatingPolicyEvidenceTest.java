@@ -9,7 +9,7 @@ import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** 자동 반영 기준 0.80과, 모델이 옮겨 적은 근거(`model_transcribed`)에 더 높은 기준을 쓰는 것(스펙 §6.4.5, §7.3). */
+/** 자동 반영 기준(여기서는 0.80)과, 모델이 옮겨 적은 근거(`model_transcribed`)에 더 높은 기준을 쓰는 것(스펙 §6.4.5, §7.3). */
 class RatingPolicyEvidenceTest {
 
     static final RatingPolicy POLICY = new RatingPolicy(0.80, 0.85,

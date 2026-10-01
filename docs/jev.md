@@ -73,11 +73,11 @@ JevAnswer.Choice misread = r.choice(AnswerJudgeQuestions.MISREAD);   // misread 
 - **이유(noul)는 애매하면 확정하지 않는다.** 확률이 `review.practice.judge.reason-yes-min`(0.7) 이상이면 있고 `reason-no-max`(0.3) 이하이면 없다. 그 사이는 참·거짓으로 정하지 않고 `AnswerJudgment.ambiguousReasons`에 적는다. 원래 확률은 `...Probability`에 그대로 남는다.
 - 이유는 `verdict`가 `not_met`일 때만 읽는다. 대표 이유는 contradiction > omission > misread. `met`에서도 `omission` 확률이 0.3~0.7로 나오는 일이 흔하므로 `met`의 이유 확률을 해석하지 않는다.
 - 판정 서비스는 신뢰도 기준을 적용하지 않는다. 기준은 등급 변환(`RatingPolicy`)이 적용한다.
-  - `review.memory.rating.min-confidence`(0.80): `verdict` 신뢰도가 이보다 낮거나 `unable_to_judge`이면 보류, `misread`가 이 이상의 신뢰도로 확인되면 보류. `not_met`에서 `misread` 신뢰도만 부족하면 Again이다.
-  - `review.memory.rating.min-confidence-transcribed`(0.85): 근거가 `model_transcribed`일 때의 기준(스펙 §7.3). **0.85는 검증하지 않은 초기값**이다.
-  - 0.80은 Jev의 채점 정확도가 80%라는 뜻이 아니라 자동 반영 여부를 정하는 초기 기준이다.
+  - `review.memory.rating.min-confidence`(0.70, 데모 기간 값): `verdict` 신뢰도가 이보다 낮거나 `unable_to_judge`이면 보류, `misread`가 이 이상의 신뢰도로 확인되면 보류. `not_met`에서 `misread` 신뢰도만 부족하면 Again이다.
+  - `review.memory.rating.min-confidence-transcribed`(0.80): 근거가 `model_transcribed`일 때의 기준(스펙 §7.3). **검증하지 않은 초기값**이다.
+  - 기준값은 Jev의 채점 정확도를 뜻하지 않고 자동 반영 여부를 정하는 초기 기준이다.
   - 풀이 기록(`ReviewLog`)에 판정값·신뢰도·정책 버전·변환표 행과 함께 적용한 기준(`appliedMinConfidence`)과 근거의 원문 여부(`evidenceTranscribed`)를 남긴다.
-- 실제 Jev 분포는 `./gradlew -q answerJudgeCheck`로 본다(표본 13개). 2026-10-02 측정에서 표현이 다른 정답의 `verdict` 신뢰도가 0.64~0.83으로 나와, 0.80 기준에서는 맞는 답의 일부가 보류된다. 기준은 풀이 기록으로 보정한다.
+- 실제 Jev 분포는 `./gradlew -q answerJudgeCheck`로 본다(표본 13개). 2026-10-02 측정에서 표현이 다른 정답의 `verdict` 신뢰도가 0.64~0.83으로 나와, 0.80 기준에서는 맞는 답의 일부가 보류된다. 그래서 데모 기간에는 0.70/0.80을 쓰고, 풀이 기록으로 보정한다.
 - `off_target_error`는 문구에 따라 평가 대상 안의 오류를 세거나(오탐) 진짜 대상 밖 오류를 놓쳤다. 기록 전용이며 정오와 등급에 쓰지 않는다.
 - 객관식은 Jev 없이 코드가 채점한다(`MET`/`NOT_MET`, 신뢰도 1).
 - 답을 제출하면 그 응답 안에서 판정한다. Jev 호출은 트랜잭션 밖에서 한다.

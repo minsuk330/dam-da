@@ -29,7 +29,7 @@ public record RatingPolicy(double minConfidence, double minConfidenceTranscribed
 
     /**
      * 변환표나 해석을 바꾸면 올린다. 풀이 기록에 함께 남겨 정책별 영향을 비교한다.
-     * 2: 모델이 옮겨 적은 근거에 별도 기준(#68). 3: `misread`를 신뢰도가 있는 선택형 판정으로 읽고 기준을 0.80/0.85로 올린다.
+     * 2: 모델이 옮겨 적은 근거에 별도 기준(#68). 3: `misread`를 신뢰도가 있는 선택형 판정으로 읽는다(기준값은 설정).
      */
     public static final int VERSION = 3;
 
