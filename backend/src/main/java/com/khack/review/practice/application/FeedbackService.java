@@ -34,7 +34,6 @@ import com.khack.review.practice.domain.PresentationFeedback;
 import com.khack.review.practice.domain.PresentationFeedbackRepository;
 import com.khack.review.practice.domain.QuestionPresentation;
 import com.khack.review.practice.domain.QuestionPresentationRepository;
-import com.khack.review.question.application.QuestionGenerationService;
 import com.khack.review.question.application.QuestionQueryService;
 import com.khack.review.question.domain.Question;
 import com.khack.review.question.domain.QuestionType;
@@ -81,7 +80,7 @@ public class FeedbackService {
     private final PresentationFeedbackRepository feedbacks;
     private final PracticeService practice;
     private final QuestionQueryService questions;
-    private final QuestionGenerationService questionGeneration;
+    private final QuestionRecheckService rechecks;
     private final LearningSessionQueryService sessions;
     private final ObjectProvider<FeedbackContentGenerator> generator;
     private final NextActionJudge judge;
@@ -93,7 +92,7 @@ public class FeedbackService {
     public FeedbackService(PracticeSessionRepository practices, QuestionPresentationRepository presentations,
             AidExposureRepository aids, PracticeAttemptRepository attempts, AnswerJudgmentRepository judgments, RatingPolicy ratingPolicy,
             PresentationFeedbackRepository feedbacks, PracticeService practice, QuestionQueryService questions,
-            QuestionGenerationService questionGeneration, LearningSessionQueryService sessions,
+            QuestionRecheckService rechecks, LearningSessionQueryService sessions,
             ObjectProvider<FeedbackContentGenerator> generator, NextActionJudge judge, FeedbackPolicy policy,
             CurrentUser currentUser, TransactionTemplate transaction, Clock clock) {
         this.practices = practices;
@@ -105,7 +104,7 @@ public class FeedbackService {
         this.feedbacks = feedbacks;
         this.practice = practice;
         this.questions = questions;
-        this.questionGeneration = questionGeneration;
+        this.rechecks = rechecks;
         this.sessions = sessions;
         this.generator = generator;
         this.judge = judge;
@@ -209,11 +208,12 @@ public class FeedbackService {
             case RELEARN_TODAY -> new Prepared(null, question.getId());
             case GENERATE_VARIANT -> {
                 // 모호한 문제는 같은 문제를 다시 내지 않는다. 재검사해 쓸 수 있는 문제(수정·변형)로 오늘 안에 다시 확인한다.
-                Optional<Question> usable = questionGeneration.recheck(question.getId());
+                // 답변 판정 직후 시작한 재검사가 있으면 그 결과를 쓰고(진행 중이면 기다림), 실패했으면 한 번 더 시도한다.
+                Optional<Long> usable = rechecks.recheck(question.getId(), presentation.getUserId(), presentation.getId(), true);
                 if (usable.isEmpty()) {
                     log.info("제시 {}: 쓸 수 있는 변형 문제가 없어 이 항목 출제를 보류", presentation.getId());
                 }
-                yield new Prepared(null, usable.map(Question::getId).orElse(null));
+                yield new Prepared(null, usable.orElse(null));
             }
             default -> new Prepared(null, null);
         };

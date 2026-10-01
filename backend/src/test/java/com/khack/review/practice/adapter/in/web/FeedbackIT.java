@@ -46,8 +46,14 @@ import com.khack.review.practice.domain.PracticeKind;
 import com.khack.review.practice.domain.PracticeQueueEntry;
 import com.khack.review.practice.domain.PracticeSession;
 import com.khack.review.practice.domain.PracticeSessionRepository;
+import com.khack.review.practice.domain.QuestionRecheck;
+import com.khack.review.practice.domain.QuestionRecheckRepository;
+import com.khack.review.practice.domain.RecheckResult;
 import com.khack.review.question.application.QuestionQualityQuestions;
 import com.khack.review.question.application.port.out.FakeQuestionGenerator;
+import com.khack.review.question.domain.Question;
+import com.khack.review.question.domain.QuestionRepository;
+import com.khack.review.question.domain.QuestionStatus;
 import io.github.openspacedrepetition.Rating;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -89,6 +95,9 @@ class FeedbackIT {
         final AtomicReference<java.util.concurrent.CyclicBarrier> nextActionBarrier = new AtomicReference<>();
         final AtomicReference<Object> lastState = new AtomicReference<>();
         final java.util.Deque<Object> verdicts = new java.util.concurrent.ConcurrentLinkedDeque<>();
+        /** 남은 횟수만큼 문제 품질 검사를 떨어뜨린다(근거 부족). */
+        final java.util.concurrent.atomic.AtomicInteger qualityRejections = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.concurrent.atomic.AtomicInteger qualityCalls = new java.util.concurrent.atomic.AtomicInteger();
 
         @Override
         public JevResult evaluate(Object state, Map<String, JevQuestion> questions) {
@@ -117,9 +126,14 @@ class FeedbackIT {
                 return new JevResult("fake", Map.of(NextActionQuestions.NEXT_ACTION,
                         new JevAnswer.Choice(next, Map.of(next, 1.0), 0.9)));
             }
+            if (questions.containsKey(QuestionQualityQuestions.GROUNDED)) {
+                qualityCalls.incrementAndGet();
+            }
+            boolean reject = questions.containsKey(QuestionQualityQuestions.GROUNDED)
+                    && qualityRejections.getAndUpdate(n -> Math.max(0, n - 1)) > 0;
             return questions.containsKey(QuestionQualityQuestions.GROUNDED)
                     ? new JevResult("fake", Map.of(
-                            QuestionQualityQuestions.GROUNDED, new JevAnswer.Noul(0.9),
+                            QuestionQualityQuestions.GROUNDED, new JevAnswer.Noul(reject ? 0.05 : 0.9),
                             QuestionQualityQuestions.CLARITY, new JevAnswer.Score(2.0, Map.of(), Map.of(), 0.9),
                             QuestionQualityQuestions.DUPLICATE, new JevAnswer.Noul(0.1)))
                     : new JevResult("fake", Map.of(
@@ -193,6 +207,12 @@ class FeedbackIT {
     StubJev jev;
 
     @Autowired
+    QuestionRecheckRepository rechecks;
+
+    @Autowired
+    QuestionRepository questionRepository;
+
+    @Autowired
     FakeFeedbackContentGenerator generator;
 
     @Autowired
@@ -205,6 +225,7 @@ class FeedbackIT {
         jev.nextActionBarrier.set(null);
         jev.lastState.set(null);
         jev.verdicts.clear();
+        jev.qualityRejections.set(0);
         generator.clear();
     }
 
@@ -458,18 +479,91 @@ class FeedbackIT {
     }
 
     @Test
-    void ambiguousQuestionIsRecheckedWithoutRatingChange() throws Exception {
+    void ambiguousQuestionThatPassesRecheckIsNotAskedAgain() throws Exception {
         long practiceId = startPractice(PracticeKind.FIRST_STUDY);
         JsonNode first = nextPresentation(practiceId);
         long p1 = first.get("presentationId").asLong();
+        long q1 = first.get("questionId").asLong();
         JsonNode a1 = answerJudged(p1, WRONG_TEXT, "AMBIGUOUS");
 
         JsonNode view = decide(p1);
 
+        // 재검사를 통과해도 같은 문제는 다시 내지 않는다. 원래 문제는 승인으로 남고 변형 문제로 다시 확인한다.
         assertThat(view.get("action").asString()).isEqualTo("GENERATE_VARIANT");
         assertThat(view.get("recheckQueued").asBoolean()).isTrue();
-        assertThat(practices.findById(practiceId).orElseThrow().getQueue().getLast().getRecheckOfPresentationId()).isEqualTo(p1);
+        QuestionRecheck recheck = awaitRecheck(q1);
+        assertThat(recheck.getResult()).isEqualTo(RecheckResult.PASSED);
+        assertThat(questionRepository.findById(q1).orElseThrow().getStatus()).isEqualTo(QuestionStatus.APPROVED);
+        Question variant = questionRepository.findById(recheck.getVariantQuestionId()).orElseThrow();
+        assertThat(variant.getStatus()).isEqualTo(QuestionStatus.APPROVED);
+        assertThat(variant.getVariantOfId()).isEqualTo(q1);
+        PracticeQueueEntry requeued = practices.findById(practiceId).orElseThrow().getQueue().getLast();
+        assertThat(requeued.getRecheckOfPresentationId()).isEqualTo(p1);
+        assertThat(requeued.getQuestionId()).isEqualTo(variant.getId()).isNotEqualTo(q1);
         assertThat(aids.findByPresentationIdOrderByExposedAtAscIdAsc(p1)).isEmpty();
+    }
+
+    @Test
+    void ambiguousHoldRechecksTheQuestionWithoutAFeedbackRequest() throws Exception {
+        long practiceId = startPractice(PracticeKind.FIRST_STUDY);
+        JsonNode first = nextPresentation(practiceId);
+        long p1 = first.get("presentationId").asLong();
+        long q1 = first.get("questionId").asLong();
+        jev.qualityRejections.set(1);
+
+        JsonNode held = answerJudged(p1, WRONG_TEXT, "AMBIGUOUS");
+        assertThat(held.get("holdReason").asString()).isEqualTo("UNABLE_TO_JUDGE");
+
+        // 피드백을 요청하지 않아도 판정 직후 재검사한다. 떨어지면 폐기하고 변형 문제를 만든다.
+        QuestionRecheck recheck = awaitRecheck(q1);
+        assertThat(recheck.getResult()).isEqualTo(RecheckResult.RETIRED);
+        assertThat(recheck.getPresentationId()).isEqualTo(p1);
+        assertThat(questionRepository.findById(q1).orElseThrow().getStatus()).isEqualTo(QuestionStatus.RETIRED);
+        Question variant = questionRepository.findById(recheck.getVariantQuestionId()).orElseThrow();
+        assertThat(variant.getStatus()).isEqualTo(QuestionStatus.APPROVED);
+        assertThat(variant.getVariantOfId()).isEqualTo(q1);
+
+        // 나중에 피드백을 요청하면 다시 검사하지 않고 기록된 변형 문제를 오늘 큐 끝에 낸다.
+        int qualityCalls = jev.qualityCalls.get();
+        JsonNode view = decide(p1);
+        assertThat(view.get("action").asString()).isEqualTo("GENERATE_VARIANT");
+        assertThat(view.get("recheckQueued").asBoolean()).isTrue();
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue().getLast().getQuestionId()).isEqualTo(variant.getId());
+        assertThat(jev.qualityCalls.get()).as("재검사 중복 없음").isEqualTo(qualityCalls);
+    }
+
+    @Test
+    void feedbackRightAfterAnAmbiguousHoldSharesTheSameRecheck() throws Exception {
+        long practiceId = startPractice(PracticeKind.FIRST_STUDY);
+        JsonNode first = nextPresentation(practiceId);
+        long p1 = first.get("presentationId").asLong();
+        long q1 = first.get("questionId").asLong();
+        jev.qualityRejections.set(1);
+        int qualityCalls = jev.qualityCalls.get();
+
+        answerJudged(p1, WRONG_TEXT, "AMBIGUOUS");
+        JsonNode view = decide(p1);
+
+        QuestionRecheck recheck = awaitRecheck(q1);
+        assertThat(recheck.getResult()).isEqualTo(RecheckResult.RETIRED);
+        assertThat(view.get("action").asString()).isEqualTo("GENERATE_VARIANT");
+        assertThat(practices.findById(practiceId).orElseThrow().getQueue().getLast().getQuestionId())
+                .isEqualTo(recheck.getVariantQuestionId());
+        assertThat(questionRepository.findAll()).filteredOn(q -> Long.valueOf(q1).equals(q.getVariantOfId()))
+                .as("변형 문제 하나").hasSize(1);
+        assertThat(jev.qualityCalls.get() - qualityCalls).as("재검사 1번 + 변형 검사 1번").isEqualTo(2);
+    }
+
+    private QuestionRecheck awaitRecheck(long questionId) {
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(15));
+        while (true) {
+            java.util.Optional<QuestionRecheck> found = rechecks.findByQuestionId(questionId);
+            if (found.isPresent()) {
+                return found.get();
+            }
+            assertThat(Instant.now()).as("재검사 기록 대기").isBefore(deadline);
+            Thread.onSpinWait();
+        }
     }
 
     @Test
