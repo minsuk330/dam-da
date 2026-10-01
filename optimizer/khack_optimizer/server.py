@@ -9,7 +9,7 @@ import urllib.request
 from fsrs import ReviewLog
 
 from .pipeline import Current
-from .reviews import from_export
+from .reviews import from_export, to_export
 
 
 class Server:
@@ -29,6 +29,20 @@ class Server:
     def register(self, weights: list[float], validation: dict) -> int:
         body = self._request("POST", "/dev/fsrs-parameters", {"weights": weights, "validation": validation})
         return body["version"]
+
+    def activate(self, version: int) -> dict:
+        """현재 사용자에게 버전을 적용하고 기억 상태를 다시 계산한다."""
+        return self._request("POST", f"/dev/fsrs-parameters/{version}/activate")
+
+    def switch_user(self, name: str) -> dict:
+        return self._request("POST", "/dev/current-user", {"name": name})
+
+    def reset_user(self) -> dict:
+        return self._request("POST", "/dev/current-user/reset")
+
+    def replace_history(self, logs: list[ReviewLog]) -> dict:
+        """현재 사용자 기록을 합성 기록으로 바꾼다. 기본 데모 사용자면 서버가 거부한다."""
+        return self._request("POST", "/dev/synthetic-history", to_export(logs))
 
     def _request(self, method: str, path: str, payload: dict | None = None):
         headers = {"Content-Type": "application/json", "Accept": "application/json"}

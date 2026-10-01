@@ -9,7 +9,8 @@ cd optimizer
 uv run pytest                                              # 테스트 (서버·키 불필요)
 uv run khack-optimizer --synthetic                         # 합성 기록으로 학습·검증 결과 확인 (저장 안 함)
 uv run khack-optimizer --server http://localhost:8080 --dry-run
-uv run khack-optimizer --server http://localhost:8080      # 개선되면 새 매개변수 버전 저장
+uv run khack-optimizer --server http://localhost:8080      # 개선되면 새 매개변수 버전 저장 (--activate면 바로 적용)
+uv run khack-optimizer --server http://localhost:8080 --seed-synthetic-user   # 개인화 시연용 합성 사용자 준비
 ```
 
 서버는 `DEV_TOOLS_ENABLED=true`로 떠 있어야 한다. 원격 서버면 `DEV_TOOLS_TOKEN` 환경 변수를 `X-Dev-Token`으로 보낸다.
@@ -45,6 +46,7 @@ java-fsrs에는 재스케줄이 없으므로, 적용할 때 항목마다 초기 
 | `--train-ratio` | 0.8 | 시간순 학습 구간 비율 |
 | `--min-improvement` | 0.02 | 기본·현재 대비 log loss 상대 개선 기준 |
 | `--min-validation-reviews` | 30 | 검증 구간 채점 복습 최소 수 |
+| `--epochs` | 20 | 옵티마이저 epoch 수. py-fsrs 기본 5는 합성 기록에서 덜 수렴했다(검증 5.5% vs 20에서 6.8%, 곡선 방향도 반대) |
 
 py-fsrs 옵티마이저는 학습 구간 채점 복습(첫 복습·같은 날 재확인 제외)이 512개(mini batch)보다 적으면 학습 없이 기본값을 돌려준다. 그래서 이 조건도 따로 검사하고, 최소 기록 수 기본값을 1000으로 둔다.
 
@@ -56,7 +58,23 @@ py-fsrs 옵티마이저는 학습 구간 채점 복습(첫 복습·같은 날 �
 `tests/fixtures/java_fsrs_golden.json`의 복습 순서별 S·D·R·due를 py-fsrs(`tests/test_compat.py`)와 java-fsrs(backend `FsrsGoldenTest`)가 함께 확인한다.
 어느 쪽이든 올리면 이 파일을 새 java-fsrs로 다시 만들고 두 테스트를 통과시킨다.
 
+## 개인화 시연 (합성 사용자, #71)
+
+메인 데모 사용자는 기록이 1000개에 못 미쳐 기본 모델에 머문다. 개인화된 "내 기억 패턴" 화면은 합성 사용자로 보여준다.
+
+```bash
+uv run khack-optimizer --server http://localhost:8080 --seed-synthetic-user   # 전환 → 합성 기록 → 학습·검증 → 저장·적용
+curl -X POST localhost:8080/dev/current-user/reset                            # 메인 데모 사용자로 복귀
+```
+
+1. `POST /dev/current-user` — 현재 사용자를 '합성 사용자'로 바꾼다(없으면 만든다).
+2. `POST /dev/synthetic-history` — 그 사용자 기록을 합성 기록으로 바꾸고 기본 매개변수로 기억 상태를 만든다. 기본 데모 사용자에게는 거부한다.
+3. 평소와 같은 학습·검증을 거쳐, 통과하면 저장하고 적용한다.
+
+합성 사용자 항목에는 실제 대화·세션·문제가 없다. 그 사용자 상태에서는 "내 기억 패턴" 화면만 보여주고 메인 사용자로 돌아온다.
+기록만 합성이고 학습·검증·적용은 실제 과정이다. 시연에서 합성 데이터라는 점을 밝힌다.
+
 ## 합성 기록
 
 `khack_optimizer/synthetic.py`는 기본값보다 빨리 잊는 가상 사용자를 앱 스케줄(기본 매개변수)대로 복습시킨다. 실제 기억 여부는 그 사용자의 '진짜' 매개변수로 뽑는다.
-기본 설정(200항목, 120일, 약 2000개 기록)에서 학습 매개변수가 기본값보다 log loss를 약 5% 낮춘다. 진짜 매개변수가 기본값과 조금만 다르면 학습 결과가 오히려 나빠지기도 하는데, 이때는 저장 기준이 막는다.
+기본 설정(200항목, 120일, 약 2000개 기록)에서 학습 매개변수가 기본값보다 log loss를 약 7% 낮춘다. 진짜 매개변수가 기본값과 조금만 다르면 학습 결과가 오히려 나빠지기도 하는데, 이때는 저장 기준이 막는다.
