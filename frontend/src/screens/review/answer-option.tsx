@@ -9,10 +9,13 @@ export type OptionState = 'idle' | 'selected' | 'correct' | 'wrong' | 'dimmed';
 export function AnswerOption({
   label,
   state,
+  wide = false,
   onPress,
 }: {
   label: string;
   state: OptionState;
+  /** 긴 선택지는 한 줄을 다 쓰고 줄 수 제한 없이 보여준다. */
+  wide?: boolean;
   onPress?: () => void;
 }) {
   const graded = state === 'correct' || state === 'wrong' || state === 'dimmed';
@@ -35,13 +38,14 @@ export function AnswerOption({
       onPress={onPress}
       style={({ pressed }) => [
         styles.option,
+        wide && styles.wide,
         { backgroundColor: look.bg, borderColor: look.border, borderWidth },
         pressed && styles.pressed,
       ]}>
       <View style={styles.content}>
         {state === 'correct' && <Icon name="check" size="md" color={look.text} />}
         {state === 'wrong' && <Icon name="x" size="md" color={look.text} />}
-        <Text style={[components.answerOption.typography, { color: look.text }]} numberOfLines={2}>
+        <Text style={[components.answerOption.typography, styles.label, { color: look.text }]} numberOfLines={wide ? undefined : 2}>
           {label}
         </Text>
       </View>
@@ -60,6 +64,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
+  wide: { flexBasis: '100%', alignItems: 'flex-start' },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  label: { flexShrink: 1 },
   pressed: { backgroundColor: colors.outline },
 });

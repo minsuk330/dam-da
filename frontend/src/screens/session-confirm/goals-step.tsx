@@ -5,10 +5,11 @@ import type { Schemas } from '@/api/client';
 import { useChooseGoals, useLearningGoals, useMemoryStrength } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
 import { OptionRow } from '@/components/option-row';
+import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
 import { colors, spacing } from '@/theme';
 
-import { Notice, StepHeader } from './parts';
+import { StepHeader } from './parts';
 
 type Goal = Schemas['GoalView']['goal'];
 type Strength = Schemas['Option']['strength'];

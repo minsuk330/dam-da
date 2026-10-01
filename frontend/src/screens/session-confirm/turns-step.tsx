@@ -5,13 +5,14 @@ import type { Schemas } from '@/api/client';
 import { useEditLearningSession } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { Notice } from '@/components/notice';
 import { Chip } from '@/components/chip';
 import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
 import { aiVerdictLabel, intentLabel, itemKindLabel } from '@/labels';
 import { colors, components, spacing } from '@/theme';
 
-import { Notice, StepHeader } from './parts';
+import { StepHeader } from './parts';
 
 type Detail = Schemas['LearningSessionDetail'];
 type Turn = Schemas['Turn'];

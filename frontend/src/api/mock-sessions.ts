@@ -1,5 +1,6 @@
 import { ApiError, type Schemas } from './client'
 import { mockLearningSessions } from './mock'
+import { mockFirstStudyQuestions } from './mock-practice'
 
 // 세션 확인 흐름(발화 확인 → 복습 단위 확인 → 학습 목표·기억 강도 → 문제 준비)의 mock.
 // 서버 규칙(analysis/practice 컨텍스트)을 단순하게 흉내 내어, mock에서도 고치고 확인한 결과가 화면에 남는다.
@@ -250,7 +251,7 @@ export const mockSessionApi = {
       failed: false,
       failureReason: null,
       planned: 7,
-      questions: SAMPLE_QUESTIONS,
+      questions: mockFirstStudyQuestions,
       held: SAMPLE_HELD,
     }
   },
@@ -291,14 +292,4 @@ function composition(goals: Goal[]): Schemas['Composition'] {
   }
 }
 
-const SAMPLE_QUESTIONS: Schemas['QuestionView'][] = [1, 2, 3, 4, 5, 6].map((position) => ({
-  questionId: 900 + position,
-  position,
-  learningGoal: position % 2 === 0 ? 'CORRECT_MISCONCEPTION' : 'KEY_RECALL',
-  type: position === 2 ? 'ERROR_FINDING' : 'MULTIPLE_CHOICE',
-  memoryItemId: 311,
-  stem: '예시 문제',
-  choices: [],
-}))
-
-const SAMPLE_HELD: Schemas['HeldSlot'][] = [{ position: 7, memoryItemId: 321, type: 'SHORT_ANSWER' }]
+const SAMPLE_HELD: Schemas['HeldSlot'][] = [{ position: 6, memoryItemId: 321, type: 'SHORT_ANSWER' }]

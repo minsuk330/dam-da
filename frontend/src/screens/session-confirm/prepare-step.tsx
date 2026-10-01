@@ -2,13 +2,14 @@ import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useFirstStudy } from '@/api/learning-sessions';
+import { useStartFirstStudy } from '@/api/practice';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
 import { questionTypeLabel } from '@/labels';
 import { colors, spacing } from '@/theme';
 
-import { Notice } from './parts';
 
 /**
  * 문제 준비: 문제를 만들고 Jev 품질 검사를 통과한 것만 내놓는다. 통과·보류 수를 그대로 보여준다(데모 포인트).
@@ -16,6 +17,7 @@ import { Notice } from './parts';
  */
 export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPlan: () => void }) {
   const { data, isPending, isError, refetch } = useFirstStudy(sessionId, true);
+  const start = useStartFirstStudy(sessionId);
 
   if (isPending) {
     return (
@@ -90,7 +92,18 @@ export function PrepareStep({ sessionId, onNoPlan }: { sessionId: number; onNoPl
         ))}
       </View>
 
-      <Button title={`첫 학습 시작 · ${passed}문제`} disabled={passed === 0} onPress={() => router.push('/review')} />
+      {start.isError && <Notice tone="danger">첫 학습을 시작하지 못했어요. 다시 시도해 주세요.</Notice>}
+      <Button
+        title={`첫 학습 시작 · ${passed}문제`}
+        disabled={passed === 0}
+        loading={start.isPending}
+        onPress={() =>
+          start.mutate(undefined, {
+            onSuccess: (practice) =>
+              router.push({ pathname: '/review', params: { practiceId: String(practice.practiceId) } }),
+          })
+        }
+      />
       <Button variant="secondary" title="나중에 하기" onPress={() => router.navigate('/memory')} />
     </View>
   );
