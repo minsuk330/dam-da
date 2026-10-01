@@ -18,8 +18,9 @@ import {
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
+import { ChoiceChip } from '@/components/choice-chip';
+import { Icon } from '@/components/icon';
 import { Notice } from '@/components/notice';
-import { OptionRow } from '@/components/option-row';
 import { ThemedText } from '@/components/themed-text';
 import { questionTypeLabel } from '@/labels';
 import { colors, components, spacing } from '@/theme';
@@ -28,11 +29,14 @@ import { AnswerInput, emptyAnswer, isAnswered, type Answer } from './answer-inpu
 import { ReviewComplete, type ItemResult, type Path } from './complete';
 
 /** 첫 무도움 시도에 함께 받는 자기평가(스펙 §6.4.5). FSRS 등급은 판정과 이 값으로 서버가 정한다. */
-const SELF_ASSESSMENT: { key: SelfAssessment; label: string }[] = [
-  { key: 'RECALLED_EASILY', label: '쉽게 떠올렸어요' },
-  { key: 'RECALLED_WITH_EFFORT', label: '힘들게 떠올렸거나 확신이 약해요' },
-  { key: 'GUESSED', label: '떠올리지 못하고 추측했어요' },
+const SELF_ASSESSMENT: { key: SelfAssessment; label: string; description: string }[] = [
+  { key: 'RECALLED_EASILY', label: '바로 떠올림', description: '쉽게 떠올렸어요' },
+  { key: 'RECALLED_WITH_EFFORT', label: '겨우 떠올림', description: '힘들게 떠올렸거나 확신이 약해요' },
+  { key: 'GUESSED', label: '추측함', description: '떠올리지 못하고 추측했어요' },
 ];
+
+/** 이보다 긴 문제는 가운데 정렬이 읽기 어려워 왼쪽 정렬로 둔다(사례 판단·서술 문제). */
+const LONG_STEM = 60;
 
 /** 판정 결과. 보류(`uncertain`·`ambiguous`)면 맞음·틀림을 보여주지 않는다. */
 type Outcome = 'correct' | 'wrong' | 'uncertain' | 'ambiguous';
@@ -228,6 +232,10 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
   const graded = result && (result.outcome === 'correct' || result.outcome === 'wrong') ? result.outcome : null;
   const moreQueued = result?.feedback.recheckQueued || result?.feedback.action === 'RELEARN_TODAY';
   const last = presentation.position + 1 >= presentation.total && !moreQueued;
+  // 진행 막대는 답한 문제 수다. 결과를 보고 있으면 지금 문제까지 센다.
+  const answered = presentation.position + (result ? 1 : 0);
+  const needsSelfAssessment =
+    asksSelfAssessment && selfAssessment === null && isAnswered(presentation.type, answer) && phase.kind !== 'checking';
 
   return (
     <View style={styles.screen}>
@@ -236,20 +244,18 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
         accessible
         accessibilityRole="progressbar"
         accessibilityLabel="풀이 진행"
-        accessibilityValue={{ min: 0, max: presentation.total, now: presentation.position }}
+        accessibilityValue={{ min: 0, max: presentation.total, now: answered }}
         style={styles.progressTrack}>
-        <View
-          style={[styles.progressFill, { width: `${Math.round((presentation.position / presentation.total) * 100)}%` }]}
-        />
+        <View style={[styles.progressFill, { width: `${Math.round((answered / presentation.total) * 100)}%` }]} />
       </View>
 
       <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-        <View style={styles.chips}>
+        <View style={[styles.chips, presentation.stem.length > LONG_STEM && styles.chipsLong]}>
           {recheck && <Chip variant="status" label="확인 문제" />}
           <Chip label={questionTypeLabel[presentation.type]} />
         </View>
 
-        <ThemedText variant="question" style={styles.prompt}>
+        <ThemedText variant="question" style={[styles.prompt, presentation.stem.length > LONG_STEM && styles.promptLong]}>
           {presentation.stem}
         </ThemedText>
 
@@ -275,15 +281,23 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
             <ThemedText variant="subhead" tone="inkSecondary">
               얼마나 확신하나요?
             </ThemedText>
-            {SELF_ASSESSMENT.map((s) => (
-              <OptionRow
-                key={s.key}
-                selected={selfAssessment === s.key}
-                onPress={() => setSelfAssessment(s.key)}
-                style={styles.selfAssessmentRow}>
-                <ThemedText variant="subhead">{s.label}</ThemedText>
-              </OptionRow>
-            ))}
+            <View style={styles.selfAssessmentRow}>
+              {SELF_ASSESSMENT.map((s) => (
+                <ChoiceChip
+                  key={s.key}
+                  label={s.label}
+                  accessibilityLabel={s.description}
+                  selected={selfAssessment === s.key}
+                  onPress={() => setSelfAssessment(s.key)}
+                  style={styles.selfAssessmentChip}
+                />
+              ))}
+            </View>
+            {selfAssessment && (
+              <ThemedText variant="caption" tone="inkMuted">
+                {SELF_ASSESSMENT.find((s) => s.key === selfAssessment)?.description}
+              </ThemedText>
+            )}
           </View>
         )}
 
@@ -293,6 +307,11 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.xl }]}>
         {/* 제출·불러오기 실패는 누른 버튼 바로 위에 둔다. 스크롤 아래에 있으면 긴 문제에서 보이지 않는다. */}
         {error && phase.kind !== 'result' && <Notice tone="danger">{error}</Notice>}
+        {needsSelfAssessment && (
+          <ThemedText variant="caption" tone="inkSecondary" style={styles.center}>
+            얼마나 확신하는지 골라야 제출할 수 있어요
+          </ThemedText>
+        )}
         {answering && (
           <Button title="제출" disabled={!canSubmit} loading={phase.kind === 'checking'} onPress={check} />
         )}
@@ -322,9 +341,12 @@ function ResultView({
     <>
       {outcome === 'correct' && (
         <View style={[styles.box, styles.correct]}>
-          <ThemedText variant="headline" tone="successInk">
-            {recheck ? '확인 문제도 맞혔어요' : feedback.path === 'AFTER_HINT' ? '힌트를 보고 맞혔어요' : '맞았어요'}
-          </ThemedText>
+          <View style={styles.resultTitle}>
+            <Icon name="check-circle" color={colors.successInk} />
+            <ThemedText variant="headline" tone="successInk">
+              {recheck ? '확인 문제도 맞혔어요' : feedback.path === 'AFTER_HINT' ? '힌트를 보고 맞혔어요' : '맞았어요'}
+            </ThemedText>
+          </View>
           {attempt.holdReason === 'GUESS_UNCONFIRMED' && (
             <ThemedText variant="subhead" tone="successInk">
               아주 빨리 골라서 추측일 수도 있어요. 이번 답은 기억 상태에 반영하지 않았어요.
@@ -340,9 +362,12 @@ function ResultView({
 
       {outcome === 'wrong' && (
         <View style={[styles.box, styles.wrong]}>
-          <ThemedText variant="headline" tone="dangerInk">
-            {retried ? '이번에도 아쉬워요' : '아쉬워요'}
-          </ThemedText>
+          <View style={styles.resultTitle}>
+            <Icon name="x-circle" color={colors.dangerInk} />
+            <ThemedText variant="headline" tone="dangerInk">
+              {retried ? '이번에도 아쉬워요' : '아쉬워요'}
+            </ThemedText>
+          </View>
           <ThemedText variant="subhead" tone="dangerInk">
             {feedback.action === 'GIVE_HINT'
               ? '힌트를 보고 한 번 더 풀어 볼까요?'
@@ -418,8 +443,11 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: components.gaugeFill.backgroundColor },
   content: { flexGrow: 1, padding: spacing.xl, gap: spacing.xl },
   chips: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
+  chipsLong: { justifyContent: 'flex-start' },
   center: { textAlign: 'center' },
   prompt: { textAlign: 'center', paddingHorizontal: spacing.sm },
+  promptLong: { textAlign: 'left', paddingHorizontal: 0 },
+  resultTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   box: {
     gap: spacing.sm,
     borderRadius: components.feedbackCorrect.rounded,
@@ -429,6 +457,7 @@ const styles = StyleSheet.create({
   correct: { backgroundColor: components.feedbackCorrect.backgroundColor },
   wrong: { backgroundColor: components.feedbackWrong.backgroundColor },
   selfAssessment: { gap: spacing.sm },
-  selfAssessmentRow: { paddingVertical: spacing.md },
+  selfAssessmentRow: { flexDirection: 'row', gap: spacing.sm },
+  selfAssessmentChip: { flex: 1 },
   footer: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.sm },
 });

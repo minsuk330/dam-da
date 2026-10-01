@@ -9,7 +9,7 @@ import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
-import { Icon } from '@/components/icon';
+import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { formatDate } from '@/labels';
 import { colors, components, spacing } from '@/theme';
@@ -60,18 +60,7 @@ export function ReviewComplete({ results, sessionId }: { results: ItemResult[]; 
         </View>
 
         {/* 이미 끝난 풀이를 다시 열면 이번 풀이 기록이 없으므로 경로 집계는 숨기고 요약만 보여준다. */}
-        {results.length > 0 && (
-          <View style={styles.paths}>
-            {COUNTED.map((path) => (
-              <Card key={path} variant={path === 'independent' ? 'lavender' : 'surface'} style={styles.pathCard}>
-                <ThemedText variant="stat">{results.filter((r) => r.path === path).length}</ThemedText>
-                <ThemedText variant="caption" tone="inkSecondary">
-                  {pathLabel[path]}
-                </ThemedText>
-              </Card>
-            ))}
-          </View>
-        )}
+        {results.length > 0 && <PathSummary results={results} />}
 
         {sessionId !== null ? (
           <SessionSummary sessionId={sessionId} />
@@ -87,6 +76,44 @@ export function ReviewComplete({ results, sessionId }: { results: ItemResult[]; 
       {/* 방금 학습을 마친 순간에만 축하한다. 이미 끝난 풀이를 다시 열면 이번 풀이 기록이 없다. */}
       {results.length > 0 && <Celebration />}
     </View>
+  );
+}
+
+const pathIcon: Record<Exclude<Path, 'held'>, IconName> = {
+  independent: 'check-circle',
+  afterHint: 'help-circle',
+  afterExplanation: 'book-open',
+  repeatedWrong: 'rotate-ccw',
+};
+
+/** 풀이 경로 집계. 0개인 경로는 빼고 한 카드 안 구분선 행으로 보여준다. */
+function PathSummary({ results }: { results: ItemResult[] }) {
+  const rows = COUNTED.map((path) => ({ path, count: results.filter((r) => r.path === path).length })).filter(
+    (row) => row.count > 0,
+  );
+  if (rows.length === 0) return null;
+
+  return (
+    <Card style={styles.pathList}>
+      {rows.map(({ path, count }, i) => (
+        <View key={path} style={[styles.pathRow, i > 0 && styles.pathDivided]}>
+          <View style={[styles.pathIcon, path === 'independent' && styles.pathIconGood]}>
+            <Icon
+              name={pathIcon[path]}
+              size="md"
+              color={path === 'independent' ? colors.successInk : colors.primaryInk}
+            />
+          </View>
+          <ThemedText variant="headline" style={styles.pathLabel}>
+            {pathLabel[path]}
+          </ThemedText>
+          <ThemedText variant="stat">{count}</ThemedText>
+          <ThemedText variant="caption" tone="inkMuted">
+            문제
+          </ThemedText>
+        </View>
+      ))}
+    </Card>
   );
 }
 
@@ -235,8 +262,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  paths: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  pathCard: { flexBasis: '47%', flexGrow: 1, gap: spacing.xs },
+  pathList: { paddingVertical: spacing.xs },
+  pathRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, paddingVertical: spacing.md },
+  pathIcon: {
+    width: components.iconCircle.size,
+    height: components.iconCircle.size,
+    borderRadius: components.iconCircle.rounded,
+    backgroundColor: components.iconCircle.backgroundColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginRight: spacing.sm,
+  },
+  pathIconGood: { backgroundColor: colors.successTint },
+  pathDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline },
+  pathLabel: { flex: 1, alignSelf: 'center' },
   next: { gap: spacing.xs },
   section: { gap: spacing.md },
   list: { gap: spacing.lg },
