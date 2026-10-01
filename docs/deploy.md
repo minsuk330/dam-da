@@ -74,7 +74,13 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 
 ### Claude 커넥터
 
-커넥터 URL은 `https://hack.refit-100.site/mcp`다. 인증이 없으므로 URL을 아는 사람은 데모 사용자에게 학습 대화를 저장할 수 있다. 데모 기간에는 URL을 공개하지 않는다.
+커넥터 URL은 `https://hack.refit-100.site/mcp`다. 커넥터 OAuth(#96) 전까지는 인증이 없어 URL을 아는 사람은 데모 사용자에게 학습 대화를 저장할 수 있다. 데모 기간에는 URL을 공개하지 않는다.
+
+### 로그인
+
+- `.env`에 `PUBLIC_SERVER_URL`, `APP_URL`(Vercel 주소), `AUTH_SIGNING_KEY`, `GOOGLE_*`, `KAKAO_*`를 넣는다. `AUTH_SIGNING_KEY`가 비면 재시작할 때마다 모두 로그아웃된다.
+- 구글 Cloud Console·Kakao Developers의 redirect URI에 `https://hack.refit-100.site/login/oauth2/code/google`, `.../kakao`를 추가한다.
+- `DEV_TOOLS_ENABLED=true`면 앱에 "데모 계정으로 시작"이 열린다(`POST /api/auth/demo`). 누구나 데모 사용자로 들어올 수 있으므로 시연 기간에만 켠다.
 
 ## 프론트엔드 (Vercel)
 
@@ -85,7 +91,7 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 ## 배포 확인 순서
 
 1. `curl https://hack.refit-100.site/healthz` → 200
-2. `curl https://hack.refit-100.site/api/daily` → 200 JSON
+2. `curl https://hack.refit-100.site/api/auth/options` → 200 JSON(켜진 로그인 제공자). `/api/daily`는 토큰 없이 401
 3. `curl -o /dev/null -w "%{http_code}" https://hack.refit-100.site/dev/clock` → 404(토큰 없음), 토큰을 주면 200
-4. Vercel 주소에서 `/api/daily` → 200(rewrite 경유)
+4. Vercel 주소에서 `/api/auth/options` → 200(rewrite 경유)
 5. Claude에 커넥터 연결 → 대화 저장 → 앱에 새 학습 세션 알림

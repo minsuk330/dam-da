@@ -11,6 +11,13 @@ springdoc:
   api-docs:
     enabled: true
 review:
+  auth:
+    # 기존 테스트는 토큰 없이 데모 사용자로 돈다. 인증 동작은 AuthIT가 required=true로 확인한다.
+    required: false
+    google:
+      client-id: ""
+    kakao:
+      client-id: ""
   dev-tools:
     enabled: true
   # backend/.env에 키가 있어도 테스트는 실제 Jev를 부르지 않는다. 검수는 UNAVAILABLE로 끝난다.

@@ -45,7 +45,7 @@ class SyntheticHistoryServiceIT {
     void replacesTheUsersHistoryAndBuildsStatesWithDefaultParameters() {
         long user = USERS.incrementAndGet();
         history.replace(user, List.of(new SyntheticReview(5, Rating.EASY, AT, 1_000)));
-        int version = parameters.registerOptimized(parameters.activeParameters(user).weights(), "{}").version();
+        int version = parameters.registerOptimized(user, parameters.activeParameters(user).weights(), "{}").version();
         activation.activate(user, version);
 
         SyntheticHistoryService.Imported imported = history.replace(user, List.of(

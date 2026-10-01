@@ -82,7 +82,7 @@ class ParameterActivationServiceIT {
         for (int i = 0; i < 4; i++) {
             custom[i] *= 0.3;
         }
-        int version = parameters.registerOptimized(custom, "{}").version();
+        int version = parameters.registerOptimized(user, custom, "{}").version();
         ParameterActivationService.Activated activated = activation.activate(user, version);
 
         assertThat(activated.parameters().version()).isEqualTo(version);
@@ -111,5 +111,17 @@ class ParameterActivationServiceIT {
     void rejectsAnUnknownVersion() {
         assertThatThrownBy(() -> activation.activate(IDS.incrementAndGet(), 9_999))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void personalParametersBelongToTheirOwner() {
+        long owner = IDS.incrementAndGet();
+        long other = IDS.incrementAndGet();
+        int version = parameters.registerOptimized(owner, FsrsSchedulers.defaultParameters(), "{}").version();
+
+        assertThat(parameters.all(owner)).extracting(FsrsParametersService.ParameterSet::version).contains(1, version);
+        assertThat(parameters.all(other)).extracting(FsrsParametersService.ParameterSet::version).contains(1).doesNotContain(version);
+        assertThatThrownBy(() -> activation.activate(other, version)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(activation.activate(owner, version).parameters().version()).isEqualTo(version);
     }
 }
