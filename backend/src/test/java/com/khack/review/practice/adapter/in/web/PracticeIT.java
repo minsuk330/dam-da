@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 import com.khack.review.analysis.application.SessionConfirmationService;
+import com.khack.review.analysis.application.UnitReviewQuestions;
 import com.khack.review.analysis.domain.LearningSessionRepository;
 import com.khack.review.analysis.domain.LearningSessionStatus;
 import com.khack.review.collection.application.ConnectorIntakeService;
@@ -25,9 +26,12 @@ import com.khack.review.common.application.port.out.JevPort;
 import com.khack.review.common.application.port.out.JevResult;
 import com.khack.review.common.json.Json;
 import com.khack.review.memory.application.MemoryStateService;
-import com.khack.review.analysis.application.UnitReviewQuestions;
-import com.khack.review.practice.application.LearningGoalService;
+import com.khack.review.memory.domain.AnswerVerdict;
 import com.khack.review.memory.domain.AttemptKind;
+import com.khack.review.memory.domain.ReviewLog;
+import com.khack.review.memory.domain.ReviewLogRepository;
+import com.khack.review.memory.domain.SelfAssessment;
+import com.khack.review.practice.application.LearningGoalService;
 import com.khack.review.practice.domain.LearningGoal;
 import com.khack.review.practice.domain.PracticeAttempt;
 import com.khack.review.practice.domain.PracticeAttemptRepository;
@@ -35,9 +39,10 @@ import com.khack.review.practice.domain.PracticeSession;
 import com.khack.review.practice.domain.PracticeSessionRepository;
 import com.khack.review.practice.domain.QuestionPresentation;
 import com.khack.review.practice.domain.QuestionPresentationRepository;
-import com.khack.review.memory.domain.SelfAssessment;
 import com.khack.review.question.application.QuestionQualityQuestions;
 import com.khack.review.question.application.port.out.FakeQuestionGenerator;
+import com.khack.review.question.domain.QuestionType;
+import io.github.openspacedrepetition.Rating;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -121,6 +126,9 @@ class PracticeIT {
 
     @Autowired
     MemoryStateService memory;
+
+    @Autowired
+    ReviewLogRepository reviewLogs;
 
     @Autowired
     TimeTravelClock clock;
@@ -243,9 +251,25 @@ class PracticeIT {
                 .as("지나간 제시").isEqualTo(409);
         String secondPath = "/api/practice/presentations/%d/attempts".formatted(secondId);
         assertThat(send("POST", secondPath, "{\"choiceIndex\":9,\"selfAssessment\":\"RECALLED_EASILY\"}").statusCode()).isEqualTo(400);
+        clock.travel(Duration.ofSeconds(10));
         JsonNode choice = ok("POST", secondPath, "{\"choiceIndex\":0,\"selfAssessment\":\"RECALLED_EASILY\"}");
         assertThat(choice.get("kind").asString()).isEqualTo("FIRST_UNASSISTED");
         assertThat(choice.get("correct").asBoolean()).isTrue();
+        // 객관식은 채점이 곧 판정: 등급 변환(객관식은 Easy 없음 → Good) → FSRS 갱신 → 복습 기록
+        assertThat(choice.get("rating").asString()).isEqualTo("GOOD");
+        assertThat(choice.get("holdReason").isNull()).isTrue();
+        PracticeAttempt choiceAttempt = attempts.findById(choice.get("attemptId").asLong()).orElseThrow();
+        assertThat(memory.lastReviewedAt(choiceAttempt.getMemoryItemId())).contains(choiceAttempt.getSubmittedAt());
+        assertThat(memory.nextReviewAt(choiceAttempt.getMemoryItemId())).hasValueSatisfying(
+                due -> assertThat(due).isAfter(choiceAttempt.getSubmittedAt()));
+        ReviewLog choiceLog = reviewLogs.findByAttemptId(choiceAttempt.getId()).orElseThrow();
+        assertThat(choiceLog.getRating()).isEqualTo(Rating.GOOD);
+        assertThat(choiceLog.getPolicyRow()).isEqualTo(7);
+        assertThat(choiceLog.getQuestionType()).isEqualTo(QuestionType.MULTIPLE_CHOICE);
+        assertThat(choiceLog.getVerdict()).isEqualTo(AnswerVerdict.MET);
+        assertThat(choiceLog.isGuessSuspected()).isFalse();
+        assertThat(unaided.get("rating").isNull()).as("서술형 등급은 Jev 판정 뒤(#17)").isTrue();
+        assertThat(reviewLogs.findByAttemptId(firstAttempt.getId())).isEmpty();
 
         // 같은 날 재확인(#20이 편성): 1번 문제를 큐 끝에 넣는다.
         PracticeSession practice = practices.findById(practiceId).orElseThrow();

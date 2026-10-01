@@ -62,6 +62,8 @@ review:
   practice:
     # 첫 학습 문제 상한 (스펙 §7.8)
     first-study-max-questions: 12
+    # 이 시간 안에 고른 객관식 정답은 추측을 의심한다 (스펙 §6.4.5 변환표 행 3)
+    mc-guess-threshold: 3s
   memory:
     # 기억 강도를 정하기 전의 기본 목표 유지율 (스펙 §6.4.7)
     default-retention: 0.9
