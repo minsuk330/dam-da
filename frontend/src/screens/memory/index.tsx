@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useDaily } from '@/api/daily';
@@ -7,6 +8,7 @@ import { useMemoryModel } from '@/api/memory-model';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
+import { ChoiceChip } from '@/components/choice-chip';
 import { Gauge, percent } from '@/components/gauge';
 import { Icon } from '@/components/icon';
 import { Skeleton, SkeletonList } from '@/components/skeleton';
@@ -16,13 +18,19 @@ import { formatRelativeDay, memoryModelStatus, sessionStatusLabel } from '@/labe
 import { openSession } from '@/navigation';
 import { colors, components, spacing } from '@/theme';
 
-/** 기억 탭: 학습 세션 목록과 세션별 기억 게이지 (스펙 §6.4.3). 색은 세션의 목표 유지율 기준이다. */
+import { KnowledgeGraph } from './knowledge-graph';
+
+/**
+ * 기억 탭: 학습 세션 목록과 세션별 기억 게이지 (스펙 §6.4.3). 색은 세션의 목표 유지율 기준이다.
+ * `목록 | 그래프`로 같은 학습을 분야별 지식 그래프로도 본다(스펙 §7.10).
+ */
 export function Memory() {
   const overview = useMemoryOverview();
   const { data, isPending, isError } = overview.sessions;
   const tabBarSpace = useTabBarSpace();
   // 서버의 오늘(시간 이동 반영). 오늘·어제·N일 전 계산에 쓴다.
   const serverToday = useDaily().data?.date;
+  const [view, setView] = useState<'list' | 'graph'>('list');
 
   if (isPending) {
     return (
@@ -71,9 +79,18 @@ export function Memory() {
 
       <MemoryModelLink />
 
-      <ThemedText variant="title" style={styles.sectionTitle}>
-        내 학습
-      </ThemedText>
+      <View style={styles.sectionHeader}>
+        <ThemedText variant="title" style={styles.sectionTitle}>
+          내 학습
+        </ThemedText>
+        <View accessibilityRole="radiogroup" accessibilityLabel="보기 방식" style={styles.viewToggle}>
+          <ChoiceChip label="목록" selected={view === 'list'} onPress={() => setView('list')} />
+          <ChoiceChip label="그래프" selected={view === 'graph'} onPress={() => setView('graph')} />
+        </View>
+      </View>
+      {view === 'graph' ? (
+        <KnowledgeGraph statusOf={(id) => data.find((s) => s.id === id)?.status} />
+      ) : (
       <Card style={styles.list}>
         {data.map((session, i) => {
           const memory = overview.bySession.get(session.id);
@@ -107,6 +124,7 @@ export function Memory() {
           );
         })}
       </Card>
+      )}
     </ScrollView>
   );
 }
@@ -146,7 +164,9 @@ const styles = StyleSheet.create({
   centerText: { textAlign: 'center' },
   content: { padding: spacing.xl, gap: spacing.md },
   summary: { gap: spacing.md },
-  sectionTitle: { marginTop: spacing.md },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+  sectionTitle: { flex: 1 },
+  viewToggle: { flexDirection: 'row', gap: spacing.xs },
   list: { paddingVertical: spacing.xs },
   sessionRow: { gap: spacing.sm, paddingVertical: spacing.lg },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline },
