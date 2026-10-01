@@ -43,7 +43,7 @@ class MemoryModelServiceIT {
         assertThat(model.status()).isEqualTo(ModelStatus.DEFAULT);
         assertThat(model.parametersVersion()).isEqualTo(FsrsParametersService.DEFAULT_VERSION);
         assertThat(model.progress().gradedReviews()).isZero();
-        assertThat(model.progress().requiredReviews()).isEqualTo(1000);
+        assertThat(model.progress().requiredReviews()).isEqualTo(512);
         assertThat(model.defaultCurve()).isNull();
         assertThat(model.predictionImprovement()).isNull();
         assertThat(model.typicalStabilityDays()).isNull();

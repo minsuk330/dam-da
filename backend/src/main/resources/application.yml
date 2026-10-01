@@ -125,7 +125,7 @@ review:
     minutes-per-review: 0.75
     # 개인 매개변수 (스펙 §6.4.9). min-reviews는 optimizer/의 --min-reviews 기본값과 같게 둔다
     personalization:
-      min-reviews: 1000
+      min-reviews: 512
       curve-days: 30
     # 매일 학습 큐 (스펙 §6.4.4, §6.4.6). 문제 유형별 소요 시간은 아래 rating.reference-times를 쓴다
     daily:

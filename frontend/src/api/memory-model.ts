@@ -18,7 +18,7 @@ function mockCurve(stability: number, decay = 0.2): CurvePoint[] {
 const mockDefault: MemoryModel = {
   status: 'DEFAULT',
   parametersVersion: 1,
-  progress: { gradedReviews: 32, requiredReviews: 1000 },
+  progress: { gradedReviews: 32, requiredReviews: 512 },
   curve: mockCurve(3.2602),
   defaultCurve: null,
   firstRecallDays: 3.2602,
@@ -31,7 +31,7 @@ const mockDefault: MemoryModel = {
 const mockPersonalized: MemoryModel = {
   status: 'PERSONALIZED',
   parametersVersion: 4,
-  progress: { gradedReviews: 2009, requiredReviews: 1000 },
+  progress: { gradedReviews: 2009, requiredReviews: 512 },
   curve: mockCurve(2.28, 0.28),
   defaultCurve: mockCurve(3.2602),
   firstRecallDays: 2.28,
