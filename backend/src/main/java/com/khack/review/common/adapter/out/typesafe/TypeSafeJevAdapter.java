@@ -7,6 +7,8 @@ import com.khack.review.common.application.port.out.JevQuestion;
 import com.khack.review.common.application.port.out.JevResult;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,8 @@ import tools.jackson.databind.JsonNode;
  */
 @Component
 public class TypeSafeJevAdapter implements JevPort {
+
+	private static final Logger log = LoggerFactory.getLogger(TypeSafeJevAdapter.class);
 
 	private final RestClient restClient;
 	private final String apiKey;
@@ -48,6 +52,7 @@ public class TypeSafeJevAdapter implements JevPort {
 		body.put("questions", questionBodies);
 
 		JsonNode response;
+		long started = System.nanoTime();
 		try {
 			response = restClient.post()
 				.uri("/v1/systemone")
@@ -64,6 +69,7 @@ public class TypeSafeJevAdapter implements JevPort {
 		catch (RestClientException e) {
 			throw new JevCallException(0, "Jev 호출 실패: " + e.getMessage(), e);
 		}
+		log.info("[jev] {} {}ms", questions.keySet(), (System.nanoTime() - started) / 1_000_000);
 		return toResult(response, questions);
 	}
 
