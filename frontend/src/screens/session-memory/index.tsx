@@ -2,6 +2,7 @@ import { router, Stack } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useDaily } from '@/api/daily';
 import { useLearningSession } from '@/api/learning-sessions';
 import { gaugeOf, useFirstStudySummary, useSessionGauge, useTargetRetention, type UnitView } from '@/api/memory';
 import { useStartFirstStudy } from '@/api/practice';
@@ -11,7 +12,7 @@ import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
 import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
-import { formatDate, itemKindLabel } from '@/labels';
+import { itemKindLabel, nextReviewLabel } from '@/labels';
 import { colors, spacing } from '@/theme';
 
 /**
@@ -25,6 +26,8 @@ export function SessionMemory({ id }: { id: number }) {
   const summary = useFirstStudySummary(id);
   const target = useTargetRetention(id);
   const start = useStartFirstStudy(id);
+  // 서버의 오늘. 다음 복습일이 지났는지 시간 이동 기준으로 판단한다.
+  const serverToday = useDaily().data?.date;
 
   if (gauge.isPending || session.isPending) {
     return (
@@ -75,7 +78,7 @@ export function SessionMemory({ id }: { id: number }) {
         <Gauge size="lg" value={value} target={target} />
         <ThemedText variant="caption" tone="inkSecondary">
           목표 유지율 {percent(target)}%
-          {summary.data?.nextReviewAt ? ` · 다음 복습 ${formatDate(summary.data.nextReviewAt)}` : ''}
+          {summary.data?.nextReviewAt ? ` · ${nextReviewLabel(summary.data.nextReviewAt, serverToday)}` : ''}
         </ThemedText>
       </Card>
 
@@ -92,7 +95,7 @@ export function SessionMemory({ id }: { id: number }) {
         </ThemedText>
       ) : (
         units.map((unit) => (
-          <UnitCard key={unit.unitId} unit={unit} target={target} nextReview={nextReview} />
+          <UnitCard key={unit.unitId} unit={unit} target={target} nextReview={nextReview} serverToday={serverToday} />
         ))
       )}
 
@@ -109,10 +112,12 @@ function UnitCard({
   unit,
   target,
   nextReview,
+  serverToday,
 }: {
   unit: UnitView;
   target: number;
   nextReview: Map<number, string | null>;
+  serverToday: string | undefined;
 }) {
   const { average, checkedItems, totalItems, weakestItemId, weakestPercent } = unit.gauge;
   const weakest = unit.items.find((i) => i.memoryItemId === weakestItemId);
@@ -146,7 +151,7 @@ function UnitCard({
               <ThemedText variant="subhead">{item.content}</ThemedText>
               <Gauge value={item.gauge.retrievability} target={target} />
               <ThemedText variant="caption" tone="inkMuted">
-                {item.gauge.checked ? (next ? `다음 복습 ${formatDate(next)}` : '다음 복습일 계산 전') : '아직 풀어 보지 않았어요'}
+                {item.gauge.checked ? (next ? nextReviewLabel(next, serverToday) : '다음 복습일 계산 전') : '아직 풀어 보지 않았어요'}
               </ThemedText>
             </View>
           );

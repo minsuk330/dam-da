@@ -4,7 +4,7 @@
 
 ```
 브라우저 ──▶ Vercel (frontend/dist)
-              └─ /api/** ──rewrite──▶ https://hack.refit-100.site ──▶ Caddy(:443) ──▶ app(:8080) ──▶ postgres
+              └─ /api/** ──rewrite──▶ https://hack.refit-100.site ──▶ 호스트 nginx(:443) ──▶ app(127.0.0.1:18080) ──▶ postgres
 Claude 커넥터 ──▶ https://hack.refit-100.site/mcp ─────────────────────┘
 ```
 
@@ -14,34 +14,44 @@ Claude 커넥터 ──▶ https://hack.refit-100.site/mcp ───────
 
 | 파일 | 내용 |
 |---|---|
-| `compose.yml` | `postgres`(17), `app`(`backend/Dockerfile` 빌드), `caddy`(HTTPS·리버스 프록시). 외부에는 Caddy의 80·443만 연다 |
-| `Caddyfile` | `DOMAIN`으로 Let's Encrypt 인증서 자동 발급, `/v3/api-docs`·`/swagger-ui` 차단, `/mcp` 스트리밍을 위해 버퍼링 끔 |
+| `compose.yml` | `postgres`(17, 외부 포트 없음), `app`(`backend/Dockerfile` 빌드, `127.0.0.1:${APP_PORT}`에만 열림), `caddy`(선택 프로필) |
+| `nginx.conf.example` | 호스트 nginx 사이트 예시. `/v3/api-docs`·`/swagger-ui` 차단, `/mcp` 스트리밍을 위해 버퍼링 끔 |
+| `Caddyfile` | 80·443이 비어 있는 VPS용(`--profile caddy`). `DOMAIN` 인증서 자동 발급 |
 | `.env.example` | 배포용 환경 변수. `.env`로 복사해 채운다(커밋 금지) |
+
+현재 VPS(`85.113.70.112`)는 호스트 nginx가 80·443을 쓰고 다른 서비스도 같이 돌므로 nginx 방식으로 올린다. 앱 포트 `18080`은 다른 서비스(`127.0.0.1:8080` 등)와 겹치지 않게 고른 값이다.
 
 ### 준비
 
 - DNS: `hack.refit-100.site`의 A(필요하면 AAAA) 레코드가 VPS IP를 가리킨다.
-- 방화벽: 80·443(TCP), 443(UDP, HTTP/3) 허용. 인증서 발급에 80이 필요하다.
-- 80·443을 쓰는 다른 웹 서버(nginx 등)가 없어야 한다. 있으면 그 서버에서 `127.0.0.1`의 앱으로 넘기도록 바꾸고 `caddy` 서비스를 뺀다.
-- Docker와 Compose 플러그인(`docker compose version`).
+- 방화벽: 80·443 허용. 인증서 발급에 80이 필요하다.
+- Docker와 Compose 플러그인(`docker compose version`), 호스트 nginx와 certbot.
 
 ### 처음 배포
 
 ```bash
-git clone https://github.com/minsuk330/ku-hack.git && cd ku-hack/backend/deploy
+cd ~/apps && git clone https://github.com/minsuk330/ku-hack.git khack && cd khack/backend/deploy
 cp .env.example .env
 # .env 채우기: DB_PASSWORD, OPENAI_API_KEY, TYPESAFE_API_KEY, DEV_TOOLS_TOKEN(openssl rand -hex 32)
 docker compose up -d --build
 docker compose ps                     # app이 healthy가 될 때까지 (첫 기동 1분 안팎)
+
+# 호스트 nginx 사이트와 인증서
+cp nginx.conf.example /etc/nginx/sites-available/hack.refit-100.site
+ln -s /etc/nginx/sites-available/hack.refit-100.site /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+certbot --nginx -d hack.refit-100.site --redirect
 curl https://hack.refit-100.site/healthz
 ```
+
+80·443이 비어 있는 VPS라면 nginx 대신 `docker compose --profile caddy up -d --build`로 Caddy가 인증서까지 처리한다.
 
 빈 DB로 시작한다. 테이블은 앱이 기동하면서 만든다(`ddl-auto: update`).
 
 ### 업데이트
 
 ```bash
-cd ku-hack && git pull
+cd ~/apps/khack && git pull
 cd backend/deploy && docker compose up -d --build app
 ```
 
