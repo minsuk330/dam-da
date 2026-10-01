@@ -49,7 +49,7 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # 시스템 기본 JDK가 21�
 - 영속성은 JPA만 쓴다. MyBatis·jOOQ·JdbcTemplate 직접 SQL을 추가하지 않는다. 필요한 경우 JPQL 또는 Spring Data 쿼리 메서드, 불가피하면 `@Query(nativeQuery = true)`.
 - 현재 시각은 주입받은 `Clock`으로만 얻는다(`LocalDateTime.now()` 등 직접 호출 금지). 시간 이동 데모 모드의 전제다.
 - API 키·ngrok URL·공유 링크 등 비밀/개인 데이터는 커밋하지 않는다. 키는 `backend/.env`(gitignore)에만 둔다.
-- `/dev/**` 뷰어는 로컬 전용이다. 운영 프로파일에서 노출하지 않는다.
+- `/dev/**` 개발 도구(세션 뷰어, 시간 이동)는 `DEV_TOOLS_ENABLED=true`일 때만 열린다. 로컬 직접 요청 또는 `X-Dev-Token` 헤더가 `DEV_TOOLS_TOKEN`과 같은 원격 요청만 허용한다. 토큰은 커밋하지 않고, 프론트엔드 번들에도 넣지 않는다.
 
 ## 아키텍처 (필수)
 
