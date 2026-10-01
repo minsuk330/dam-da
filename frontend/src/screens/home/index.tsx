@@ -12,6 +12,7 @@ import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
 import { Icon } from '@/components/icon';
 import { Notice } from '@/components/notice';
+import { Skeleton, SkeletonList } from '@/components/skeleton';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatRelativeDay, inputPathIcon } from '@/labels';
@@ -129,11 +130,7 @@ function TodayStudy({
   const nothingToSolve = start.data !== undefined && start.data.practiceId === null;
 
   if (isPending) {
-    return (
-      <Card style={styles.todayCard}>
-        <ActivityIndicator color={colors.primary} />
-      </Card>
-    );
+    return <Skeleton shape="block" height={components.cardHero.height} />;
   }
   if (isError || !daily) {
     return (
@@ -308,7 +305,13 @@ function MemorySummary() {
         </Link>
       </View>
       <Card style={styles.memoryCard}>
-        {isPending && <ThemedText tone="inkMuted">불러오는 중…</ThemedText>}
+        {isPending && (
+          <>
+            <Skeleton width="50%" />
+            <Skeleton height={components.gaugeLarge.height} />
+            <Skeleton width="70%" />
+          </>
+        )}
         {isError && <ThemedText tone="dangerInk">기억 상태를 불러오지 못했어요.</ThemedText>}
         {data?.length === 0 && <ThemedText tone="inkMuted">대화를 추가하면 얼마나 기억하는지 보여드려요.</ThemedText>}
         {data && data.length > 0 && (
@@ -352,7 +355,7 @@ function RecentConversations({ serverToday }: { serverToday: string | undefined 
         </Link>
       </View>
 
-      {isPending && <ThemedText tone="inkMuted">불러오는 중…</ThemedText>}
+      {isPending && <SkeletonList />}
       {isError && <ThemedText tone="dangerInk">대화를 불러오지 못했어요.</ThemedText>}
       {conversations?.length === 0 && (
         <ThemedText tone="inkMuted">아직 받은 대화가 없어요. Claude에서 “복습에 넣어줘”라고 요청해 보세요.</ThemedText>

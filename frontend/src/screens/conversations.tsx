@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useConversations } from '@/api/conversations';
 import { useDaily } from '@/api/daily';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Icon } from '@/components/icon';
+import { SkeletonList } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { fidelityLabel, formatRelativeDay, inputPathIcon, inputPathLabel } from '@/labels';
 import { colors, components, spacing } from '@/theme';
@@ -17,8 +18,8 @@ export function Conversations() {
 
   if (isPending) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+      <View style={styles.content}>
+        <SkeletonList rows={4} />
       </View>
     );
   }

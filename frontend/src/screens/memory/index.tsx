@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useDaily } from '@/api/daily';
 import { useMemoryOverview } from '@/api/memory';
@@ -9,6 +9,7 @@ import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Gauge, percent } from '@/components/gauge';
 import { Icon } from '@/components/icon';
+import { Skeleton, SkeletonList } from '@/components/skeleton';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatRelativeDay, memoryModelStatus, sessionStatusLabel } from '@/labels';
@@ -25,8 +26,9 @@ export function Memory() {
 
   if (isPending) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+      <View style={styles.content}>
+        <Skeleton shape="block" height={components.cardStat.height} />
+        <SkeletonList />
       </View>
     );
   }

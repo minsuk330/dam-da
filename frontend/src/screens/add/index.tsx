@@ -82,7 +82,7 @@ export function AddConversation() {
     <ScrollView
       keyboardShouldPersistTaps="handled"
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg, paddingBottom: tabBarSpace }]}>
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing['3xl'], paddingBottom: tabBarSpace }]}>
       <View style={styles.intro}>
         <ThemedText variant="display">AI와 나눈 대화를{'\n'}추가해요</ThemedText>
         <ThemedText variant="subhead" tone="inkMuted">
@@ -170,6 +170,19 @@ export function AddConversation() {
           </ThemedText>
         )}
       </View>
+
+      {/* 앱의 기본 입력 경로는 Claude 커넥터다(스펙 §7.6). 링크·붙여넣기는 커넥터를 못 쓸 때의 대안이다. */}
+      <View style={styles.tip}>
+        <View style={styles.tipIcon}>
+          <Icon name="message-circle" color={colors.primaryInk} />
+        </View>
+        <View style={styles.tipText}>
+          <ThemedText variant="headline">Claude에서 바로 보낼 수도 있어요</ThemedText>
+          <ThemedText variant="subhead" tone="inkSecondary">
+            커넥터를 연결해 두면 대화 중에 “복습에 넣어줘”라고만 말해도 여기로 들어와요.
+          </ThemedText>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -177,6 +190,23 @@ export function AddConversation() {
 const styles = StyleSheet.create({
   content: { padding: spacing.xl, gap: spacing['2xl'] },
   intro: { gap: spacing.sm },
+  tip: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.xl,
+    borderRadius: components.card.rounded,
+    borderCurve: 'continuous',
+    backgroundColor: colors.surfaceSoft,
+  },
+  tipIcon: {
+    width: components.iconCircle.size,
+    height: components.iconCircle.size,
+    borderRadius: components.iconCircle.rounded,
+    backgroundColor: components.iconCircle.backgroundColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipText: { flex: 1, gap: spacing.xs },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   centerText: { textAlign: 'center' },
   doneIcon: {

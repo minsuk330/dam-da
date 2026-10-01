@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { components, spacing } from '@/theme';
+import { components, motion, spacing } from '@/theme';
 
 const sizes = {
   md: { height: components.gauge.height, labelVariant: 'caption', labelTone: 'inkSecondary' },
@@ -86,17 +88,24 @@ export function Gauge({
           backgroundColor: level ? level.track.backgroundColor : components.gaugeUnchecked.backgroundColor,
           overflow: 'hidden',
         }}>
-        {level && now !== null && (
-          <View
-            style={{
-              width: `${now}%`,
-              height: '100%',
-              borderRadius: level.fill.rounded,
-              backgroundColor: level.fill.backgroundColor,
-            }}
-          />
-        )}
+        {level && now !== null && <Fill percent={now} color={level.fill.backgroundColor} rounded={level.fill.rounded} />}
       </View>
     </View>
   );
+}
+
+/**
+ * 게이지 채움. 처음 보이거나 값이 바뀌면 지금 값까지 차오른다(DESIGN.md 움직임).
+ * 기기의 움직임 줄이기 설정이 켜져 있으면 바로 그린다.
+ */
+function Fill({ percent: target, color, rounded }: { percent: number; color: string; rounded: number }) {
+  const reduceMotion = useReducedMotion();
+  const width = useSharedValue(reduceMotion ? target : 0);
+
+  useEffect(() => {
+    width.value = reduceMotion ? target : withTiming(target, { duration: motion.gauge, easing: Easing.out(Easing.cubic) });
+  }, [reduceMotion, target, width]);
+
+  const animated = useAnimatedStyle(() => ({ width: `${width.value}%` }));
+  return <Animated.View style={[{ height: '100%', borderRadius: rounded, backgroundColor: color }, animated]} />;
 }
