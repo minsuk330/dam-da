@@ -113,6 +113,10 @@ public class LearningConversation {
                 List.copyOf(reviewUnits), topicHint, List.copyOf(warnings), null, null);
     }
 
+    public List<UserTurn> userTurns() {
+        return turns.stream().map(ConversationTurn::toUserTurn).toList();
+    }
+
     public Long getId() {
         return id;
     }

@@ -1,34 +1,30 @@
 package com.khack.review.tools.question;
 
-import com.khack.review.collection.domain.AiVerdict;
-import com.khack.review.collection.domain.Intent;
-import com.khack.review.collection.domain.ReviewUnit;
+import com.khack.review.analysis.application.SessionContent;
+import com.khack.review.analysis.domain.LearningSession;
 import com.khack.review.collection.domain.SavedSession;
 import com.khack.review.collection.domain.SessionInput;
-import com.khack.review.collection.domain.SessionStore;
-import com.khack.review.collection.domain.UserTurn;
 import com.khack.review.common.adapter.out.openai.OpenAiLlmAdapter;
 import com.khack.review.common.application.port.out.LlmPort;
 import com.khack.review.common.json.Json;
 import com.khack.review.question.application.QuestionDrafter;
+import com.khack.review.question.application.QuestionSources;
 import com.khack.review.question.domain.LearningGoal;
-import com.khack.review.question.domain.PointKind;
 import com.khack.review.question.domain.QuestionPlan;
 import com.khack.review.question.domain.QuestionPlanner;
 import com.khack.review.question.domain.QuestionSource;
+import com.khack.review.tools.verify.SessionSource;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -39,7 +35,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
  *
  * <pre>
  * ./gradlew -q questionGen -Pargs="fixtures/sessions/b2-etag.json CORRECT_MISCONCEPTION,UNDERSTAND_PRINCIPLE"
- * ./gradlew -q questionGen -Pargs="latest REMEMBER_CORE"        (data/sessions.jsonl의 마지막 세션, 또는 세션 ID)
+ * ./gradlew -q questionGen -Pargs="latest REMEMBER_CORE"        (실행 중인 서버에 저장된 마지막 대화, 또는 대화 ID. -Pserver로 서버 지정)
  * ./gradlew -q questionGen -Pargs="fixtures/sessions/b2-etag.json REMEMBER_CORE --plan"   (LLM 호출 없이 출제 계획만)
  * ./gradlew -q questionGen -Pargs="... --out build/question-gen.json"   (UTF-8 파일로 저장. 콘솔에서 한글이 깨질 때)
  * </pre>
@@ -66,7 +62,7 @@ public final class QuestionGenCli {
 
         QuestionPlan plan = QuestionPlanner.plan(source, goals);
         Map<String, Object> output = new LinkedHashMap<>();
-        output.put("sessionId", source.sessionId());
+        output.put("source", args[0]);
         output.put("plan", plan);
         if (!planOnly) {
             Properties env = loadEnv();
@@ -102,44 +98,18 @@ public final class QuestionGenCli {
     private static QuestionSource load(String arg) throws IOException {
         Path file = Path.of(arg);
         if (Files.isRegularFile(file)) {
-            SessionInput input = Json.MAPPER.readValue(Files.readString(file), SessionInput.class);
-            return source(file.getFileName().toString(), input.userTurns(), input.reviewUnits());
+            return source(Json.MAPPER.readValue(Files.readString(file), SessionInput.class));
         }
-        SessionStore store = new SessionStore(
-                Path.of(System.getProperty("review.sessions-file", "data/sessions.jsonl")), Clock.systemUTC());
-        SavedSession session = (arg.equals("latest") ? store.latest()
-                : store.list().stream().filter(s -> s.id().equals(arg)).findFirst())
+        String[] id = arg.equals("latest") ? new String[0] : new String[] {arg};
+        SavedSession session = SessionSource.find(id, 0)
                 .orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다: " + arg));
-        return source(session.id(), session.userTurns(), session.reviewUnits());
+        return source(new SessionInput(session.userTurns(), session.reviewUnits(), session.topicHint()));
     }
 
-    /** 커넥터 스키마(v5)를 문제 생성 입력으로 옮긴다. 헷갈린 지점의 교정은 해당 발화의 correction이다. */
-    static QuestionSource source(String sessionId, List<UserTurn> userTurns, List<ReviewUnit> reviewUnits) {
-        Map<Integer, UserTurn> byIndex = userTurns.stream()
-                .collect(Collectors.toMap(UserTurn::index, Function.identity(), (a, b) -> a));
-        List<QuestionSource.Turn> turns = userTurns.stream()
-                .map(t -> new QuestionSource.Turn(t.index(), t.text(), t.intent() == Intent.meta))
-                .toList();
-        List<QuestionSource.Unit> units = reviewUnits.stream()
-                .map(unit -> new QuestionSource.Unit(
-                        unit.title(),
-                        unit.keyPoints().stream()
-                                .map(p -> new QuestionSource.KeyPoint(p.point(),
-                                        PointKind.valueOf(p.effectiveKind().name().toUpperCase()), p.turns()))
-                                .toList(),
-                        unit.confusions().stream()
-                                .map(c -> new QuestionSource.Confusion(c.turn(), c.userBelief(), correction(byIndex.get(c.turn()))))
-                                .toList()))
-                .toList();
-        return new QuestionSource(sessionId, turns, units);
-    }
-
-    private static String correction(UserTurn turn) {
-        if (turn == null) {
-            return null;
-        }
-        AiVerdict verdict = turn.effectiveVerdict();
-        return verdict == AiVerdict.partial || verdict == AiVerdict.corrected ? turn.correction() : null;
+    /** 서버와 같은 경로로 옮긴다: 커넥터 스키마(v5) → 학습 세션·기억 항목 → 문제 생성 입력. 저장하지 않아 ID는 없다. */
+    static QuestionSource source(SessionInput input) {
+        LearningSession session = LearningSession.create(0L, 0L, input, Instant.EPOCH);
+        return QuestionSources.of(SessionContent.of(session), input.userTurns());
     }
 
     private static Properties loadEnv() throws IOException {

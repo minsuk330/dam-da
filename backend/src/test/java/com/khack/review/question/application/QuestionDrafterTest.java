@@ -58,7 +58,7 @@ class QuestionDrafterTest {
         assertThat(call.systemPrompt()).isEqualTo(QuestionPrompt.SYSTEM);
         assertThat(call.userPrompt())
                 .contains("\"targetId\":\"t1\"", "\"type\":\"ERROR_FINDING\"", "잘못 믿은 내용", "AI의 교정", "발화 2")
-                .doesNotContain("복습에 넣어줘");
+                .doesNotContain("발화 5");
     }
 
     @Test

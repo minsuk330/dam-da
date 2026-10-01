@@ -17,6 +17,6 @@ public record QuestionPlan(
         Map<LearningGoal, String> emptyGoals,
         List<Skipped> skipped) {
 
-    public record Skipped(int unitIndex, ItemKind itemKind, int itemIndex, String reason) {
+    public record Skipped(int unitIndex, int itemIndex, String reason) {
     }
 }

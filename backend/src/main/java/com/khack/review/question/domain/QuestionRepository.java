@@ -5,5 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 
-    List<Question> findBySessionIdAndStatusOrderById(String sessionId, QuestionStatus status);
+    List<Question> findBySessionId(Long sessionId);
+
+    List<Question> findBySessionIdAndStatusOrderById(Long sessionId, QuestionStatus status);
 }

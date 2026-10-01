@@ -10,7 +10,7 @@ public record QuestionTarget(
         LearningGoal goal,
         QuestionType type,
         int unitIndex,
-        ItemKind itemKind,
         int itemIndex,
+        ItemKind itemKind,
         List<Integer> evidenceTurns) {
 }

@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * 기억 항목 하나를 대상으로 생성한 문제. 같은 항목의 문제와 변형 문제는 기억 상태를 공유한다(스펙 규칙 17).
- * 기억 항목은 세션 안의 위치(복습 단위, 종류, 순서)로 가리킨다. 기억 항목 엔티티가 생기면 그 ID로 바꾼다.
+ * 학습 세션과 기억 항목은 분석 컨텍스트의 것이며 ID로만 참조한다.
  */
 @Entity
 @Table(name = "question")
@@ -29,17 +29,10 @@ public class Question {
     private Long userId;
 
     @Column(nullable = false)
-    private String sessionId;
+    private Long sessionId;
 
     @Column(nullable = false)
-    private int unitIndex;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ItemKind itemKind;
-
-    @Column(nullable = false)
-    private int itemIndex;
+    private Long memoryItemId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -92,16 +85,14 @@ public class Question {
     protected Question() {
     }
 
-    private Question(Long userId, String sessionId, QuestionTarget target, Content content, String promptVersion,
-            Instant createdAt) {
+    private Question(Long userId, Long sessionId, Long memoryItemId, QuestionTarget target, Content content,
+            String promptVersion, Instant createdAt) {
         if (target.evidenceTurns().isEmpty()) {
             throw new IllegalArgumentException("문제는 원문 근거 발화를 가져야 합니다.");
         }
         this.userId = userId;
         this.sessionId = sessionId;
-        this.unitIndex = target.unitIndex();
-        this.itemKind = target.itemKind();
-        this.itemIndex = target.itemIndex();
+        this.memoryItemId = memoryItemId;
         this.goal = target.goal();
         this.type = target.type();
         this.status = QuestionStatus.CANDIDATE;
@@ -118,9 +109,9 @@ public class Question {
     }
 
     /** 품질 검사 전의 문제 후보를 만든다. */
-    public static Question candidate(Long userId, String sessionId, QuestionTarget target, Content content,
-            String promptVersion, Instant createdAt) {
-        return new Question(userId, sessionId, target, content, promptVersion, createdAt);
+    public static Question candidate(Long userId, Long sessionId, Long memoryItemId, QuestionTarget target,
+            Content content, String promptVersion, Instant createdAt) {
+        return new Question(userId, sessionId, memoryItemId, target, content, promptVersion, createdAt);
     }
 
     /** LLM이 생성한 문제 내용. */
@@ -142,20 +133,12 @@ public class Question {
         return userId;
     }
 
-    public String getSessionId() {
+    public Long getSessionId() {
         return sessionId;
     }
 
-    public int getUnitIndex() {
-        return unitIndex;
-    }
-
-    public ItemKind getItemKind() {
-        return itemKind;
-    }
-
-    public int getItemIndex() {
-        return itemIndex;
+    public Long getMemoryItemId() {
+        return memoryItemId;
     }
 
     public LearningGoal getGoal() {

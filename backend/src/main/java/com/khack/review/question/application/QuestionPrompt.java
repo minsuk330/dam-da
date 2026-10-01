@@ -80,26 +80,23 @@ final class QuestionPrompt {
     /** 사용자 메시지: 복습 단위 맥락과 출제 대상 목록을 JSON으로 담는다. */
     static String user(QuestionSource source, int unitIndex, List<Identified> targets) {
         QuestionSource.Unit unit = source.units().get(unitIndex);
-        List<UnitKeyPoint> keyPoints = unit.keyPoints().stream()
-                .map(p -> new UnitKeyPoint(p.point(), p.kind().name().toLowerCase()))
+        List<UnitKeyPoint> keyPoints = unit.items().stream()
+                .filter(item -> item.kind() != ItemKind.CONFUSION)
+                .map(item -> new UnitKeyPoint(item.content(), item.kind().name().toLowerCase()))
                 .toList();
-        List<Target> items = targets.stream().map(t -> target(source, unit, t)).toList();
+        List<Target> items = targets.stream().map(t -> target(source, t)).toList();
         return Json.MAPPER.writeValueAsString(new Input(unit.title(), keyPoints, items));
     }
 
-    private static Target target(QuestionSource source, QuestionSource.Unit unit, Identified identified) {
+    private static Target target(QuestionSource source, Identified identified) {
         QuestionTarget target = identified.target();
         Map<Integer, String> texts = source.turns().stream()
                 .collect(Collectors.toMap(QuestionSource.Turn::index, QuestionSource.Turn::text, (a, b) -> a));
         List<String> utterances = target.evidenceTurns().stream().map(texts::get).filter(Objects::nonNull).toList();
-        Item item;
-        if (target.itemKind() == ItemKind.CONFUSION_POINT) {
-            QuestionSource.Confusion confusion = unit.confusions().get(target.itemIndex());
-            item = new Item(null, null, confusion.userBelief(), confusion.correction());
-        } else {
-            QuestionSource.KeyPoint point = unit.keyPoints().get(target.itemIndex());
-            item = new Item(point.point(), point.kind().name().toLowerCase(), null, null);
-        }
+        QuestionSource.Item memoryItem = source.item(target);
+        Item item = memoryItem.kind() == ItemKind.CONFUSION
+                ? new Item(null, null, memoryItem.content(), memoryItem.correction())
+                : new Item(memoryItem.content(), memoryItem.kind().name().toLowerCase(), null, null);
         return new Target(identified.targetId(), target.type(), task(target.goal()), item, utterances);
     }
 
