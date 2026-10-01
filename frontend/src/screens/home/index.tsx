@@ -15,11 +15,15 @@ import { Notice } from '@/components/notice';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime } from '@/labels';
+import { openNotification } from '@/navigation';
 import { colors, components, spacing } from '@/theme';
 
 import { StatCard } from '@/components/stat-card';
 
 const today = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
+
+const openPractice = (practiceId: number) =>
+  router.push({ pathname: '/review', params: { practiceId: String(practiceId) } });
 
 /** 홈: 새 세션 알림 → 오늘의 학습 → 연속 학습 일수 → 기억 게이지 요약 → 최근 받은 대화 (스펙 §6.4.3, §7.7). */
 export function Home() {
@@ -29,6 +33,21 @@ export function Home() {
   const streak = useStreak();
   const data = daily.data;
   const empty = data !== undefined && data.total === 0 && !data.started;
+  // 오늘의 학습 카드와 매일 학습 알림 배너가 같은 시작 요청을 쓴다(준비 중·실패 표시를 함께 본다).
+  const start = useStartDaily();
+
+  /** 시작했으면 이어서 풀이로, 시작 전이면 시작해서 풀이로 간다. */
+  function openDaily() {
+    if (data?.practiceId) {
+      openPractice(data.practiceId);
+      return;
+    }
+    start.mutate(undefined, {
+      onSuccess: (started) => {
+        if (started.practiceId) openPractice(started.practiceId);
+      },
+    });
+  }
 
   return (
     <ScrollView
@@ -36,7 +55,7 @@ export function Home() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg, paddingBottom: tabBarSpace }]}>
       <HomeHeader />
 
-      <SessionReadyBanner />
+      <NotificationBanner dailyCompleted={data?.completed ?? false} onOpenDaily={openDaily} />
 
       <View style={styles.titleRow}>
         <View style={styles.title}>
@@ -70,7 +89,14 @@ export function Home() {
         />
       </View>
 
-      <TodayStudy daily={daily.data} isPending={daily.isPending} isError={daily.isError} refetch={() => daily.refetch()} />
+      <TodayStudy
+        daily={daily.data}
+        isPending={daily.isPending}
+        isError={daily.isError}
+        refetch={() => daily.refetch()}
+        start={start}
+        onOpen={openDaily}
+      />
 
       <MemorySummary />
 
@@ -88,13 +114,16 @@ function TodayStudy({
   isPending,
   isError,
   refetch,
+  start,
+  onOpen,
 }: {
   daily: Daily | undefined;
   isPending: boolean;
   isError: boolean;
   refetch: () => void;
+  start: ReturnType<typeof useStartDaily>;
+  onOpen: () => void;
 }) {
-  const start = useStartDaily();
   const nothingToSolve = start.data !== undefined && start.data.practiceId === null;
 
   if (isPending) {
@@ -145,21 +174,6 @@ function TodayStudy({
     );
   }
 
-  const open = (practiceId: number) =>
-    router.push({ pathname: '/review', params: { practiceId: String(practiceId) } });
-
-  function onPress() {
-    if (daily?.practiceId) {
-      open(daily.practiceId);
-      return;
-    }
-    start.mutate(undefined, {
-      onSuccess: (started) => {
-        if (started.practiceId) open(started.practiceId);
-      },
-    });
-  }
-
   return (
     <View style={styles.today}>
       <Pressable
@@ -167,7 +181,7 @@ function TodayStudy({
         accessibilityLabel={daily.started ? '오늘의 학습 이어서 하기' : '오늘의 학습 시작하기'}
         accessibilityState={{ busy: start.isPending }}
         disabled={start.isPending}
-        onPress={onPress}>
+        onPress={onOpen}>
         {({ pressed }) => (
           <Card variant="hero" pressed={pressed} style={styles.hero}>
             <View style={styles.heroText}>
@@ -197,11 +211,11 @@ function TodayStudy({
 
 /**
  * 레퍼런스 홈 헤더: 왼쪽 원형 메뉴 버튼 + 서비스명, 오른쪽 원형 알림 버튼 + 프로필.
- * 메뉴 화면이 없어 메뉴는 받은 학습 대화 목록으로 보낸다. 알림은 알림 목록으로 간다.
+ * 메뉴 화면이 없어 메뉴는 받은 학습 대화 목록으로 보낸다. 알림은 알림 목록으로, 프로필은 내 정보로 간다.
  */
 function HomeHeader() {
   const { data } = useNotifications();
-  const unread = data?.items.find((n) => !n.read && n.type === 'SESSION_READY');
+  const unread = data?.items.some((n) => !n.read);
 
   return (
     <View style={styles.header}>
@@ -223,22 +237,32 @@ function HomeHeader() {
         <Icon name="bell" />
         {unread && <View style={styles.unreadDot} />}
       </Pressable>
-      <View accessibilityLabel="프로필: 지원" style={styles.avatar}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="내 정보: 지원"
+        onPress={() => router.push('/me')}
+        style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}>
         <ThemedText variant="headline" tone="primaryInk">
           지
         </ThemedText>
-      </View>
+      </Pressable>
     </View>
   );
 }
 
-/** 검수를 마친 새 세션의 "학습 내용 도착" 알림. 읽지 않은 것 중 최신 하나만 보여준다. */
-function SessionReadyBanner() {
+/**
+ * 읽지 않은 알림 중 최신 하나: 검수를 마친 새 세션의 "학습 내용 도착", 또는 알림 시각이 지난 "오늘의 학습".
+ * 오늘의 학습 알림은 누르면 바로 시작(또는 이어서) 풀이로 간다. 오늘 학습을 이미 끝냈으면 보여주지 않는다.
+ */
+function NotificationBanner({ dailyCompleted, onOpenDaily }: { dailyCompleted: boolean; onOpenDaily: () => void }) {
   const { data } = useNotifications();
   const markRead = useMarkNotificationRead();
-  const latest = data?.items.find((n) => !n.read && n.type === 'SESSION_READY');
+  const latest = data?.items.find(
+    (n) => !n.read && (n.type === 'SESSION_READY' || (n.type === 'DAILY_LEARNING' && !dailyCompleted)),
+  );
   // 불러오는 중·오류·없음은 배너를 그리지 않는다. 알림은 홈의 보조 정보라 자리를 비워 두지 않는다.
   if (!latest) return null;
+  const daily = latest.type === 'DAILY_LEARNING';
 
   return (
     <Pressable
@@ -246,11 +270,12 @@ function SessionReadyBanner() {
       accessibilityLabel={`${latest.title}. ${latest.body}`}
       onPress={() => {
         markRead.mutate(latest.id);
-        router.push({ pathname: '/sessions/[id]', params: { id: String(latest.targetId) } });
+        if (daily) onOpenDaily();
+        else openNotification(latest);
       }}
       style={({ pressed }) => [styles.row, styles.banner, pressed && styles.rowPressed]}>
       <View style={[styles.rowIcon, styles.bannerIcon]}>
-        <Icon name="bell" size="md" color={colors.onPrimary} />
+        <Icon name={daily ? 'clock' : 'bell'} size="md" color={colors.onPrimary} />
       </View>
       <View style={styles.rowText}>
         <ThemedText variant="headline" numberOfLines={2}>
@@ -373,6 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   circlePressed: { backgroundColor: components.cardPressed.backgroundColor },
+  avatarPressed: { backgroundColor: colors.lavender },
   unreadDot: {
     position: 'absolute',
     top: spacing.md,
