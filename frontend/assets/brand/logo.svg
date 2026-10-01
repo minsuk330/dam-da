@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <!--
-    AI Learning Companion 로고: 대화(말풍선) 안에서 확인(체크)하고, AI(라벤더 반짝임)가 돕는다.
+    담다 로고: 대화(말풍선) 안에서 확인(체크)하고, AI(라벤더 반짝임)가 돕는다.
     색은 DESIGN.md primary #2E5BE8 / on-primary #FFFFFF / lavender #BDCDFF.
     앱 안 로고는 src/components/logo.tsx, 아이콘 PNG(assets/images)는 이 도형으로 만든다.
   -->

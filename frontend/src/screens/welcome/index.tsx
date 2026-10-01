@@ -45,7 +45,7 @@ export function Welcome() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.brand}>
           <Logo size={components.iconButtonPrimary.size} />
-          <ThemedText variant="headline">AI Learning Companion</ThemedText>
+          <ThemedText variant="title">담다</ThemedText>
         </View>
 
         <View style={styles.intro}>

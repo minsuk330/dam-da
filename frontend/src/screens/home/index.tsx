@@ -229,9 +229,8 @@ function HomeHeader() {
       </Pressable>
       <View style={styles.brand}>
         <Logo size={components.iconXl.size} />
-        {/* 헤더 버튼 사이 폭이 좁아 headline이면 이름이 잘린다. 로고와 함께 한 단계 작은 글자로 둔다. */}
-        <ThemedText variant="subhead" numberOfLines={1} style={styles.brandName}>
-          AI Learning Companion
+        <ThemedText variant="headline" numberOfLines={1} style={styles.brandName}>
+          담다
         </ThemedText>
       </View>
       <Pressable
