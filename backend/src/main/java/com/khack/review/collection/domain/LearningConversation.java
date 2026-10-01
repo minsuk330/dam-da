@@ -123,7 +123,7 @@ public class LearningConversation {
         ConversationTurn turn = turn(index);
         requireText(text);
         if (fidelity == Fidelity.verbatim && !text.equals(turn.getText())) {
-            throw new IllegalStateException("원문으로 저장된 발화(%d번)의 내용은 고칠 수 없습니다.".formatted(index));
+            throw new IllegalStateException("%d번째 메시지는 원문 그대로 저장돼 있어 고칠 수 없어요.".formatted(index));
         }
         turn.edit(text, requireIntent(intent), aiVerdict, correction);
     }
@@ -135,7 +135,7 @@ public class LearningConversation {
     public int insertTurnAfter(int afterIndex, String text, Intent intent, @Nullable AiVerdict aiVerdict,
             @Nullable String correction) {
         if (fidelity != Fidelity.model_transcribed) {
-            throw new IllegalStateException("원문으로 저장된 대화에는 발화를 추가할 수 없습니다.");
+            throw new IllegalStateException("원문 그대로 저장된 대화에는 메시지를 추가할 수 없어요.");
         }
         if (afterIndex != 0) {
             turn(afterIndex);
@@ -150,18 +150,18 @@ public class LearningConversation {
 
     private ConversationTurn turn(int index) {
         return turns.stream().filter(turn -> turn.getTurnIndex() == index).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("%d번 발화가 없습니다.".formatted(index)));
+                .orElseThrow(() -> new IllegalArgumentException("%d번째 메시지가 없어요.".formatted(index)));
     }
 
     private static void requireText(String text) {
         if (text == null || text.isBlank()) {
-            throw new IllegalArgumentException("발화 내용이 비어 있습니다.");
+            throw new IllegalArgumentException("메시지 내용을 입력해 주세요.");
         }
     }
 
     private static Intent requireIntent(Intent intent) {
         if (intent == null) {
-            throw new IllegalArgumentException("발화 의도(intent)가 비어 있습니다.");
+            throw new IllegalArgumentException("메시지 종류를 골라 주세요.");
         }
         return intent;
     }

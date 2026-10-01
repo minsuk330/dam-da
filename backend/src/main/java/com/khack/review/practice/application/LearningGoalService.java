@@ -77,12 +77,11 @@ public class LearningGoalService {
     @Transactional
     public FirstStudyComposer.Composition choose(Long sessionId, List<LearningGoal> goals, @Nullable MemoryStrength strength) {
         if (goals == null || goals.isEmpty() || goals.size() > LearningGoal.MAX_SELECTED || new HashSet<>(goals).size() != goals.size()) {
-            throw new IllegalArgumentException("학습 목표는 서로 다른 1~%d개를 고르세요.".formatted(LearningGoal.MAX_SELECTED));
+            throw new IllegalArgumentException("학습 목표를 1~%d개 골라 주세요.".formatted(LearningGoal.MAX_SELECTED));
         }
         LearningSessionDetail detail = sessions.detail(sessionId);
         if (detail.status() != LearningSessionStatus.CONFIRMED) {
-            throw new IllegalStateException("학습 세션 %d은(는) %s 상태라 학습 목표를 고를 수 없습니다. 확인을 마친 뒤, 문제를 만들기 전에 고릅니다."
-                    .formatted(sessionId, detail.status()));
+            throw new IllegalStateException("지금은 학습 목표를 고를 수 없어요. 내용 확인을 마친 뒤, 문제를 만들기 전에 고를 수 있어요.");
         }
         Long userId = currentUser.id();
         FirstStudyComposer.Composition composition = FirstStudyComposer.compose(goals, units(detail), maxQuestions);

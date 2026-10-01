@@ -36,15 +36,15 @@ public final class ConfirmationWarnings {
         for (UserTurn turn : turns) {
             boolean corrected = CORRECTED.contains(turn.effectiveVerdict());
             if (corrected && (turn.correction() == null || turn.correction().isBlank())) {
-                warnings.add("%d번 발화: AI가 바로잡았다고 표시됐지만 교정 내용이 비어 있습니다.".formatted(turn.index()));
+                warnings.add("%d번째 메시지: AI가 바로잡았다고 표시됐지만 바로잡은 내용이 비어 있어요.".formatted(turn.index()));
             }
             if (turn.intent() == Intent.meta) {
                 continue;
             }
             if (!sources.contains(turn.index())) {
-                warnings.add("%d번 발화: 어느 기억 항목에도 연결되지 않았습니다.".formatted(turn.index()));
+                warnings.add("%d번째 메시지: 어느 기억할 내용에도 연결되지 않았어요.".formatted(turn.index()));
             } else if (corrected && !confusions.contains(turn.index())) {
-                warnings.add("%d번 발화: AI가 바로잡은 발화인데 헷갈린 지점 항목이 없습니다.".formatted(turn.index()));
+                warnings.add("%d번째 메시지: AI가 바로잡은 메시지인데 헷갈렸던 점이 없어요.".formatted(turn.index()));
             }
         }
         return List.copyOf(warnings);
