@@ -104,7 +104,7 @@
     },
     "/api/conversations" : {
       "get" : {
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -301,6 +301,37 @@
         "tags" : [ "daily-practice-controller" ]
       }
     },
+    "/api/fields" : {
+      "get" : {
+        "operationId" : "list_2",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/FieldOption"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          }
+        },
+        "tags" : [ "field-controller" ]
+      }
+    },
     "/api/learning-sessions" : {
       "get" : {
         "operationId" : "list_1",
@@ -381,6 +412,53 @@
             "format" : "int64"
           }
         } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LearningSessionDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          }
+        },
+        "tags" : [ "learning-session-controller" ]
+      }
+    },
+    "/api/learning-sessions/{sessionId}/field" : {
+      "put" : {
+        "operationId" : "field",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FieldRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {
@@ -1739,6 +1817,55 @@
         },
         "required" : [ "action", "decidedBy", "evidenceTurns", "explanation", "hint", "path", "prerequisite", "presentationId", "reason", "recheckQueued" ]
       },
+      "FieldLabel" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "fieldCode" : {
+            "type" : "string"
+          },
+          "fieldLabel" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "AUTO", "USER" ]
+          }
+        },
+        "required" : [ "code", "fieldCode", "fieldLabel", "label", "source" ]
+      },
+      "FieldOption" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "subfields" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SubfieldOption"
+            }
+          }
+        },
+        "required" : [ "code", "label", "subfields" ]
+      },
+      "FieldRequest" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code" ]
+      },
       "FirstStudy" : {
         "type" : "object",
         "properties" : {
@@ -2006,6 +2133,13 @@
           "fidelity" : {
             "type" : "string"
           },
+          "field" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/FieldLabel"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "id" : {
             "type" : "integer",
             "format" : "int64"
@@ -2039,7 +2173,7 @@
             }
           }
         },
-        "required" : [ "confirmedAt", "conversationId", "createdAt", "fidelity", "id", "inputPath", "status", "topicHint", "turns", "units", "warnings" ]
+        "required" : [ "confirmedAt", "conversationId", "createdAt", "fidelity", "field", "id", "inputPath", "status", "topicHint", "turns", "units", "warnings" ]
       },
       "LearningSessionSummary" : {
         "type" : "object",
@@ -2053,6 +2187,13 @@
           },
           "fidelity" : {
             "type" : "string"
+          },
+          "field" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/FieldLabel"
+            }, {
+              "type" : "null"
+            } ]
           },
           "id" : {
             "type" : "integer",
@@ -2077,7 +2218,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "conversationId", "createdAt", "fidelity", "id", "inputPath", "itemCount", "status", "topicHint", "unitCount" ]
+        "required" : [ "conversationId", "createdAt", "fidelity", "field", "id", "inputPath", "itemCount", "status", "topicHint", "unitCount" ]
       },
       "LoginOptions" : {
         "type" : "object",
@@ -2604,6 +2745,21 @@
           }
         },
         "required" : [ "strength" ]
+      },
+      "SubfieldOption" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "hint" : {
+            "type" : [ "string", "null" ]
+          },
+          "label" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "hint", "label" ]
       },
       "Submission" : {
         "type" : "object",

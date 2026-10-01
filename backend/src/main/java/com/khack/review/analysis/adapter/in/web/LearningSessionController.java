@@ -5,6 +5,7 @@ import com.khack.review.analysis.application.LearningSessionNotFoundException;
 import com.khack.review.analysis.application.LearningSessionQueryService;
 import com.khack.review.analysis.application.LearningSessionSummary;
 import com.khack.review.analysis.application.SessionConfirmationService;
+import com.khack.review.analysis.application.SessionFieldService;
 import com.khack.review.collection.application.TurnContent;
 import com.khack.review.collection.domain.AiVerdict;
 import com.khack.review.collection.domain.Intent;
@@ -32,10 +33,12 @@ class LearningSessionController {
 
     private final LearningSessionQueryService query;
     private final SessionConfirmationService confirmation;
+    private final SessionFieldService fields;
 
-    LearningSessionController(LearningSessionQueryService query, SessionConfirmationService confirmation) {
+    LearningSessionController(LearningSessionQueryService query, SessionConfirmationService confirmation, SessionFieldService fields) {
         this.query = query;
         this.confirmation = confirmation;
+        this.fields = fields;
     }
 
     record ExclusionRequest(boolean excluded) {
@@ -51,6 +54,10 @@ class LearningSessionController {
     /** {@code afterIndex} 뒤에 넣는다(0이면 맨 앞). {@code sourceOf}는 새 발화를 출처로 더할 기억 항목 ID. */
     record NewTurnRequest(int afterIndex, String text, Intent intent, @Nullable AiVerdict aiVerdict, @Nullable String correction,
             @Nullable List<Long> sourceOf) {
+    }
+
+    /** {@code code}는 분류표의 소분류 코드(`GET /api/fields`). */
+    record FieldRequest(String code) {
     }
 
     record ErrorResponse(String code, String message) {
@@ -86,6 +93,12 @@ class LearningSessionController {
         TurnContent content = new TurnContent(request.text(), request.intent(), request.aiVerdict(), request.correction());
         return ResponseEntity.status(HttpStatus.CREATED).body(confirmation.insertTurn(sessionId, request.afterIndex(), content,
                 request.sourceOf() == null ? List.of() : request.sourceOf()));
+    }
+
+    /** 학습 분야를 고른다(스펙 §7.10). 확인 전후 모두 가능하며, 고른 값은 자동 판정이 덮어쓰지 않는다. */
+    @PutMapping("/{sessionId}/field")
+    LearningSessionDetail field(@PathVariable Long sessionId, @RequestBody FieldRequest request) {
+        return fields.choose(sessionId, request.code());
     }
 
     @PostMapping("/{sessionId}/confirm")

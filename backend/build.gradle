@@ -110,3 +110,4 @@ cli('questionQualityCheck', 'com.khack.review.tools.verify.QuestionQualityCheckC
 cli('answerJudgeCheck', 'com.khack.review.tools.verify.AnswerJudgeCheckCli')
 cli('feedbackContentCheck', 'com.khack.review.tools.verify.FeedbackContentCheckCli')
 cli('nextActionCheck', 'com.khack.review.tools.verify.NextActionCheckCli')
+cli('sessionFieldCheck', 'com.khack.review.tools.verify.SessionFieldCheckCli')

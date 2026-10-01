@@ -24,6 +24,10 @@ review:
   practice:
     feedback:
       content-timeout: 1s
+  # 분야 자동 판정은 FakeJevPort 응답 순서를 흐트러뜨리므로 끈다. SessionFieldServiceIT만 켠다
+  analysis:
+    field:
+      auto-classify: false
   # backend/.env에 키가 있어도 테스트는 실제 Jev를 부르지 않는다. 검수는 UNAVAILABLE로 끝난다.
   jev:
     api-key: ""

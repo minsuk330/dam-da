@@ -24,6 +24,7 @@ const details: Record<number, Detail> = {
     topicHint: 'InnoDB 잠금과 MVCC',
     inputPath: 'connector',
     fidelity: 'model_transcribed',
+    field: { code: 'cs.db', label: '데이터베이스', fieldCode: 'cs', fieldLabel: '컴퓨터·IT', source: 'AUTO' },
     createdAt: hoursAgo(1),
     confirmedAt: null,
     turns: [
@@ -66,6 +67,7 @@ const details: Record<number, Detail> = {
     topicHint: '경영통계: 표준오차',
     inputPath: 'share_link',
     fidelity: 'verbatim',
+    field: { code: 'math.stats', label: '확률·통계', fieldCode: 'math', fieldLabel: '수학·통계', source: 'AUTO' },
     createdAt: hoursAgo(48),
     confirmedAt: hoursAgo(47),
     turns: [
@@ -97,6 +99,7 @@ const details: Record<number, Detail> = {
     topicHint: 'React 재렌더링',
     inputPath: 'paste',
     fidelity: 'model_transcribed',
+    field: { code: 'cs.frontend', label: '프론트엔드·모바일', fieldCode: 'cs', fieldLabel: '컴퓨터·IT', source: 'USER' },
     createdAt: hoursAgo(120),
     confirmedAt: hoursAgo(119),
     turns: [

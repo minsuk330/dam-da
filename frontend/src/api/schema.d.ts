@@ -59,7 +59,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning-sessions": {
         parameters: {
             query?: never;
@@ -190,6 +206,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning-sessions/{sessionId}/field": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["field"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -681,6 +713,22 @@ export interface components {
             reason: string | null;
             recheckQueued: boolean;
         };
+        FieldLabel: {
+            code: string;
+            fieldCode: string;
+            fieldLabel: string;
+            label: string;
+            /** @enum {string} */
+            source: "AUTO" | "USER";
+        };
+        FieldOption: {
+            code: string;
+            label: string;
+            subfields: components["schemas"]["SubfieldOption"][];
+        };
+        FieldRequest: {
+            code: string;
+        };
         FirstStudy: {
             failed: boolean;
             failureReason: string | null;
@@ -781,6 +829,7 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             fidelity: string;
+            field: components["schemas"]["FieldLabel"] | null;
             /** Format: int64 */
             id: number;
             inputPath: string;
@@ -796,6 +845,7 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             fidelity: string;
+            field: components["schemas"]["FieldLabel"] | null;
             /** Format: int64 */
             id: number;
             inputPath: string;
@@ -1000,6 +1050,11 @@ export interface components {
             /** @enum {string} */
             strength: "LIGHT" | "UNDERSTAND" | "APPLY" | "MASTER";
         };
+        SubfieldOption: {
+            code: string;
+            hint: string | null;
+            label: string;
+        };
         Submission: {
             answer: string | null;
             /** Format: int32 */
@@ -1202,7 +1257,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1386,6 +1441,35 @@ export interface operations {
             };
         };
     };
+    list_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldOption"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     list_1: {
         parameters: {
             query?: never;
@@ -1456,6 +1540,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    field: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
