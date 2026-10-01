@@ -29,7 +29,7 @@ Jev는 TypeSafe의 System One 모델이다. **정해진 선택지 안의 구조�
 |---|---|---|
 | 복습 단위 검수 (복습 가치, 근거 연결) | `analysis/` | noul `worth_reviewing`, score `evidence_fit` |
 | 문제 품질 검사 (근거성, 명확성, 난이도, 중복) | `question/` | noul `grounded`, score `clarity`·`difficulty`, noul `duplicate` |
-| 답변 판정 | `practice/` | choice `status` |
+| 답변 판정 | `practice/` | choice `verdict`, noul `omission`·`contradiction`·`misread`·`repeats_user_belief`·`off_target_error` |
 | 다음 행동 선택 | `practice/` | choice `next_action` |
 
 **소유 경계:**
@@ -47,28 +47,31 @@ Jev는 TypeSafe의 System One 모델이다. **정해진 선택지 안의 구조�
 - 커넥터 입력(`model_transcribed`)에 근거한 판정은 기준을 더 높게 잡는다(스펙 §7.3).
 - 참고: 예시 호출에서 choice 신뢰도는 0.44~0.88로 나왔다. 질문 설계에 따라 크게 달라진다.
 
-## 스펙 §6.2 판정 → 질문 설계 예시
+## 답변 판정 (스펙 §6.4.5)
+
+질문 정의는 `practice/application/AnswerJudgeQuestions`(ai 소유), 호출·해석은 `AnswerJudge`, 기록은 `AnswerJudgment`(server 소유)다. 질문은 한 번의 호출에 묶는다.
+
+| 질문 | 유형 | 기록 |
+|---|---|---|
+| `verdict` | choice `met` / `not_met` / `unable_to_judge` | 판정과 choice 신뢰도 |
+| `omission` | noul | 필수 내용 누락 |
+| `contradiction` | noul | 평가 대상 기준을 부정하거나 틀리게 주장 |
+| `misread` | noul | 질문을 다르게 이해함. 확률을 등급 변환의 `misread` 신뢰도로 쓴다 |
+| `repeats_user_belief` | noul, 헷갈린 지점 항목만 | 틀린 주장이 대화 속 `userBelief`와 같은가. `contradiction`과 함께면 오개념 재발 |
+| `off_target_error` | noul | 평가 대상 밖의 틀린 내용. 등급에 반영하지 않는다 |
 
 ```java
-// practice/application/AnswerJudgeQuestions (ai 소유)
-static Map<String, JevQuestion> questions() {
-    Map<String, String> status = new LinkedHashMap<>();
-    status.put("correct", "정답 기준을 모두 충족");
-    status.put("partial", "정답 기준을 일부만 충족");
-    status.put("misconception", "틀린 개념을 사실로 믿고 있음");
-    status.put("misunderstood_question", "질문 자체를 다르게 이해함");
-    status.put("lucky_guess", "결론은 맞지만 근거가 틀리거나 없음");
-    status.put("unable_to_judge", null);
-    return Map.of("status", JevQuestion.choice("`criteria` 기준으로 `answer`는 어떤 상태인가?", status));
-}
-
-// practice/application/AnswerJudgeService (server 소유)
-JevResult r = jev.evaluate(Map.of("question", q, "criteria", c, "answer", a), AnswerJudgeQuestions.questions());
-JevAnswer.Choice status = r.choice("status");
-if (status.confidence() < minConfidence) {
-    // 기억 상태 변경 안 함, 사용자 확인 요청
-}
+// practice/application/AnswerJudge (server 소유)
+JevResult r = jev.evaluate(state, AnswerJudgeQuestions.questions(state.userBelief() != null));
+JevAnswer.Choice verdict = r.choice(AnswerJudgeQuestions.VERDICT);   // met / not_met / unable_to_judge
+double misread = r.noul(AnswerJudgeQuestions.MISREAD).probability();
 ```
+
+- 상태(`AnswerJudgeState`): `question`, `type`, `answerCriteria`, `modelAnswer`, `answer`, `item`, 헷갈린 지점 항목이면 `userBelief`와 `correction`.
+- 이유(noul)는 확률이 `review.practice.judge.failure-threshold` 이상이고 `verdict`가 `not_met`일 때만 있다고 본다. 대표 이유는 contradiction > omission > misread.
+- 판정 서비스는 확률을 그대로 남기고 신뢰도 기준을 적용하지 않는다. 기준은 등급 변환(`RatingPolicy`, `review.memory.rating.min-confidence`)이 적용하며, 근거가 `model_transcribed`인지(`evidenceFidelity`)를 함께 남겨 더 높은 기준을 고를 수 있게 한다.
+- 객관식은 Jev 없이 코드가 채점한다(`MET`/`NOT_MET`, 신뢰도 1).
+- 답을 제출하면 그 응답 안에서 판정한다. Jev 호출은 트랜잭션 밖에서 한다.
 
 ## 오류와 재시도
 
