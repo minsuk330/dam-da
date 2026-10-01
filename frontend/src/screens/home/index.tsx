@@ -14,7 +14,7 @@ import { Icon } from '@/components/icon';
 import { Notice } from '@/components/notice';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
-import { formatDateTime } from '@/labels';
+import { formatRelativeDay, inputPathIcon } from '@/labels';
 import { openNotification } from '@/navigation';
 import { useProfile } from '@/profile';
 import { colors, components, spacing } from '@/theme';
@@ -26,7 +26,10 @@ const today = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', 
 const openPractice = (practiceId: number) =>
   router.push({ pathname: '/review', params: { practiceId: String(practiceId) } });
 
-/** 홈: 새 세션 알림 → 오늘의 학습 → 연속 학습 일수 → 기억 게이지 요약 → 최근 받은 대화 (스펙 §6.4.3, §7.7). */
+/**
+ * 홈 (스펙 §6.4.3, §7.7): 새 세션 알림 → 인사와 오늘 상태 → 오늘의 학습(행동) → 연속 학습·오늘 문제 → 기억 요약 → 최근 받은 대화.
+ * 오늘의 학습은 한 곳(강조 카드)에서만 말한다. 시간은 강조 카드, 문제 수는 통계 카드, 연속 학습은 통계 카드에 한 번씩.
+ */
 export function Home() {
   const profile = useProfile();
   const insets = useSafeAreaInsets();
@@ -57,7 +60,7 @@ export function Home() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg, paddingBottom: tabBarSpace }]}>
       <HomeHeader />
 
-      <NotificationBanner dailyCompleted={data?.completed ?? false} onOpenDaily={openDaily} />
+      <SessionReadyBanner />
 
       <View style={styles.titleRow}>
         <View style={styles.title}>
@@ -69,26 +72,6 @@ export function Home() {
             {data?.completed ? '오늘 학습을\n마쳤어요' : empty ? '오늘은\n쉬어도 돼요' : '오늘 학습할\n지식이 있어요'}
           </ThemedText>
         </View>
-        {data && data.total > 0 && !data.completed && (
-          <Chip variant="status" label={`${data.total}문제`} style={styles.titleChip} />
-        )}
-      </View>
-
-      <View style={styles.stats}>
-        <StatCard
-          variant="lavender"
-          icon="clock"
-          value={data ? String(minutesOf(data)) : '-'}
-          unit="분"
-          label="오늘 예상 학습 시간"
-        />
-        <StatCard
-          variant="surface"
-          icon="zap"
-          value={streak.data ? String(streak.data.current) : '-'}
-          unit="일"
-          label={streak.data ? streakLabel(streak.data) : '연속 학습'}
-        />
       </View>
 
       <TodayStudy
@@ -100,9 +83,26 @@ export function Home() {
         onOpen={openDaily}
       />
 
+      <View style={styles.stats}>
+        <StatCard
+          variant="lavender"
+          icon="zap"
+          value={streak.data ? String(streak.data.current) : '-'}
+          unit="일"
+          label={streak.data ? streakLabel(streak.data) : '연속 학습'}
+        />
+        <StatCard
+          variant="surface"
+          icon="check-square"
+          value={data ? String(data.total) : '-'}
+          unit="문제"
+          label={data ? `복습 ${data.reviewCount} · 새 항목 ${data.newCount}` : '오늘 문제'}
+        />
+      </View>
+
       <MemorySummary />
 
-      <RecentConversations />
+      <RecentConversations serverToday={data?.date} />
     </ScrollView>
   );
 }
@@ -193,7 +193,7 @@ function TodayStudy({
               <ThemedText variant="subhead" tone="onPrimary">
                 {start.isPending
                   ? '오늘 풀 문제를 준비하고 있어요…'
-                  : `복습 ${daily.reviewCount} · 새 항목 ${daily.newCount} · 약 ${minutesOf(daily)}분`}
+                  : `약 ${minutesOf(daily)}분이면 끝나요`}
               </ThemedText>
             </View>
             <View style={styles.heroArrow}>
@@ -254,18 +254,15 @@ function HomeHeader() {
 }
 
 /**
- * 읽지 않은 알림 중 최신 하나: 검수를 마친 새 세션의 "학습 내용 도착", 또는 알림 시각이 지난 "오늘의 학습".
- * 오늘의 학습 알림은 누르면 바로 시작(또는 이어서) 풀이로 간다. 오늘 학습을 이미 끝냈으면 보여주지 않는다.
+ * 검수를 마친 새 세션의 "학습 내용 도착" 알림. 읽지 않은 것 중 최신 하나만 보여준다.
+ * 매일 학습 알림은 바로 아래 오늘의 학습 카드가 같은 일을 하므로 홈에서는 띄우지 않는다(알림 목록에는 남는다).
  */
-function NotificationBanner({ dailyCompleted, onOpenDaily }: { dailyCompleted: boolean; onOpenDaily: () => void }) {
+function SessionReadyBanner() {
   const { data } = useNotifications();
   const markRead = useMarkNotificationRead();
-  const latest = data?.items.find(
-    (n) => !n.read && (n.type === 'SESSION_READY' || (n.type === 'DAILY_LEARNING' && !dailyCompleted)),
-  );
+  const latest = data?.items.find((n) => !n.read && n.type === 'SESSION_READY');
   // 불러오는 중·오류·없음은 배너를 그리지 않는다. 알림은 홈의 보조 정보라 자리를 비워 두지 않는다.
   if (!latest) return null;
-  const daily = latest.type === 'DAILY_LEARNING';
 
   return (
     <Pressable
@@ -273,12 +270,11 @@ function NotificationBanner({ dailyCompleted, onOpenDaily }: { dailyCompleted: b
       accessibilityLabel={`${latest.title}. ${latest.body}`}
       onPress={() => {
         markRead.mutate(latest.id);
-        if (daily) onOpenDaily();
-        else openNotification(latest);
+        openNotification(latest);
       }}
-      style={({ pressed }) => [styles.row, styles.banner, pressed && styles.rowPressed]}>
+      style={({ pressed }) => [styles.banner, pressed && styles.rowPressed]}>
       <View style={[styles.rowIcon, styles.bannerIcon]}>
-        <Icon name={daily ? 'clock' : 'bell'} size="md" color={colors.onPrimary} />
+        <Icon name="bell" size="md" color={colors.onPrimary} />
       </View>
       <View style={styles.rowText}>
         <ThemedText variant="headline" numberOfLines={2}>
@@ -338,7 +334,8 @@ function MemorySummary() {
   );
 }
 
-function RecentConversations() {
+/** 최근 받은 대화 3개. 한 카드 안에 구분선으로 묶고, 들어온 길(커넥터·링크·붙여넣기)을 아이콘으로 보여준다. */
+function RecentConversations({ serverToday }: { serverToday: string | undefined }) {
   const { data: conversations, isPending, isError } = useConversations();
   const recent = conversations ? [...conversations].reverse().slice(0, 3) : [];
 
@@ -360,27 +357,31 @@ function RecentConversations() {
       {conversations?.length === 0 && (
         <ThemedText tone="inkMuted">아직 받은 대화가 없어요. Claude에서 “복습에 넣어줘”라고 요청해 보세요.</ThemedText>
       )}
-      {recent.map((c) => (
-        <Pressable
-          key={c.id}
-          accessibilityRole="link"
-          onPress={() => router.push({ pathname: '/conversations/[id]', params: { id: c.id } })}
-          style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
-          <View style={styles.rowIcon}>
-            <Icon name="book-open" size="md" color={colors.primaryInk} />
-          </View>
-          <View style={styles.rowText}>
-            <ThemedText variant="headline" numberOfLines={1}>
-              {c.topicHint ?? '주제 없음'}
-            </ThemedText>
-            <ThemedText variant="caption" tone="inkMuted">
-              {formatDateTime(c.receivedAt)} · 복습 단위 {c.reviewUnitCount}개
-            </ThemedText>
-          </View>
-          {c.warningCount > 0 && <View accessibilityLabel={`경고 ${c.warningCount}`} style={styles.warningDot} />}
-          <Icon name="chevron-right" size="md" color={colors.inkMuted} />
-        </Pressable>
-      ))}
+      {recent.length > 0 && (
+        <Card style={styles.list}>
+          {recent.map((c, i) => (
+            <Pressable
+              key={c.id}
+              accessibilityRole="link"
+              onPress={() => router.push({ pathname: '/conversations/[id]', params: { id: c.id } })}
+              style={({ pressed }) => [styles.listRow, i > 0 && styles.divided, pressed && styles.rowPressed]}>
+              <View style={styles.rowIcon}>
+                <Icon name={inputPathIcon[c.inputPath]} size="md" color={colors.primaryInk} />
+              </View>
+              <View style={styles.rowText}>
+                <ThemedText variant="headline" numberOfLines={1}>
+                  {c.topicHint ?? '주제 없음'}
+                </ThemedText>
+                <ThemedText variant="caption" tone="inkMuted">
+                  {formatRelativeDay(c.receivedAt, serverToday)} · 복습 단위 {c.reviewUnitCount}개
+                </ThemedText>
+              </View>
+              {c.warningCount > 0 && <View accessibilityLabel={`경고 ${c.warningCount}`} style={styles.warningDot} />}
+              <Icon name="chevron-right" size="md" color={colors.inkMuted} />
+            </Pressable>
+          ))}
+        </Card>
+      )}
     </View>
   );
 }
@@ -421,7 +422,6 @@ const styles = StyleSheet.create({
   },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
   title: { flex: 1, gap: spacing.xs },
-  titleChip: { marginTop: spacing.sm },
   stats: { flexDirection: 'row', gap: spacing.md },
   hero: {
     flexDirection: 'row',
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   memoryCard: { gap: spacing.md },
   weakest: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   weakestText: { flex: 1 },
-  row: {
+  banner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -451,9 +451,13 @@ const styles = StyleSheet.create({
     borderRadius: components.card.rounded,
     borderCurve: 'continuous',
     padding: spacing.lg,
+    borderWidth: components.answerOptionOutline.width,
+    borderColor: colors.primaryTint,
   },
   rowPressed: { backgroundColor: components.cardPressed.backgroundColor },
-  banner: { borderWidth: components.answerOptionOutline.width, borderColor: colors.primaryTint },
+  list: { paddingVertical: spacing.xs },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outline },
   rowIcon: {
     width: components.iconCircle.size,
     height: components.iconCircle.size,

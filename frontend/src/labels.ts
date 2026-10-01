@@ -1,4 +1,5 @@
 import type { Schemas } from '@/api/client'
+import type { IconName } from '@/components/icon'
 
 type Turn = Schemas['UserTurnResponse']
 type Detail = Schemas['ConversationDetailResponse']
@@ -7,6 +8,13 @@ export const inputPathLabel: Record<Detail['inputPath'], string> = {
   connector: 'Claude 커넥터',
   share_link: '공유 링크',
   paste: '붙여넣기',
+}
+
+/** 대화가 들어온 길을 아이콘으로도 구분한다. */
+export const inputPathIcon: Record<Detail['inputPath'], IconName> = {
+  connector: 'message-circle',
+  share_link: 'link',
+  paste: 'clipboard',
 }
 
 export const fidelityLabel: Record<Detail['fidelity'], string> = {
@@ -85,9 +93,7 @@ export function formatDate(iso: string): string {
  * 서버의 오늘을 모르면(아직 못 불러왔으면) 날짜만 쓴다. 기기 날짜는 시간 이동과 달라 비교에 쓰지 않는다.
  */
 export function nextReviewLabel(iso: string, serverToday: string | undefined): string {
-  const date = new Date(iso)
-  const day = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  if (serverToday !== undefined && day <= serverToday) return '복습할 때가 됐어요'
+  if (serverToday !== undefined && dayOf(new Date(iso)) <= serverToday) return '복습할 때가 됐어요'
   return `다음 복습 ${formatDate(iso)}`
 }
 
@@ -104,4 +110,23 @@ export function dailySettingsStatus(settings: Schemas['Settings'] | undefined): 
   if (!settings) return '하루 학습 시간과 알림 시각'
   const notify = settings.notifyAt === null ? '알림 꺼짐' : `${settings.notifyAt.slice(0, 5)} 알림`
   return `하루 ${settings.budgetMinutes}분 · ${notify}`
+}
+
+/** 로컬 날짜 "YYYY-MM-DD". 서버의 오늘(`DailyView.date`)과 비교할 때 쓴다. */
+function dayOf(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * 목록의 날짜: 오늘 · 어제 · N일 전(일주일 안) · M월 D일. 서버의 오늘을 알면 그 기준이다(시간 이동 반영).
+ * 시각까지 필요한 곳은 `formatDateTime`을 쓴다.
+ */
+export function formatRelativeDay(iso: string, serverToday?: string): string {
+  const date = new Date(iso)
+  const today = new Date(`${serverToday ?? dayOf(new Date())}T00:00:00`)
+  const days = Math.round((today.getTime() - new Date(`${dayOf(date)}T00:00:00`).getTime()) / 86_400_000)
+  if (days <= 0) return '오늘'
+  if (days === 1) return '어제'
+  if (days < 7) return `${days}일 전`
+  return date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
 }
