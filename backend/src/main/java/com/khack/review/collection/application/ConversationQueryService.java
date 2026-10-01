@@ -17,6 +17,14 @@ public class ConversationQueryService {
         this.conversations = conversations;
     }
 
+    /** 다른 컨텍스트가 근거 발화를 읽을 때 쓴다. 없으면 {@link IllegalArgumentException}. */
+    @Transactional(readOnly = true)
+    public ConversationEvidence evidence(Long conversationId) {
+        LearningConversation conversation = conversations.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("학습 대화 없음: " + conversationId));
+        return new ConversationEvidence(conversation.getFidelity(), conversation.userTurns());
+    }
+
     @Transactional(readOnly = true)
     public List<SavedSession> list() {
         return conversations.findAllByOrderByReceivedAtAscIdAsc().stream()
