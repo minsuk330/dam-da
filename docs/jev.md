@@ -69,7 +69,7 @@ double misread = r.noul(AnswerJudgeQuestions.MISREAD).probability();
 
 - 상태(`AnswerJudgeState`): `question`, `type`, `answerCriteria`, `modelAnswer`, `answer`, `item`, 헷갈린 지점 항목이면 `userBelief`와 `correction`.
 - 이유(noul)는 확률이 `review.practice.judge.failure-threshold` 이상이고 `verdict`가 `not_met`일 때만 있다고 본다. 대표 이유는 contradiction > omission > misread.
-- 판정 서비스는 확률을 그대로 남기고 신뢰도 기준을 적용하지 않는다. 기준은 등급 변환(`RatingPolicy`, `review.memory.rating.min-confidence`)이 적용하며, 근거가 `model_transcribed`인지(`evidenceFidelity`)를 함께 남겨 더 높은 기준을 고를 수 있게 한다.
+- 판정 서비스는 확률을 그대로 남기고 신뢰도 기준을 적용하지 않는다. 기준은 등급 변환(`RatingPolicy`)이 적용한다. 근거 대화가 `model_transcribed`면(`evidenceFidelity`) `review.memory.rating.min-confidence-transcribed`(0.7), 아니면 `min-confidence`(0.6)를 쓴다.
 - 객관식은 Jev 없이 코드가 채점한다(`MET`/`NOT_MET`, 신뢰도 1).
 - 답을 제출하면 그 응답 안에서 판정한다. Jev 호출은 트랜잭션 밖에서 한다.
 

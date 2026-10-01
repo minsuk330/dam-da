@@ -142,6 +142,11 @@ public class AnswerJudgment {
         return judgment;
     }
 
+    /** 정답 기준의 근거 대화가 모델이 옮겨 적은 것인가. 등급 변환이 더 높은 신뢰도 기준을 쓴다. */
+    public boolean isEvidenceTranscribed() {
+        return "model_transcribed".equals(evidenceFidelity);
+    }
+
     /** 오개념 재발: 대화에서 믿었던 틀린 내용을 다시 주장했다. */
     public boolean isMisconceptionRecurred() {
         return Boolean.TRUE.equals(repeatsUserBelief);
