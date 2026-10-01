@@ -46,6 +46,31 @@ export const sessionStatusLabel: Record<Schemas['LearningSessionSummary']['statu
   IN_PROGRESS: '학습 중',
 }
 
+export const itemKindLabel: Record<Schemas['Item']['kind'], string> = {
+  FACT: '핵심 내용',
+  WARNING: '주의',
+  PRACTICE: '실습 팁',
+  CONFUSION: '헷갈렸던 점',
+}
+
+/** Jev가 복습 단위를 검수한 결과. 판정만 보여주고 제외 여부는 사용자가 정한다. */
+export const unitVerdictLabel: Record<Schemas['Unit']['verdict'], string> = {
+  PENDING: '검수 중',
+  APPROVED: '검수 통과',
+  HELD: '확인 필요',
+  REJECTED: '빼기 권장',
+  UNAVAILABLE: '검수 못 함',
+}
+
+export const questionTypeLabel: Record<Schemas['QuestionView']['type'], string> = {
+  MULTIPLE_CHOICE: '객관식',
+  SHORT_ANSWER: '단답',
+  ESSAY: '서술',
+  ERROR_FINDING: '오류 찾기',
+  CASE_JUDGMENT: '사례 판단',
+  CASE_APPLICATION: '사례 적용',
+}
+
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
 }

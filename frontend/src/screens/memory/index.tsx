@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useLearningSessions } from '@/api/learning-sessions';
 import { Button } from '@/components/button';
@@ -62,21 +62,28 @@ export function Memory() {
 
       <ThemedText variant="headline">학습 세션</ThemedText>
       {data.map((session) => (
-        <Card key={session.id} style={styles.card}>
-          <View style={styles.row}>
-            <ThemedText variant="headline" style={styles.title}>
-              {session.topicHint ?? '주제 없음'}
+        <Pressable
+          key={session.id}
+          accessibilityRole="link"
+          accessibilityLabel={`${session.topicHint ?? '주제 없음'}, ${sessionStatusLabel[session.status]}`}
+          onPress={() => router.push({ pathname: '/sessions/[id]', params: { id: String(session.id) } })}
+          style={({ pressed }) => pressed && styles.pressed}>
+          <Card style={styles.card}>
+            <View style={styles.row}>
+              <ThemedText variant="headline" style={styles.title}>
+                {session.topicHint ?? '주제 없음'}
+              </ThemedText>
+              <Chip
+                variant={session.status === 'AWAITING_CONFIRMATION' ? 'status' : 'soft'}
+                label={sessionStatusLabel[session.status]}
+              />
+            </View>
+            <ThemedText variant="caption" tone="inkMuted">
+              {formatDateTime(session.createdAt)} · 복습 단위 {session.unitCount}개 · 기억 항목 {session.itemCount}개
             </ThemedText>
-            <Chip
-              variant={session.status === 'AWAITING_CONFIRMATION' ? 'status' : 'soft'}
-              label={sessionStatusLabel[session.status]}
-            />
-          </View>
-          <ThemedText variant="caption" tone="inkMuted">
-            {formatDateTime(session.createdAt)} · 복습 단위 {session.unitCount}개 · 기억 항목 {session.itemCount}개
-          </ThemedText>
-          <Gauge value={sampleRetrievability(session)} />
-        </Card>
+            <Gauge value={sampleRetrievability(session)} />
+          </Card>
+        </Pressable>
       ))}
     </ScrollView>
   );
@@ -90,4 +97,5 @@ const styles = StyleSheet.create({
   card: { gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   title: { flexShrink: 1 },
+  pressed: { opacity: 0.85 },
 });

@@ -105,8 +105,7 @@ function SessionReadyBanner() {
       accessibilityLabel={`${latest.title}. ${latest.body}`}
       onPress={() => {
         markRead.mutate(latest.id);
-        // 세션 확인 화면(이슈 #45)이 생기면 latest.targetId 세션으로 바로 보낸다.
-        router.navigate('/memory');
+        router.push({ pathname: '/sessions/[id]', params: { id: String(latest.targetId) } });
       }}
       style={({ pressed }) => [styles.row, styles.banner, pressed && styles.rowPressed]}>
       <View style={[styles.rowIcon, styles.bannerIcon]}>
