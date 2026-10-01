@@ -9,14 +9,8 @@ import { Gauge, percent } from '@/components/gauge';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatDateTime, sessionStatusLabel } from '@/labels';
+import { openSession } from '@/navigation';
 import { colors, spacing } from '@/theme';
-
-/** 학습을 시작한 세션은 세션 상세(게이지)로, 그 전 세션은 세션 확인으로 보낸다. */
-function open(session: { id: number; status: string }) {
-  const id = String(session.id);
-  if (session.status === 'IN_PROGRESS') router.push({ pathname: '/sessions/[id]/memory', params: { id } });
-  else router.push({ pathname: '/sessions/[id]', params: { id } });
-}
 
 /** 기억 탭: 학습 세션 목록과 세션별 기억 게이지 (스펙 §6.4.3). 색은 세션의 목표 유지율 기준이다. */
 export function Memory() {
@@ -76,7 +70,7 @@ export function Memory() {
             key={session.id}
             accessibilityRole="link"
             accessibilityLabel={`${session.topicHint ?? '주제 없음'}, ${sessionStatusLabel[session.status]}`}
-            onPress={() => open(session)}>
+            onPress={() => openSession(session.id, session.status)}>
             {({ pressed }) => (
               <Card pressed={pressed} style={styles.card}>
                 <View style={styles.row}>

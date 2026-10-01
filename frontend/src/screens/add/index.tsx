@@ -51,10 +51,19 @@ export function AddConversation() {
           {saved.warnings.length > 0 ? ` · 확인할 점 ${saved.warnings.length}개` : ''}
         </ThemedText>
         <ThemedText variant="caption" tone="inkMuted" style={styles.centerText}>
-          검수가 끝나면 기억 탭에서 내용을 확인할 수 있어요.
+          검수가 끝나면 뽑은 내용을 확인하고 첫 학습을 준비해요.
         </ThemedText>
         <View style={styles.actions}>
-          <Button title="기억 탭에서 보기" onPress={() => router.navigate('/memory')} />
+          {saved.learningSessionId !== null ? (
+            <Button
+              title="학습 내용 확인하기"
+              onPress={() =>
+                router.push({ pathname: '/sessions/[id]', params: { id: String(saved.learningSessionId) } })
+              }
+            />
+          ) : (
+            <Button title="기억 탭에서 보기" onPress={() => router.navigate('/memory')} />
+          )}
           <Button
             variant="secondary"
             title="다른 대화 추가"
