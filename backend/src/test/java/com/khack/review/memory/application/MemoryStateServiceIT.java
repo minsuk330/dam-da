@@ -108,7 +108,7 @@ class MemoryStateServiceIT {
     @Test
     void ratingPolicyIsBoundFromConfiguration() {
         assertThat(ratingPolicy.minConfidence()).isEqualTo(0.7);
-        assertThat(ratingPolicy.minConfidenceTranscribed()).as("모델이 옮겨 적은 근거는 더 높은 기준(검증 전 초기값)").isEqualTo(0.8);
+        assertThat(ratingPolicy.minConfidenceTranscribed()).as("모델이 옮겨 적은 근거의 기준(데모 기간 값, 원문 기준 이상)").isEqualTo(0.7);
         assertThat(ratingPolicy.referenceTimes()).containsEntry(
                 QuestionType.SHORT_ANSWER, Duration.ofSeconds(40));
         assertThat(ratingPolicy.easyMaxTimeRatio()).isEqualTo(1.5);

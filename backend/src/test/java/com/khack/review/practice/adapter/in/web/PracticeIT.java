@@ -31,6 +31,7 @@ import com.khack.review.memory.application.MemoryStateService;
 import com.khack.review.memory.domain.AnswerVerdict;
 import com.khack.review.memory.domain.AttemptKind;
 import com.khack.review.memory.domain.HoldReason;
+import com.khack.review.memory.domain.RatingPolicy;
 import com.khack.review.memory.domain.ReviewLog;
 import com.khack.review.memory.domain.ReviewLogRepository;
 import com.khack.review.memory.domain.SelfAssessment;
@@ -428,6 +429,23 @@ class PracticeIT {
         assertThat(misreadLog.isMisread()).isTrue();
         assertThat(misreadLog.getMisreadConfidence()).isEqualTo(0.9);
         assertThat(misreadLog.getFailures()).isEqualTo("misread");
+    }
+
+    @Test
+    void meaninglessAnswersAreMarkedNotMetByCodeWithoutJev() throws Exception {
+        long sessionId = readySession(LearningGoal.CORRECT_MISCONCEPTION, LearningGoal.CONDITION);
+        long practiceId = ok("POST", "/api/sessions/%d/first-study/practice".formatted(sessionId), null).get("practiceId").asLong();
+        JsonNode first = ok("GET", "/api/practice/%d/next".formatted(practiceId), null).get("presentation");
+
+        JsonNode mashed = ok("POST", "/api/practice/presentations/%d/attempts".formatted(first.get("presentationId").asLong()),
+                "{\"answer\":\"ㅁㄴㅇㄹ\",\"selfAssessment\":\"RECALLED_EASILY\"}");
+
+        assertThat(jev.answerStates).as("의미 없는 답은 Jev를 부르지 않는다").isEmpty();
+        assertThat(mashed.get("rating").asString()).isEqualTo("AGAIN");
+        assertThat(mashed.get("holdReason").isNull()).isTrue();
+        ReviewLog log = reviewLogs.findByAttemptId(mashed.get("attemptId").asLong()).orElseThrow();
+        assertThat(log.getVerdictConfidence()).isEqualTo(1.0);
+        assertThat(log.getPolicyVersion()).isEqualTo(RatingPolicy.VERSION);
     }
 
     @Test

@@ -166,9 +166,10 @@ review:
       # 등급 변환표 행 1·2의 판정 신뢰도 기준 (스펙 §6.4.5). 자동 반영 여부를 정하는 초기 기준이며 Jev의 실제 채점 정확도를 뜻하지 않는다
       # 데모 기간 값. 측정(answerJudgeCheck)에서 표현이 다른 정답의 신뢰도가 0.64~0.83이라 0.80이면 정답 일부가 보류된다
       min-confidence: 0.7
-      # 판정에 쓴 대화 근거가 모델이 옮겨 적은 것(model_transcribed)일 때의 기준 (스펙 §7.3). 원문 근거보다 높게 잡는다.
-      # 검증하지 않은 초기값이다. 실제 풀이 기록(review_log.applied_min_confidence·evidence_transcribed)으로 보정한다
-      min-confidence-transcribed: 0.8
+      # 판정에 쓴 대화 근거가 모델이 옮겨 적은 것(model_transcribed)일 때의 기준 (스펙 §7.3). 원문 근거보다 낮을 수 없다.
+      # 2026-10-02 운영 기록에서 0.8은 거의 맞은 판정(0.72)까지 보류해 데모 기간에는 원문 기준과 같은 0.7로 둔다.
+      # 실제 풀이 기록(review_log.applied_min_confidence·evidence_transcribed)으로 보정한다
+      min-confidence-transcribed: 0.7
       # 문제 유형별 기준 응답 시간. 응답 시간은 Easy를 막는 보조 조건으로만 쓴다
       reference-times:
         MULTIPLE_CHOICE: 20s

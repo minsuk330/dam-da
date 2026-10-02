@@ -175,6 +175,18 @@ public class AnswerJudgment {
         return judgment;
     }
 
+    /**
+     * 의미 없는 답({@link NonAnswer})의 코드 채점. 떠올리지 못한 것이므로 `not_met`, 신뢰도 1이다(스펙 §6.4.5).
+     * Jev를 부르지 않으므로 이유 판정은 없다.
+     */
+    public static AnswerJudgment nonAnswer(Long attemptId, String evidenceFidelity, Instant at) {
+        AnswerJudgment judgment = base(attemptId, JudgmentStatus.JUDGED, JudgedBy.CODE, evidenceFidelity, at);
+        judgment.verdict = AnswerVerdict.NOT_MET;
+        judgment.verdictConfidence = 1.0;
+        judgment.note = "의미 없는 답: 코드가 not_met으로 채점";
+        return judgment;
+    }
+
     /** 판정하지 못했다(Jev 호출·해석 실패). 기억 상태를 바꾸지 않는다. */
     public static AnswerJudgment failed(Long attemptId, JudgedBy judgedBy, String note, String evidenceFidelity, Instant at) {
         AnswerJudgment judgment = base(attemptId, JudgmentStatus.FAILED, judgedBy, evidenceFidelity, at);
