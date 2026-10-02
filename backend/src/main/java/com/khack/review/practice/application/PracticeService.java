@@ -24,6 +24,7 @@ import com.khack.review.practice.domain.AnswerJudgmentRepository;
 import com.khack.review.practice.domain.AttemptOutcome;
 import com.khack.review.practice.domain.AttemptRules;
 import com.khack.review.practice.domain.JudgedBy;
+import com.khack.review.practice.domain.NonAnswer;
 import com.khack.review.practice.domain.JudgmentStatus;
 import com.khack.review.practice.domain.PracticeAttempt;
 import com.khack.review.practice.domain.PracticeAttemptRepository;
@@ -285,6 +286,9 @@ public class PracticeService {
         String fidelity = detail.fidelity();
         if (question.getType() == QuestionType.MULTIPLE_CHOICE) {
             return AnswerJudgment.byCode(attempt.getId(), attempt.getChoiceCorrect(), fidelity, clock.instant());
+        }
+        if (NonAnswer.is(attempt.getAnswerText())) {
+            return AnswerJudgment.nonAnswer(attempt.getId(), fidelity, clock.instant());
         }
         AnswerJudge.Outcome outcome = judge.judge(state(detail, question, attempt.getAnswerText()));
         return outcome.judged()
