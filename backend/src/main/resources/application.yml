@@ -62,8 +62,15 @@ review:
       client-id: ${KAKAO_CLIENT_ID:}
       # 카카오 콘솔에서 Client Secret을 켰을 때만
       client-secret: ${KAKAO_CLIENT_SECRET:}
+  toss:
+    # 앱인토스 토스 로그인(#149). 서버 간 호출은 콘솔에서 받은 mTLS 인증서로 한다.
+    base-url: https://apps-in-toss-api.toss.im
+    # PEM 파일 경로. 로컬: backend/certs/toss/ (커밋하지 않는다). 비어 있으면 토스 로그인은 401이다.
+    mtls-cert: ${TOSS_MTLS_CERT:}
+    mtls-key: ${TOSS_MTLS_KEY:}
   cors:
-    # 로컬 Expo 웹 개발 서버만. 배포 서버는 Vercel rewrites로 같은 출처라 비워 둔다(CORS_ALLOWED_ORIGINS=).
+    # 로컬 Expo 웹 개발 서버만. 배포 웹은 Vercel rewrites로 같은 출처다.
+    # 토스 인앱(#149) 배포 서버: CORS_ALLOWED_ORIGINS=https://damda-ai.apps.tossmini.com,https://damda-ai.private-apps.tossmini.com
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8081}
   dev-tools:
     # /dev/** (세션 뷰어, 시간 이동). 켜면 이 기기에서 직접 온 요청과, X-Dev-Token 헤더가 token과 같은 원격 요청만 허용한다.

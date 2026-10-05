@@ -5,6 +5,7 @@ import com.khack.review.common.application.AuthTokenService;
 import com.khack.review.common.application.AuthTokenService.AuthToken;
 import com.khack.review.common.application.AuthTokenService.Me;
 import com.khack.review.common.application.CurrentUser;
+import com.khack.review.common.application.TossSignInService;
 import com.khack.review.common.application.UnauthenticatedException;
 import com.khack.review.common.config.SocialLoginConfig.SocialRegistrations;
 import java.util.List;
@@ -29,13 +30,15 @@ class AuthController {
     private final AuthTokenService tokens;
     private final CurrentUser currentUser;
     private final AccountDeletionService accounts;
+    private final TossSignInService toss;
     private final List<Provider> providers;
 
-    AuthController(AuthTokenService tokens, CurrentUser currentUser, AccountDeletionService accounts, SocialRegistrations social,
-            @Value("${review.auth.server-url}") String serverUrl) {
+    AuthController(AuthTokenService tokens, CurrentUser currentUser, AccountDeletionService accounts, TossSignInService toss,
+            SocialRegistrations social, @Value("${review.auth.server-url}") String serverUrl) {
         this.tokens = tokens;
         this.currentUser = currentUser;
         this.accounts = accounts;
+        this.toss = toss;
         String base = serverUrl.replaceAll("/+$", "");
         this.providers = social.registrations().stream()
                 .map(r -> new Provider(r.getRegistrationId(), r.getClientName(), base + "/oauth2/authorization/" + r.getRegistrationId()))
@@ -52,6 +55,10 @@ class AuthController {
     record TokenRequest(String code) {
     }
 
+    /** 미니앱 {@code appLogin()}의 결과 그대로. {@code referrer}는 {@code DEFAULT}(토스 앱) 또는 {@code SANDBOX}. */
+    record TossLoginRequest(String authorizationCode, String referrer) {
+    }
+
     record ErrorResponse(String code, String message) {
     }
 
@@ -64,6 +71,12 @@ class AuthController {
     @PostMapping("/api/auth/token")
     AuthToken token(@RequestBody TokenRequest request) {
         return tokens.exchange(request.code()).orElseThrow(UnauthenticatedException::new);
+    }
+
+    /** 토스 인앱(#149). 토스 로그인 인가 코드를 앱 토큰으로 바꾼다. 처음 로그인하면 계정이 만들어진다. */
+    @PostMapping("/api/auth/toss")
+    AuthToken toss(@RequestBody TossLoginRequest request) {
+        return toss.signIn(request.authorizationCode(), request.referrer());
     }
 
     @GetMapping("/api/me")
