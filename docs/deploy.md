@@ -7,7 +7,7 @@
               └─ /api/** ──rewrite──▶ https://hack.refit-100.site ──▶ caddy(:443) ──▶ app(:8080) ──▶ postgres
 Claude 커넥터 ──▶ https://hack.refit-100.site/mcp ──────────────────┘
 
-main push(backend/**) ──▶ GitHub Actions(backend-image) ──▶ ghcr.io/minsuk330/ku-hack-backend ──pull──▶ 서버
+main push(backend/**) ──▶ GitHub Actions(backend-image) ──▶ ghcr.io/minsuk330/dam-da-backend ──pull──▶ 서버
 ```
 
 ## 백엔드 (서버)
@@ -29,12 +29,12 @@ main push(backend/**) ──▶ GitHub Actions(backend-image) ──▶ ghcr.io/
 - DNS: `hack.refit-100.site`의 A(필요하면 AAAA) 레코드가 서버 IP를 가리킨다(Vercel DNS).
 - 방화벽: 80·443 허용. 인증서 발급에 80이 필요하다.
 - Docker와 Compose 플러그인(`docker compose version`). nginx 방식이면 호스트 nginx와 certbot.
-- GHCR 패키지 `ku-hack-backend`가 public이어야 서버가 로그인 없이 받는다. private이면 서버에서 `docker login ghcr.io`(`read:packages` 토큰)를 먼저 한다.
+- GHCR 패키지 `dam-da-backend`가 public이어야 서버가 로그인 없이 받는다. private이면 서버에서 `docker login ghcr.io`(`read:packages` 토큰)를 먼저 한다.
 
 ### 처음 배포
 
 ```bash
-cd ~/apps && git clone https://github.com/minsuk330/ku-hack.git khack && cd khack/backend/deploy
+cd ~/apps && git clone https://github.com/minsuk330/dam-da.git khack && cd khack/backend/deploy
 cp .env.example .env
 # .env 채우기: DB_PASSWORD, OPENAI_API_KEY, TYPESAFE_API_KEY, DEV_TOOLS_TOKEN(openssl rand -hex 32)
 docker compose pull app
@@ -77,7 +77,7 @@ cd backend/deploy && docker compose pull app && docker compose --profile caddy u
 docker image prune -f                 # 이전 이미지 정리(디스크)
 ```
 
-특정 커밋으로 되돌리려면 `.env`의 `APP_IMAGE`를 `ghcr.io/minsuk330/ku-hack-backend:sha-<7자리>`로 바꾸고 같은 명령을 실행한다. Actions 없이 서버에서 직접 빌드하려면 `APP_IMAGE`를 비우고 `docker compose up -d --build app`(RAM 2GiB 이상 권장).
+특정 커밋으로 되돌리려면 `.env`의 `APP_IMAGE`를 `ghcr.io/minsuk330/dam-da-backend:sha-<7자리>`로 바꾸고 같은 명령을 실행한다. Actions 없이 서버에서 직접 빌드하려면 `APP_IMAGE`를 비우고 `docker compose up -d --build app`(RAM 2GiB 이상 권장).
 
 ### 운영
 
@@ -120,7 +120,7 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 
 ## 프론트엔드 (Vercel)
 
-- 프로젝트 `khack-frontend`가 GitHub `minsuk330/ku-hack`에 연결돼 있다. `main`에 merge되면 production, 다른 브랜치·PR은 preview로 자동 배포된다. `frontend/`가 바뀌지 않은 커밋은 `ignoreCommand`로 빌드를 건너뛴다.
+- 프로젝트 `khack-frontend`가 GitHub `minsuk330/dam-da`에 연결돼 있다. `main`에 merge되면 production, 다른 브랜치·PR은 preview로 자동 배포된다. `frontend/`가 바뀌지 않은 커밋은 `ignoreCommand`로 빌드를 건너뛴다.
 - Root Directory: `frontend`. 빌드 설정은 `frontend/vercel.json`(`EXPO_PUBLIC_API_MOCK=false npx expo export -p web` → `dist`). mock 끄기는 빌드 명령에 들어 있어 Vercel 환경 변수로 넣지 않아도 된다.
 - `EXPO_PUBLIC_API_URL`은 넣지 않는다(비우면 같은 출처 `/api`를 부른다).
 - 손으로 배포할 때는 레포 루트에서 `vercel deploy`를 실행한다(Root Directory가 `frontend`라 `frontend/`에서 실행하면 경로가 겹친다).
