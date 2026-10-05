@@ -11,6 +11,10 @@ export default defineConfig({
     // DESIGN.md colors.primary. 이 파일은 앱 밖 빌드 설정이라 @/theme을 가져오지 않는다.
     primaryColor: '#2E5BE8',
   },
+  // 뒤로가기는 토스 내비게이션 바만 쓴다. 앱 헤더 뒤로가기는 숨기고 TossBridge가 화면 기록을 따라간다(비게임 출시 가이드).
+  navigationBar: {
+    withBackButton: true,
+  },
   webView: {
     bounces: false,
     pullToRefreshEnabled: false,

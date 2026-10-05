@@ -34,7 +34,7 @@ export function UnitsStep({ session, onBack, onConfirmed }: { session: Detail; o
         step={2}
         total={3}
         title="복습할 내용을 골라요"
-        description="대화에서 뽑은 내용이에요. 복습하고 싶지 않은 것은 빼 주세요."
+        description="생성형 AI가 대화에서 뽑은 내용이에요. 틀렸거나 복습하고 싶지 않은 것은 빼 주세요."
       />
 
       <Card>

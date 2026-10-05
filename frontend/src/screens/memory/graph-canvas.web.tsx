@@ -137,6 +137,9 @@ async function renderGraph(
   const [{ Application, Circle, Container, Graphics, Text }, { Group: TweenGroup, Tween }] = await Promise.all([
     import('pixi.js'),
     import('@tweenjs/tween.js'),
+    // pixi 기본 렌더러는 셰이더 동기화 코드를 new Function으로 만든다. 앱인토스 출시 가이드(외부 코드 실행 금지, #149)와
+    // CSP에 걸리지 않게 eval 없는 구현으로 바꾼다.
+    import('pixi.js/unsafe-eval'),
   ]);
 
   const nodes: NodeData[] = graphNodes.map((n) => ({ ...n, r: radiusOf(n) }));
