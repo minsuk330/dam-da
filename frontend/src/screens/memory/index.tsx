@@ -17,6 +17,7 @@ import { ThemedText } from '@/components/themed-text';
 import { formatRelativeDay, memoryModelStatus, sessionStatusLabel } from '@/labels';
 import { openSession } from '@/navigation';
 import { colors, components, spacing } from '@/theme';
+import { inToss } from '@/toss';
 
 import { KnowledgeGraph } from './knowledge-graph';
 
@@ -85,7 +86,8 @@ export function Memory() {
         </ThemedText>
         <View accessibilityRole="radiogroup" accessibilityLabel="보기 방식" style={styles.viewToggle}>
           <ChoiceChip label="목록" selected={view === 'list'} onPress={() => setView('list')} />
-          <ChoiceChip label="그래프" selected={view === 'graph'} onPress={() => setView('graph')} />
+          {/* 토스 인앱(#149)은 그래프 렌더러(pixi.js, new Function 사용)를 번들에서 빼므로 목록만 보여준다. */}
+          {!inToss && <ChoiceChip label="그래프" selected={view === 'graph'} onPress={() => setView('graph')} />}
         </View>
       </View>
       {view === 'graph' ? (
