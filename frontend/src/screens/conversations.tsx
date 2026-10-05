@@ -8,7 +8,7 @@ import { Chip } from '@/components/chip';
 import { Icon } from '@/components/icon';
 import { SkeletonList } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { fidelityLabel, formatRelativeDay, inputPathIcon, inputPathLabel } from '@/labels';
+import { fidelityLabel, formatRelativeDay, inputPathIcon, inputPathText } from '@/labels';
 import { colors, components, spacing } from '@/theme';
 
 export function Conversations() {
@@ -57,7 +57,7 @@ export function Conversations() {
                   {c.warningCount > 0 && <Chip variant="warning" label={`경고 ${c.warningCount}`} />}
                 </View>
                 <ThemedText variant="caption" tone="inkMuted">
-                  {formatRelativeDay(c.receivedAt, serverToday)} · {inputPathLabel[c.inputPath]} · {fidelityLabel[c.fidelity]}
+                  {formatRelativeDay(c.receivedAt, serverToday)} · {inputPathText(c)} · {fidelityLabel[c.fidelity]}
                 </ThemedText>
                 <ThemedText variant="caption" tone="inkSecondary">
                   메시지 {c.userTurnCount}개 · 주제 {c.reviewUnitCount}개

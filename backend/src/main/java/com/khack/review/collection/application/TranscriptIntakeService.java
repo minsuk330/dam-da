@@ -11,6 +11,7 @@ import com.khack.review.collection.domain.SavedSession;
 import com.khack.review.collection.domain.SessionInput;
 import com.khack.review.collection.domain.SessionValidator;
 import com.khack.review.collection.domain.ShareExtraction;
+import com.khack.review.collection.domain.ShareLink;
 import com.khack.review.collection.domain.ShareLinkPolicy;
 import com.khack.review.collection.domain.ShareStatus;
 import com.khack.review.collection.domain.ShareTurn;
@@ -61,12 +62,12 @@ public class TranscriptIntakeService {
     }
 
     public SavedSession fromShareLink(String url) {
-        String allowed = ShareLinkPolicy.requireAllowed(url);
+        ShareLink allowed = ShareLinkPolicy.requireAllowed(url);
         ShareExtraction fetched;
         try {
             fetched = fetcher.fetch(allowed);
         } catch (RuntimeException e) {
-            log.warn("share link fetch failed: {}", allowed, e);
+            log.warn("share link fetch failed: {}", allowed.url(), e);
             throw new ShareLinkUnavailableException(ShareStatus.UNREACHABLE);
         }
         ShareStatus status = ShareStatus.classify(fetched);
@@ -77,7 +78,7 @@ public class TranscriptIntakeService {
         if (size > MAX_PASTED_CHARS * 4) {
             throw new IllegalArgumentException("대화가 너무 깁니다. 학습한 부분만 붙여넣기로 입력하세요.");
         }
-        return intake(RawConversation.fromShareLink(fetched.title(), fetched.turns()));
+        return intake(RawConversation.fromShareLink(allowed.source(), fetched.title(), fetched.turns()));
     }
 
     public SavedSession fromPaste(String text) {

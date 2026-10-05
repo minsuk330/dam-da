@@ -12,6 +12,8 @@ import com.khack.review.collection.domain.InputPath;
 import com.khack.review.collection.domain.LearningConversation;
 import com.khack.review.collection.domain.LearningConversationRepository;
 import com.khack.review.collection.domain.ShareExtraction;
+import com.khack.review.collection.domain.ShareLink;
+import com.khack.review.collection.domain.ShareSource;
 import com.khack.review.collection.domain.ShareTurn;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -35,7 +37,7 @@ import com.khack.review.common.json.Json;
 @Import(ConversationInputIT.Fakes.class)
 class ConversationInputIT {
 
-    static final List<String> FETCHED = new ArrayList<>();
+    static final List<ShareLink> FETCHED = new ArrayList<>();
     static ShareExtraction nextShare;
     static RuntimeException fetchFailure;
 
@@ -45,8 +47,8 @@ class ConversationInputIT {
         @Bean
         @Primary
         ShareLinkFetcher fakeShareLinkFetcher() {
-            return url -> {
-                FETCHED.add(url);
+            return link -> {
+                FETCHED.add(link);
                 if (fetchFailure != null) {
                     throw fetchFailure;
                 }
@@ -103,13 +105,29 @@ class ConversationInputIT {
         JsonNode body = Json.MAPPER.readTree(response.body());
         assertThat(body.get("inputPath").asString()).isEqualTo("share_link");
         assertThat(body.get("userTurnCount").asInt()).isEqualTo(2);
-        assertThat(FETCHED).containsExactly("https://chatgpt.com/share/abc");
+        assertThat(FETCHED).containsExactly(new ShareLink("https://chatgpt.com/share/abc", ShareSource.chatgpt));
         LearningConversation conversation = stored(response);
         assertThat(conversation.getInputPath()).isEqualTo(InputPath.share_link);
+        assertThat(conversation.getShareSource()).isEqualTo(ShareSource.chatgpt);
         assertThat(conversation.getFidelity()).isEqualTo(Fidelity.verbatim);
         assertThat(conversation.getRawTranscript()).contains("표본평균의 퍼짐입니다.");
         assertThat(sessions.findByConversationId(conversation.getId())).hasValueSatisfying(session ->
                 assertThat(body.get("learningSessionId").asLong()).as("응답의 학습 세션 ID").isEqualTo(session.getId()));
+    }
+
+    @Test
+    void claudeShareLinkKeepsItsSourceInTheConversationDetail() throws Exception {
+        HttpResponse<String> response = post("/api/conversations/share-link", "{\"url\":\"https://claude.ai/share/b3bc\"}");
+
+        assertThat(response.statusCode()).isEqualTo(201);
+        assertThat(FETCHED).containsExactly(new ShareLink("https://claude.ai/share/b3bc", ShareSource.claude));
+        String id = Json.MAPPER.readTree(response.body()).get("conversationId").asString();
+        HttpResponse<String> detail = HttpClient.newHttpClient().send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/conversations/" + id)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        JsonNode body = Json.MAPPER.readTree(detail.body());
+        assertThat(body.get("inputPath").asString()).isEqualTo("share_link");
+        assertThat(body.get("shareSource").asString()).isEqualTo("claude");
     }
 
     @Test

@@ -17,7 +17,7 @@ const MODES: { mode: Mode; label: string }[] = [
   { mode: 'paste', label: '붙여넣기' },
 ];
 
-/** 추가 탭: Claude 공유 링크나 복사한 대화를 넣어 학습 대화로 저장한다 (스펙 §7.6 입력 경로). */
+/** 추가 탭: ChatGPT·Claude·Codex 공유 링크나 복사한 대화를 넣어 학습 대화로 저장한다 (스펙 §7.5 입력 경로). */
 export function AddConversation() {
   const tabBarSpace = useTabBarSpace();
   const insets = useSafeAreaInsets();
@@ -122,7 +122,7 @@ export function AddConversation() {
             style={styles.field}
           />
           <ThemedText variant="caption" tone="inkMuted">
-            Claude 대화 화면의 공유 버튼으로 만든 링크를 붙여넣어 주세요.
+            ChatGPT·Claude·Codex 대화의 공유 버튼으로 만든 링크를 붙여넣어 주세요.
           </ThemedText>
         </View>
       ) : (
@@ -139,7 +139,7 @@ export function AddConversation() {
             style={[styles.field, styles.fieldMultiline]}
           />
           <ThemedText variant="caption" tone="inkMuted">
-            붙여넣은 대화는 Claude가 옮겨 적은 것으로 표시돼요. 저장 뒤 내가 한 말과 맞는지 확인할 수 있어요.
+            붙여넣은 대화는 원문 그대로 저장돼요. 저장 뒤 뽑은 학습 내용을 확인할 수 있어요.
           </ThemedText>
         </View>
       )}

@@ -47,6 +47,10 @@ public class LearningConversation {
     @Column(nullable = false)
     private InputPath inputPath;
 
+    /** 공유 링크로 받은 대화가 어느 서비스의 링크였는지. 다른 입력 경로는 null이다. */
+    @Enumerated(EnumType.STRING)
+    private ShareSource shareSource;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Fidelity fidelity;
@@ -99,6 +103,7 @@ public class LearningConversation {
         conversation.sessionId = UUID.randomUUID().toString();
         conversation.userId = userId;
         conversation.inputPath = raw.inputPath();
+        conversation.shareSource = raw.shareSource();
         conversation.fidelity = Fidelity.verbatim;
         conversation.receivedAt = receivedAt;
         conversation.topicHint = input.topicHint() != null ? input.topicHint() : raw.title();
@@ -113,7 +118,8 @@ public class LearningConversation {
     public SavedSession toSavedSession() {
         return new SavedSession(sessionId, receivedAt.toString(), inputPath.name(), fidelity.name(),
                 turns.stream().map(ConversationTurn::toUserTurn).toList(),
-                List.copyOf(reviewUnits), topicHint, List.copyOf(warnings), null, null);
+                List.copyOf(reviewUnits), topicHint, List.copyOf(warnings), null, null,
+                shareSource == null ? null : shareSource.name());
     }
 
     /**
@@ -184,6 +190,10 @@ public class LearningConversation {
 
     public InputPath getInputPath() {
         return inputPath;
+    }
+
+    public ShareSource getShareSource() {
+        return shareSource;
     }
 
     public Fidelity getFidelity() {

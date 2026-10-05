@@ -21,6 +21,7 @@ const details: Detail[] = [
     learningSessionId: 3,
     receivedAt: daysAgo(0),
     inputPath: 'connector',
+    shareSource: null,
     fidelity: 'model_transcribed',
     topicHint: 'InnoDB 잠금과 MVCC',
     userTurns: [
@@ -67,6 +68,7 @@ const details: Detail[] = [
     learningSessionId: 2,
     receivedAt: daysAgo(2),
     inputPath: 'share_link',
+    shareSource: 'chatgpt',
     fidelity: 'verbatim',
     topicHint: '경영통계: 표준오차',
     userTurns: [
@@ -106,7 +108,8 @@ const details: Detail[] = [
     learningSessionId: 1,
     receivedAt: daysAgo(5),
     inputPath: 'paste',
-    fidelity: 'model_transcribed',
+    shareSource: null,
+    fidelity: 'verbatim',
     topicHint: 'React 재렌더링',
     userTurns: [
       {
@@ -147,6 +150,7 @@ export const mockConversations: Schemas['ConversationSummaryResponse'][] = [...d
   learningSessionId: d.learningSessionId,
   receivedAt: d.receivedAt,
   inputPath: d.inputPath,
+  shareSource: d.shareSource,
   fidelity: d.fidelity,
   topicHint: d.topicHint,
   userTurnCount: d.userTurns.length,

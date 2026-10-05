@@ -20,7 +20,7 @@ class SessionMarkdownTest {
     private static final UserTurn INFO = new UserTurn(2, "trx_id가 뭔데", null, Intent.info_request, null, null);
 
     private static SavedSession v5(String id, String receivedAt, List<UserTurn> turns, List<ReviewUnit> units, List<String> warnings) {
-        return new SavedSession(id, receivedAt, "connector", "model_transcribed", turns, units, "InnoDB", warnings, null, null);
+        return new SavedSession(id, receivedAt, "connector", "model_transcribed", turns, units, "InnoDB", warnings, null, null, null);
     }
 
     private static ReviewUnit unit() {
@@ -63,7 +63,7 @@ class SessionMarkdownTest {
     @Test
     void rendersLegacySessionSummary() {
         SavedSession legacy = new SavedSession("old", "2026-09-27T10:00:00Z", "connector", "model_transcribed",
-                List.of(new UserTurn(1, "질문", null, null, null, null)), null, null, null, "## 옛 요약", 1);
+                List.of(new UserTurn(1, "질문", null, null, null, null)), null, null, null, "## 옛 요약", 1, null);
         assertThat(SessionMarkdown.render(List.of(legacy))).contains("질문", "v1 요약", "## 옛 요약");
     }
 }

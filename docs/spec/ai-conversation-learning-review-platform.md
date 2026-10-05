@@ -592,6 +592,20 @@ MCP 서버         ── 대화를 볼 수 없고 인자만 받음
 
 공유 링크는 ChatGPT 무료 사용자처럼 커넥터를 쓸 수 없는 사용자도 지원한다.
 
+#### 지원하는 공유 링크
+
+| 출처 | 링크 형태 | 사용자 발화 | AI 답변 |
+|---|---|---|---|
+| ChatGPT | `https://chatgpt.com/share/<id>`, `https://chat.openai.com/share/<id>` | `[data-message-author-role="user"]` | `[data-message-author-role="assistant"]` |
+| Claude | `https://claude.ai/share/<id>` | `[data-testid="user-message"]` | `.font-claude-response` |
+| Codex | `https://chatgpt.com/s/cx_<id>` | `article[id^="message-"]` 안의 `[data-user-message-bubble]` | 말풍선이 없는 `article[id^="message-"]` |
+
+- 서버는 위 호스트·경로만 연다(SSRF 방지: `https`, 기본 포트, 사용자 정보 없음). 쿼리·프래그먼트는 뗀다.
+- 대화에 출처(`shareSource`: `chatgpt` / `claude` / `codex`)를 남긴다. 다른 입력 경로는 비어 있다.
+- Claude·Codex 공유 페이지는 Cloudflare가 headless 브라우저 UA(`HeadlessChrome`)를 막아, headless 표시를 뗀 UA로 연다(2026-10-05 확인).
+- 봇 확인 화면이나 로그인 페이지로 넘어가면 응답이 200이어도 차단(`BLOCKED`)으로 보고 붙여넣기를 권한다. 공유를 켜기 전의 Claude 링크는 로그인 페이지로 넘어간다.
+- Codex CLI 세션은 공유 링크가 없어 붙여넣기로 입력한다. 세션 파일 업로드는 지원하지 않는다.
+
 #### 공유 링크의 주의점
 
 - 공유 페이지는 공식 API가 아니며 JS 렌더링과 봇 차단이 적용될 수 있어, 페이지 구조가 바뀌면 수집이 실패할 수 있다. 각 플랫폼 약관상 수집 가능 여부를 확인한다.
@@ -971,7 +985,7 @@ StreakUpdated
 
 ### 11.1 반드시 구현할 기능
 
-1. 입력 2종: Claude MCP 커넥터 저장, ChatGPT 공유 링크 수집 + 텍스트 붙여넣기 대체 경로
+1. 입력 2종: Claude MCP 커넥터 저장, ChatGPT·Claude·Codex 공유 링크 수집 + 텍스트 붙여넣기 대체 경로
 2. 커넥터 스키마 v5(§7.6) 수신과 서버 검증: 발화 의도·AI 판정·복습 단위 1~7개
 3. 앱에서 수신 발화와 복습 단위 확인·수정 (누락 발화 추가 포함)
 4. 문제 후보 생성
@@ -998,7 +1012,6 @@ StreakUpdated
 
 - 여러 AI 서비스의 완전 자동 동기화
 - ChatGPT 커넥터 (기술적으로 가능하나 개발자 모드 설정 부담으로 해커톤 이후 지원, §7.4 참고)
-- Claude 공유 링크 수집
 - 공유 링크를 이용한 커넥터 저장분 원문 보강
 - 브라우저 확장
 - 정교한 소셜 기능
@@ -1097,7 +1110,7 @@ StreakUpdated
 5. 한 복습 단위가 여러 대화의 근거를 가질 수 있는가?
 6. ~~사용자의 자기 확신도를 입력받을 것인가?~~ 결정: 답을 제출할 때 "쉽게 떠올렸음 / 힘들게 떠올렸거나 확신이 약함 / 떠올리지 못하고 추측했음" 중 하나를 받아 등급 변환에 쓴다(§6.4.5).
 7. 알림을 제품의 핵심 기능으로 포함할 것인가?
-8. 브라우저 확장은 언제 지원할 것인가? (해커톤 공유 링크 수집은 ChatGPT로 결정됨)
+8. 브라우저 확장은 언제 지원할 것인가? (해커톤 공유 링크 수집은 ChatGPT·Claude·Codex로 결정됨)
 
 ## 16. 다음 작업
 

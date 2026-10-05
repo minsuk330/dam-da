@@ -626,6 +626,8 @@ export interface components {
             /** Format: date-time */
             receivedAt: string;
             reviewUnits: components["schemas"]["ReviewUnitResponse"][];
+            /** @enum {string|null} */
+            shareSource: "chatgpt" | "claude" | "codex" | null;
             topicHint: string | null;
             userTurns: components["schemas"]["UserTurnResponse"][];
             warnings: string[];
@@ -642,6 +644,8 @@ export interface components {
             receivedAt: string;
             /** Format: int32 */
             reviewUnitCount: number;
+            /** @enum {string|null} */
+            shareSource: "chatgpt" | "claude" | "codex" | null;
             topicHint: string | null;
             /** Format: int32 */
             userTurnCount: number;

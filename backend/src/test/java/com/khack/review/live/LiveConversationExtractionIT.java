@@ -8,6 +8,7 @@ import com.khack.review.collection.domain.Intent;
 import com.khack.review.collection.domain.RawConversation;
 import com.khack.review.collection.domain.SessionInput;
 import com.khack.review.collection.domain.SessionValidator;
+import com.khack.review.collection.domain.ShareSource;
 import com.khack.review.collection.domain.ShareTurn;
 import com.khack.review.collection.domain.UserTurn;
 import com.khack.review.collection.domain.ValidationResult;
@@ -45,7 +46,7 @@ class LiveConversationExtractionIT {
 
     @Test
     void shareLinkConversationIsClassifiedPerOriginalTurn() {
-        SessionInput input = extractor.extract(RawConversation.fromShareLink("InnoDB 잠금", TURNS));
+        SessionInput input = extractor.extract(RawConversation.fromShareLink(ShareSource.chatgpt, "InnoDB 잠금", TURNS));
 
         print("share_link", input);
         assertThat(SessionValidator.validate(input).errors()).isEmpty();

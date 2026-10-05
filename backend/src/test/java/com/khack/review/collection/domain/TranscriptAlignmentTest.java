@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 class TranscriptAlignmentTest {
 
-    static final RawConversation SHARE = RawConversation.fromShareLink("통계", List.of(
+    static final RawConversation SHARE = RawConversation.fromShareLink(ShareSource.chatgpt, "통계", List.of(
             new ShareTurn("user", "표준오차가 뭐얘요?"),
             new ShareTurn("assistant", "표본평균의 퍼짐입니다."),
             new ShareTurn("user", "그럼 표준편차는?")));

@@ -8,7 +8,7 @@ import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
 import { Skeleton, SkeletonList } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { aiVerdictLabel, factKindLabel, fidelityLabel, formatDateTime, inputPathLabel, intentLabel } from '@/labels';
+import { aiVerdictLabel, factKindLabel, fidelityLabel, formatDateTime, inputPathText, intentLabel } from '@/labels';
 import { openSession } from '@/navigation';
 import { colors, components, opacity, radius, spacing, typography } from '@/theme';
 
@@ -49,7 +49,7 @@ export function ConversationDetail({ id }: { id: string }) {
       <View style={styles.header}>
         <ThemedText variant="display">{data.topicHint ?? '주제 없음'}</ThemedText>
         <ThemedText variant="caption" tone="inkMuted">
-          {formatDateTime(data.receivedAt)} · {inputPathLabel[data.inputPath]} · {fidelityLabel[data.fidelity]}
+          {formatDateTime(data.receivedAt)} · {inputPathText(data)} · {fidelityLabel[data.fidelity]}
         </ThemedText>
       </View>
 

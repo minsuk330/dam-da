@@ -11,6 +11,7 @@ import com.khack.review.collection.domain.KeyPoint;
 import com.khack.review.collection.domain.RawConversation;
 import com.khack.review.collection.domain.ReviewUnit;
 import com.khack.review.collection.domain.SessionInput;
+import com.khack.review.collection.domain.ShareSource;
 import com.khack.review.collection.domain.ShareTurn;
 import com.khack.review.collection.domain.UserTurn;
 import com.khack.review.common.application.port.out.FakeLlmPort;
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 class LlmConversationExtractorTest {
 
-    static final RawConversation SHARED = RawConversation.fromShareLink("ETag", List.of(
+    static final RawConversation SHARED = RawConversation.fromShareLink(ShareSource.chatgpt, "ETag", List.of(
             new ShareTurn("user", "ETag가 뭐야?"),
             new ShareTurn("assistant", "버전 식별자입니다."),
             new ShareTurn("user", "요청마다 파일을 비교하는 거지?"),
