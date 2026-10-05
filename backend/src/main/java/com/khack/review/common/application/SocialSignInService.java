@@ -27,12 +27,22 @@ public class SocialSignInService {
 
     @Transactional
     public AppUser signIn(SocialProfile profile) {
-        return users.findByProviderAndProviderUserId(profile.provider(), profile.providerUserId())
-                .map(user -> {
-                    user.updateProfile(profile.nickname(), profile.email());
-                    return user;
+        return signIn(profile, null);
+    }
+
+    /** {@code encryptedProviderUserId}가 있으면 함께 저장한다(토스, {@link TossUserKeyCipher}). */
+    @Transactional
+    public AppUser signIn(SocialProfile profile, @Nullable String encryptedProviderUserId) {
+        AppUser user = users.findByProviderAndProviderUserId(profile.provider(), profile.providerUserId())
+                .map(found -> {
+                    found.updateProfile(profile.nickname(), profile.email());
+                    return found;
                 })
                 .orElseGet(() -> users.save(AppUser.social(profile.provider(), profile.providerUserId(), profile.nickname(),
                         profile.email(), clock.instant())));
+        if (encryptedProviderUserId != null) {
+            user.encryptedProviderUserId(encryptedProviderUserId);
+        }
+        return user;
     }
 }

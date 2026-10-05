@@ -126,7 +126,7 @@ sudo chown -R 1001:1001 ~/apps/khack/backend/certs/toss
 sudo chmod 500 ~/apps/khack/backend/certs/toss && sudo chmod 400 ~/apps/khack/backend/certs/toss/*
 ```
 
-`.env`에 `CORS_ALLOWED_ORIGINS`, `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`를 `.env.example`처럼 넣고 `docker compose --profile caddy up -d`. 인증서 파일이 없는데 경로만 넣으면 앱이 뜨지 않는다(PEM을 기동 때 읽는다).
+`.env`에 `CORS_ALLOWED_ORIGINS`, `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`, `TOSS_USER_KEY_SECRET`(`openssl rand -base64 32`), `TOSS_UNLINK_BASIC_AUTH`를 `.env.example`처럼 넣고 `docker compose --profile caddy up -d`. 인증서 파일이 없는데 경로만 넣으면 앱이 뜨지 않는다(PEM을 기동 때 읽는다).
 
 확인: 가짜 코드는 401이고, 로그(`docker compose logs app | grep toss-login`)에 `invalid_grant`가 보이면 mTLS 연결까지 된 것이다. `4050`이면 콘솔의 토스 로그인 설정이 빠진 것이다.
 
@@ -134,6 +134,10 @@ sudo chmod 500 ~/apps/khack/backend/certs/toss && sudo chmod 400 ~/apps/khack/ba
 curl -s -o /dev/null -w "%{http_code}\n" -X POST -H 'Content-Type: application/json' \
   -d '{"authorizationCode":"fake","referrer":"SANDBOX"}' https://hack.refit-100.site/api/auth/toss
 ```
+
+연결 끊기 콜백: 사용자가 토스 앱에서 로그인 연결을 끊으면 토스가 `https://hack.refit-100.site/toss/unlink`를 부르고, 서버는 그 사용자의 데이터를 모두 지운다(출시 가이드). 콘솔 토스 로그인 설정에 이 URL과 Basic Auth 값(`TOSS_UNLINK_BASIC_AUTH`와 같은 값)을 등록한다. GET·POST 둘 다 받는다. 앱에서 회원 탈퇴하면 서버가 토스 연결도 끊는다(`remove-by-user-key`).
+
+`TOSS_USER_KEY_SECRET`은 바꾸면 기존 토스 사용자를 찾지 못해 새 계정이 생긴다. 백업해 두고 바꾸지 않는다.
 
 ### 로그인
 

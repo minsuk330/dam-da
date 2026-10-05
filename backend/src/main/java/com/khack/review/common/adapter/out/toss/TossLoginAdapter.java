@@ -71,6 +71,25 @@ public class TossLoginAdapter implements TossLoginPort {
         return new TossUser(text(me, "userKey", "login-me"));
     }
 
+    @Override
+    public void disconnect(String userKey) {
+        if (!configured) {
+            throw new TossLoginException("토스 mTLS 인증서가 설정되지 않았습니다 (TOSS_MTLS_CERT, TOSS_MTLS_KEY)");
+        }
+        long key;
+        try {
+            key = Long.parseLong(userKey);
+        } catch (NumberFormatException e) {
+            throw new TossLoginException("토스 userKey가 숫자가 아님", e);
+        }
+        success(call(() -> restClient.post()
+                .uri("/api-partner/v1/apps-in-toss/user/oauth2/access/remove-by-user-key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("userKey", key))
+                .retrieve()
+                .body(JsonNode.class)), "remove-by-user-key");
+    }
+
     private interface Call {
         JsonNode run();
     }

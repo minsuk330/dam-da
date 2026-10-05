@@ -1,7 +1,9 @@
 package com.khack.review.common.application.port.out;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 테스트용 TossLoginPort. 인가 코드마다 돌려줄 userKey를 정한다. 정하지 않은 코드는 거절한다.
@@ -13,6 +15,9 @@ import java.util.Map;
 public class FakeTossLoginPort implements TossLoginPort {
 
 	private final Map<String, String> userKeys = new HashMap<>();
+
+	/** {@link #disconnect}로 받은 userKey. */
+	public final List<String> disconnected = new CopyOnWriteArrayList<>();
 
 	public FakeTossLoginPort willAccept(String authorizationCode, String userKey) {
 		userKeys.put(authorizationCode, userKey);
@@ -26,6 +31,11 @@ public class FakeTossLoginPort implements TossLoginPort {
 			throw new TossLoginException("invalid_grant");
 		}
 		return new TossUser(userKey);
+	}
+
+	@Override
+	public void disconnect(String userKey) {
+		disconnected.add(userKey);
 	}
 
 }

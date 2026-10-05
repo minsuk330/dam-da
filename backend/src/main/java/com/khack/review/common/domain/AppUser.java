@@ -33,6 +33,12 @@ public class AppUser {
 
     private String providerUserId;
 
+    /**
+     * 토스 사용자의 userKey 암호문(AES-GCM, #149). 토스는 {@code providerUserId}에 userKey의 HMAC을 두고, 토스 API(연결 끊기)를 부를 때만 이 값을 푼다.
+     * 다른 제공자는 null.
+     */
+    private String encryptedProviderUserId;
+
     /** 화면에 보이는 이름. 소셜 닉네임이며 없으면 {@code name}을 쓴다. */
     private String nickname;
 
@@ -62,6 +68,14 @@ public class AppUser {
         if (email != null && !email.isBlank()) {
             this.email = email;
         }
+    }
+
+    public void encryptedProviderUserId(String encrypted) {
+        this.encryptedProviderUserId = encrypted;
+    }
+
+    public String getEncryptedProviderUserId() {
+        return encryptedProviderUserId;
     }
 
     public String displayName() {
