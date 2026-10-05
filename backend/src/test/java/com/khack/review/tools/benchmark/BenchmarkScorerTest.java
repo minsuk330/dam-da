@@ -33,7 +33,7 @@ class BenchmarkScorerTest {
 
     private static SavedSession session(List<UserTurn> turns, KeyPoint... points) {
         return new SavedSession("s", "2026-09-27T00:00:00Z", "connector", "model_transcribed", turns,
-                List.of(new ReviewUnit("u", List.of(points), null)), null, List.of(), null, null);
+                List.of(new ReviewUnit("u", List.of(points), null)), null, List.of(), null, null, null);
     }
 
     @Test

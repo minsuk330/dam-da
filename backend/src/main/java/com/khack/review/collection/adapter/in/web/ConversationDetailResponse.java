@@ -9,6 +9,7 @@ import com.khack.review.collection.domain.Intent;
 import com.khack.review.collection.domain.KeyPoint;
 import com.khack.review.collection.domain.ReviewUnit;
 import com.khack.review.collection.domain.SavedSession;
+import com.khack.review.collection.domain.ShareSource;
 import com.khack.review.collection.domain.UserTurn;
 import java.time.Instant;
 import java.util.List;
@@ -23,6 +24,7 @@ record ConversationDetailResponse(
         @Nullable Long learningSessionId,
         Instant receivedAt,
         InputPath inputPath,
+        @Nullable ShareSource shareSource,
         Fidelity fidelity,
         @Nullable String topicHint,
         List<UserTurnResponse> userTurns,
@@ -31,7 +33,9 @@ record ConversationDetailResponse(
 
     static ConversationDetailResponse from(SavedSession session, @Nullable Long learningSessionId) {
         return new ConversationDetailResponse(session.id(), learningSessionId, Instant.parse(session.receivedAt()),
-                InputPath.valueOf(session.source()), Fidelity.valueOf(session.transcription()), session.topicHint(),
+                InputPath.valueOf(session.source()),
+                session.shareSource() == null ? null : ShareSource.valueOf(session.shareSource()),
+                Fidelity.valueOf(session.transcription()), session.topicHint(),
                 session.userTurns().stream().map(UserTurnResponse::from).toList(),
                 session.reviewUnits().stream().map(ReviewUnitResponse::from).toList(),
                 session.warnings());

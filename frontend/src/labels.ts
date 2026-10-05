@@ -10,6 +10,18 @@ export const inputPathLabel: Record<Detail['inputPath'], string> = {
   paste: '붙여넣기',
 }
 
+export const shareSourceLabel: Record<NonNullable<Detail['shareSource']>, string> = {
+  chatgpt: 'ChatGPT',
+  claude: 'Claude',
+  codex: 'Codex',
+}
+
+/** 대화가 들어온 길. 공유 링크는 어느 서비스의 링크였는지 붙인다(예: "Claude 공유 링크"). */
+export function inputPathText(c: Pick<Detail, 'inputPath' | 'shareSource'>): string {
+  const label = inputPathLabel[c.inputPath]
+  return c.inputPath === 'share_link' && c.shareSource ? `${shareSourceLabel[c.shareSource]} ${label}` : label
+}
+
 /** 대화가 들어온 길을 아이콘으로도 구분한다. */
 export const inputPathIcon: Record<Detail['inputPath'], IconName> = {
   connector: 'message-circle',

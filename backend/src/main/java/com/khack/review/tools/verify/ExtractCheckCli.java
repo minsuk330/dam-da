@@ -6,7 +6,9 @@ import com.khack.review.collection.domain.RawConversation;
 import com.khack.review.collection.domain.SessionInput;
 import com.khack.review.collection.domain.SessionValidator;
 import com.khack.review.collection.domain.ShareExtraction;
+import com.khack.review.collection.domain.ShareLink;
 import com.khack.review.collection.domain.ShareLinkPolicy;
+import com.khack.review.collection.domain.ShareSource;
 import com.khack.review.collection.domain.ShareStatus;
 import com.khack.review.collection.domain.ShareTurn;
 import com.khack.review.collection.domain.TranscriptAlignment;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
  * 추출 프롬프트를 바꿀 때 결과를 보는 용도다.
  *
  * <pre>
- * ./gradlew -q extractCheck -Pargs="https://chatgpt.com/share/..."          (공유 링크를 Playwright로 수집)
+ * ./gradlew -q extractCheck -Pargs="https://chatgpt.com/share/..."          (ChatGPT·Claude·Codex 공유 링크를 Playwright로 수집)
  * ./gradlew -q extractCheck -Pargs="fixtures/transcripts/etag.json"        (발화자가 구분된 원문 {title, turns:[{role,text}]})
  * ./gradlew -q extractCheck -Pargs="fixtures/transcripts/etag.json --paste" (발화자 표시 없이 붙여넣은 것처럼)
  * ./gradlew -q extractCheck -Pargs="대화.txt"                               (붙여넣기 텍스트 파일)
@@ -63,12 +65,13 @@ public final class ExtractCheckCli {
 
     private static RawConversation load(String arg, boolean asPaste) throws IOException {
         if (arg.startsWith("https://")) {
-            ShareExtraction fetched = ShareExtractor.extract(ShareLinkPolicy.requireAllowed(arg), false, null);
+            ShareLink link = ShareLinkPolicy.requireAllowed(arg);
+            ShareExtraction fetched = ShareExtractor.extract(link, false, null);
             ShareStatus status = ShareStatus.classify(fetched);
             if (status != ShareStatus.OK) {
                 throw new IllegalStateException("공유 링크에서 대화를 가져오지 못했습니다: " + status);
             }
-            return RawConversation.fromShareLink(fetched.title(), fetched.turns());
+            return RawConversation.fromShareLink(link.source(), fetched.title(), fetched.turns());
         }
         String content = Files.readString(Path.of(arg));
         if (!arg.endsWith(".json")) {
@@ -78,6 +81,6 @@ public final class ExtractCheckCli {
         if (asPaste) {
             return RawConversation.fromPaste(transcript.turns().stream().map(ShareTurn::text).collect(Collectors.joining("\n\n")));
         }
-        return RawConversation.fromShareLink(transcript.title(), transcript.turns());
+        return RawConversation.fromShareLink(ShareSource.chatgpt, transcript.title(), transcript.turns());
     }
 }

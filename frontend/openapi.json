@@ -1606,6 +1606,10 @@
               "$ref" : "#/components/schemas/ReviewUnitResponse"
             }
           },
+          "shareSource" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "chatgpt", "claude", "codex" ]
+          },
           "topicHint" : {
             "type" : [ "string", "null" ]
           },
@@ -1622,7 +1626,7 @@
             }
           }
         },
-        "required" : [ "fidelity", "id", "inputPath", "learningSessionId", "receivedAt", "reviewUnits", "topicHint", "userTurns", "warnings" ]
+        "required" : [ "fidelity", "id", "inputPath", "learningSessionId", "receivedAt", "reviewUnits", "shareSource", "topicHint", "userTurns", "warnings" ]
       },
       "ConversationSummaryResponse" : {
         "type" : "object",
@@ -1650,6 +1654,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "shareSource" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "chatgpt", "claude", "codex" ]
+          },
           "topicHint" : {
             "type" : [ "string", "null" ]
           },
@@ -1662,7 +1670,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "fidelity", "id", "inputPath", "learningSessionId", "receivedAt", "reviewUnitCount", "topicHint", "userTurnCount", "warningCount" ]
+        "required" : [ "fidelity", "id", "inputPath", "learningSessionId", "receivedAt", "reviewUnitCount", "shareSource", "topicHint", "userTurnCount", "warningCount" ]
       },
       "CurvePoint" : {
         "type" : "object",

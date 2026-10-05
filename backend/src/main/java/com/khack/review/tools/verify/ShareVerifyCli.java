@@ -2,6 +2,7 @@ package com.khack.review.tools.verify;
 
 import com.khack.review.collection.adapter.out.playwright.ShareExtractor;
 import com.khack.review.collection.domain.ShareExtraction;
+import com.khack.review.collection.domain.ShareLinkPolicy;
 import com.khack.review.collection.domain.ShareStatus;
 import com.khack.review.collection.domain.ShareTurn;
 import com.khack.review.common.json.Json;
@@ -26,7 +27,7 @@ public final class ShareVerifyCli {
             System.exit(1);
         }
 
-        ShareExtraction extraction = ShareExtractor.extract(script.shareUrl(), headed, script.name());
+        ShareExtraction extraction = ShareExtractor.extract(ShareLinkPolicy.requireAllowed(script.shareUrl()), headed, script.name());
         ShareStatus status = ShareStatus.classify(extraction);
 
         Map<String, Object> report = new LinkedHashMap<>();

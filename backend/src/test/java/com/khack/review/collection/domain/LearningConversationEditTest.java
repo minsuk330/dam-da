@@ -56,7 +56,7 @@ class LearningConversationEditTest {
 
     @Test
     void verbatimTextStaysAsIs() {
-        RawConversation raw = RawConversation.fromShareLink("통계", List.of());
+        RawConversation raw = RawConversation.fromShareLink(ShareSource.chatgpt, "통계", List.of());
         LearningConversation conversation = LearningConversation.fromTranscript(1L, raw,
                 input(List.of(turn(1, "표준오차가 뭐야"))), List.of(), NOW);
 
