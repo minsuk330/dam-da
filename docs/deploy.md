@@ -113,6 +113,28 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 - 토큰 서명 키가 `AUTH_SIGNING_KEY`로 고정되어 있어야 재시작 뒤에도 연결이 유지된다. 클라이언트와 갱신 토큰(30일)은 DB(`connector_client`, `connector_authorization`)에 있다.
 - `PUBLIC_SERVER_URL`이 실제 공개 주소와 같아야 한다(토큰 `iss`와 메타데이터에 쓰인다).
 
+### 토스 인앱 (앱인토스, #149)
+
+토스 미니앱은 출처가 `https://damda-ai.apps.tossmini.com`(콘솔 QR 테스트는 `private-apps`)라 CORS를 열고, 토스 로그인은 서버가 mTLS 인증서로 앱인토스 API를 부른다.
+
+```bash
+# 인증서: 앱인토스 콘솔에서 받은 PEM 두 개. 커밋하지 않는다.
+mkdir -p ~/apps/khack/backend/certs/toss
+scp damda_public.crt damda_private.key <서버>:apps/khack/backend/certs/toss/
+# 컨테이너 사용자(pwuser, uid 1001)만 읽게 한다. compose가 /app/certs/toss에 읽기 전용으로 붙인다.
+sudo chown -R 1001:1001 ~/apps/khack/backend/certs/toss
+sudo chmod 500 ~/apps/khack/backend/certs/toss && sudo chmod 400 ~/apps/khack/backend/certs/toss/*
+```
+
+`.env`에 `CORS_ALLOWED_ORIGINS`, `TOSS_MTLS_CERT`, `TOSS_MTLS_KEY`를 `.env.example`처럼 넣고 `docker compose --profile caddy up -d`. 인증서 파일이 없는데 경로만 넣으면 앱이 뜨지 않는다(PEM을 기동 때 읽는다).
+
+확인: 가짜 코드는 401이고, 로그(`docker compose logs app | grep toss-login`)에 `invalid_grant`가 보이면 mTLS 연결까지 된 것이다. `4050`이면 콘솔의 토스 로그인 설정이 빠진 것이다.
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST -H 'Content-Type: application/json' \
+  -d '{"authorizationCode":"fake","referrer":"SANDBOX"}' https://hack.refit-100.site/api/auth/toss
+```
+
 ### 로그인
 
 - `.env`에 `PUBLIC_SERVER_URL`, `APP_URL`(Vercel 주소), `AUTH_SIGNING_KEY`, `GOOGLE_*`, `KAKAO_*`를 넣는다. `AUTH_SIGNING_KEY`가 비면 재시작할 때마다 모두 로그아웃된다. 키는 PKCS#8 DER이어야 한다(`openssl genpkey ... | openssl pkcs8 -topk8 -nocrypt -outform DER | base64 | tr -d '\n'`). OpenSSL 3.0.x의 `genpkey -outform DER`는 PKCS#1로 내보내 기동이 실패한다(`Unable to decode key`).
@@ -124,7 +146,7 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 - Root Directory: `frontend`. 빌드 설정은 `frontend/vercel.json`(`EXPO_PUBLIC_API_MOCK=false npx expo export -p web` → `dist`). mock 끄기는 빌드 명령에 들어 있어 Vercel 환경 변수로 넣지 않아도 된다.
 - `EXPO_PUBLIC_API_URL`은 넣지 않는다(비우면 같은 출처 `/api`를 부른다).
 - 손으로 배포할 때는 레포 루트에서 `vercel deploy`를 실행한다(Root Directory가 `frontend`라 `frontend/`에서 실행하면 경로가 겹친다).
-- `frontend/vercel.json` rewrites가 `/api/**`를 `https://hack.refit-100.site/api/**`로 넘긴다. 같은 출처라 백엔드 CORS는 열지 않는다(`CORS_ALLOWED_ORIGINS=`).
+- `frontend/vercel.json` rewrites가 `/api/**`를 `https://hack.refit-100.site/api/**`로 넘긴다. 같은 출처라 웹에는 백엔드 CORS가 필요 없다(토스 인앱은 위 "토스 인앱" 참고).
 
 ## 배포 확인 순서
 
