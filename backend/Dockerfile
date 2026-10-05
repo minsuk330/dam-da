@@ -21,8 +21,9 @@ ENV JAVA_HOME=/opt/java/openjdk \
 	PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 WORKDIR /app
-COPY --from=build /workspace/app.jar app.jar
-RUN mkdir -p data && chown -R pwuser:pwuser /app
+# --chown으로 복사한다. 복사 뒤 chown -R을 하면 JAR가 레이어에 한 번 더 들어가 이미지를 받을 때마다 두 배를 내려받는다.
+COPY --from=build --chown=pwuser:pwuser /workspace/app.jar app.jar
+RUN mkdir -p data && chown pwuser:pwuser /app data
 USER pwuser
 
 EXPOSE 8080

@@ -45,6 +45,9 @@ services:
     volumes:
       # 공유 링크 수집 결과(data/results)
       - app-data:/app/data
+      # 토스 로그인 mTLS 인증서(#149). 서버의 backend/certs/toss/에 두고 커밋하지 않는다(docs/deploy.md "토스 인앱").
+      # 없으면 빈 폴더가 붙고 토스 로그인만 401이다. 쓰려면 .env의 TOSS_MTLS_CERT·TOSS_MTLS_KEY를 채운다.
+      - ../certs/toss:/app/certs/toss:ro
     healthcheck:
       # 실행 이미지(Playwright)에 curl·wget이 없어 bash /dev/tcp로 확인한다.
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /healthz HTTP/1.0\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q ' 200 '"]
