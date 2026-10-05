@@ -59,7 +59,7 @@
     "android": "expo start --android",
     "build:web": "expo export -p web",
     "toss:web": "EXPO_PUBLIC_TOSS=true expo start --web --clear",
-    "toss:build": "EXPO_PUBLIC_TOSS=true EXPO_PUBLIC_API_MOCK=false EXPO_PUBLIC_API_URL=https://hack.refit-100.site expo export -p web --clear --output-dir dist-toss && ait build",
+    "toss:build": "EXPO_PUBLIC_TOSS=true EXPO_PUBLIC_API_MOCK=false EXPO_PUBLIC_API_URL=https://hack.refit-100.site expo export -p web --clear --output-dir dist-toss && node scripts/check-no-eval.mjs dist-toss && ait build",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "api:types": "npx --yes openapi-typescript@7.13.0 openapi.json -o src/api/schema.d.ts",
