@@ -63,7 +63,7 @@ export const SHARE_GUIDES: ShareGuide[] = [
       },
       {
         title: '링크 공유 누르기',
-        detail: ['아래쪽 ', { strong: '링크 공유' }, '를 누른 뒤 ', { strong: '복사' }, '를 골라요.'],
+        detail: ['아래쪽 ', { strong: '링크 공유' }, '를 누른 뒤 ', { strong: '링크 복사' }, '를 눌러요.'],
         icon: 'copy',
         image: { source: require('@/assets/share-guide/chatgpt-3-link.png'), aspectRatio: 1206 / 550 },
       },
@@ -101,7 +101,7 @@ export const SHARE_GUIDES: ShareGuide[] = [
       },
       {
         title: '링크 공유 누르기',
-        detail: ['아래쪽 ', { strong: '링크 공유' }, '를 누른 뒤 ', { strong: '복사' }, '를 골라요.'],
+        detail: ['아래쪽 ', { strong: '링크 공유' }, '를 누른 뒤 ', { strong: '링크 복사' }, '를 눌러요.'],
         icon: 'copy',
         image: { source: require('@/assets/share-guide/claude-3-link.png'), aspectRatio: 1206 / 1305 },
       },
