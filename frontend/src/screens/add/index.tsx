@@ -139,7 +139,7 @@ export function AddConversation() {
             style={[styles.field, styles.fieldMultiline]}
           />
           <ThemedText variant="caption" tone="inkMuted">
-            붙여넣은 대화는 Claude가 옮겨 적은 것으로 표시돼요. 저장 뒤 내가 한 말과 맞는지 확인할 수 있어요.
+            붙여넣은 대화는 원문 그대로 저장돼요. 저장 뒤 뽑은 학습 내용을 확인할 수 있어요.
           </ThemedText>
         </View>
       )}

@@ -109,7 +109,7 @@ const details: Detail[] = [
     receivedAt: daysAgo(5),
     inputPath: 'paste',
     shareSource: null,
-    fidelity: 'model_transcribed',
+    fidelity: 'verbatim',
     topicHint: 'React 재렌더링',
     userTurns: [
       {
