@@ -73,17 +73,9 @@ export function ShareGuideWalkthrough({ guide }: { guide: ShareGuide }) {
             )}
           </ThemedText>
           {last && (
-            <>
-              <View style={styles.linkExample}>
-                <Icon name="link" size="sm" color={colors.inkSecondary} />
-                <ThemedText variant="caption" tone="inkSecondary" style={styles.flex}>
-                  {guide.linkExample}
-                </ThemedText>
-              </View>
-              <ThemedText variant="caption" tone="inkMuted">
-                링크가 있으면 누구나 그 대화를 볼 수 있어요. 담은 뒤에는 공유를 꺼도 괜찮아요.
-              </ThemedText>
-            </>
+            <ThemedText variant="caption" tone="inkMuted">
+              링크가 있으면 누구나 그 대화를 볼 수 있어요. 담은 뒤에는 공유를 꺼도 괜찮아요.
+            </ThemedText>
           )}
         </View>
       </ScrollView>
@@ -136,17 +128,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: { gap: spacing.sm },
-  linkExample: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: components.field.rounded,
-    backgroundColor: components.field.backgroundColor,
-  },
-  flex: { flex: 1 },
   footer: { gap: spacing.lg, paddingHorizontal: spacing.xl, paddingTop: spacing.md },
   open: { alignSelf: 'center' },
 });

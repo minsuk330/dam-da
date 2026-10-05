@@ -25,15 +25,20 @@ export type ShareGuide = {
   /** 단계 화면의 "열기" 링크. */
   openUrl: string;
   steps: GuideStep[];
-  /** 담다에 붙여넣을 링크 모양. 맞는 링크를 복사했는지 사용자가 비교한다. */
-  linkExample: string;
 };
 
-const pasteStep: GuideStep = {
-  title: '담다에 붙여넣기',
-  detail: ['담다 ', { strong: '추가' }, ' 탭의 공유 링크 칸에 붙여넣어요. 이런 모양이면 맞아요.'],
-  icon: 'clipboard',
-};
+/**
+ * 마지막 단계: 담다 추가 탭에 붙여넣기. 캡처는 담다 화면을 서비스별 링크 모양으로 직접 찍었다(링크 ID는 지어낸 값).
+ * 사용자는 캡처 속 링크 모양과 복사한 링크를 비교한다.
+ */
+function pasteStep(image: ImageSourcePropType): GuideStep {
+  return {
+    title: '담다에 붙여넣기',
+    detail: ['담다 ', { strong: '추가' }, ' 탭의 공유 링크 칸에 붙여넣어요. 이런 모양이면 맞아요.'],
+    icon: 'clipboard',
+    image: { source: image, aspectRatio: 1206 / 579 },
+  };
+}
 
 // 버튼 이름·위치는 각 서비스 화면이 바뀌면 달라진다. 캡처를 받을 때 실제 화면과 맞춘다(#168).
 export const SHARE_GUIDES: ShareGuide[] = [
@@ -62,9 +67,8 @@ export const SHARE_GUIDES: ShareGuide[] = [
         icon: 'copy',
         image: { source: require('@/assets/share-guide/chatgpt-3-link.png'), aspectRatio: 1206 / 550 },
       },
-      pasteStep,
+      pasteStep(require('@/assets/share-guide/chatgpt-4-paste.png')),
     ],
-    linkExample: 'https://chatgpt.com/share/...',
   },
   {
     source: 'claude',
@@ -92,9 +96,8 @@ export const SHARE_GUIDES: ShareGuide[] = [
         ],
         icon: 'copy',
       },
-      pasteStep,
+      pasteStep(require('@/assets/share-guide/claude-4-paste.png')),
     ],
-    linkExample: 'https://claude.ai/share/...',
   },
   {
     source: 'codex',
@@ -117,9 +120,8 @@ export const SHARE_GUIDES: ShareGuide[] = [
         detail: [{ strong: '링크 복사' }, '를 눌러요.'],
         icon: 'copy',
       },
-      pasteStep,
+      pasteStep(require('@/assets/share-guide/codex-4-paste.png')),
     ],
-    linkExample: 'https://chatgpt.com/s/cx_...',
   },
 ];
 
