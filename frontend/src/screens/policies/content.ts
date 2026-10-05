@@ -40,7 +40,7 @@ export const privacyPolicy: Policy = {
     {
       heading: '4. 처리 위탁과 국외 이전',
       body: [
-        'Microsoft(Azure, 홍콩): 서비스 서버와 데이터베이스. 위 1의 모든 정보가 이 서버에 저장됩니다.',
+        'Microsoft(Azure, 말레이시아): 서비스 서버와 데이터베이스. 위 1의 모든 정보가 이 서버에 저장됩니다.',
         'OpenAI(미국): 학습 내용 추출, 문제·힌트·설명 생성. 보낸 대화와 학습 내용이 API로 전송됩니다.',
         'TypeSafe AI(미국): 복습 단위·문제 품질 검사와 답변 판정. 문제, 근거 발화, 내가 낸 답이 API로 전송됩니다.',
         'Vercel(미국): 웹 화면 제공. 웹에서 쓸 때 요청이 Vercel을 거쳐 서버로 전달됩니다(토스 앱에서는 거치지 않습니다).',
@@ -166,7 +166,7 @@ export const privacyConsent: Policy = {
   ],
 };
 
-/** 토스 인앱(#149) 개인정보 국외 이전 동의. 서버가 홍콩에 있어 필수다. 대화를 처음 저장할 때 함께 동의받는다. */
+/** 토스 인앱(#149) 개인정보 국외 이전 동의. 서버가 말레이시아에 있어 필수다. 대화를 처음 저장할 때 함께 동의받는다. */
 export const overseasTransferConsent: Policy = {
   title: '개인정보 국외 이전 동의',
   effectiveDate: '2026년 10월 5일',
@@ -175,7 +175,7 @@ export const overseasTransferConsent: Policy = {
     {
       heading: '1. Microsoft Corporation (Azure)',
       body: [
-        '이전되는 국가: 홍콩(Azure East Asia 리전)',
+        '이전되는 국가: 말레이시아(Azure Malaysia West 리전)',
         '연락처: 개인정보 문의 https://aka.ms/privacyresponse',
         '이전 항목: 개인정보 수집·이용 동의의 모든 항목(익명 식별값을 변환한 값, 학습 대화와 학습 기록, 설정)',
         '이전 시점과 방법: 서비스를 이용할 때마다 암호화된 연결(HTTPS)로 서버에 전송·저장',
