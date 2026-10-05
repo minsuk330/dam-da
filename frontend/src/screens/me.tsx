@@ -53,6 +53,7 @@ export function Me() {
 
       <Card style={styles.list}>
         <Row icon="shield" title="개인정보 처리방침" status="어떤 정보를 받고 언제 지우는지" href="/privacy" />
+        <Row icon="globe" title="개인정보 국외 이전" status="서버(홍콩)와 AI 처리(미국)" href="/consent/overseas" divided />
         <Row icon="file-text" title="이용약관" status="서비스 이용 조건" href="/terms" divided />
         <Row icon="user-x" title="회원 탈퇴" status="계정과 학습 기록을 모두 지워요" href="/account-deletion" divided />
       </Card>

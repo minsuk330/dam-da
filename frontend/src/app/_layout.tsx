@@ -82,6 +82,9 @@ function AppStack() {
       {/* 정책·탈퇴 안내는 로그인 전후 모두 열린다. 스토어 심사용 웹 공개 주소이기도 하다(#148). */}
       <Stack.Screen name="privacy" options={{ title: '개인정보 처리방침' }} />
       <Stack.Screen name="terms" options={{ title: '이용약관' }} />
+      {/* 토스 로그인 동의문(#149). 앱인토스 콘솔에 공개 주소로 등록한다. */}
+      <Stack.Screen name="consent/privacy" options={{ title: '개인정보 수집·이용 동의' }} />
+      <Stack.Screen name="consent/overseas" options={{ title: '개인정보 국외 이전 동의' }} />
       <Stack.Screen name="account-deletion" options={{ title: '회원 탈퇴' }} />
     </Stack>
   );
