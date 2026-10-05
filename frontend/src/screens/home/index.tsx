@@ -17,6 +17,7 @@ import { Skeleton, SkeletonList } from '@/components/skeleton';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { formatRelativeDay, inputPathIcon } from '@/labels';
+import { AI_NOTICE, INTRO_STEPS } from '@/screens/intro-steps';
 import { openNotification } from '@/navigation';
 import { useProfile } from '@/profile';
 import { colors, components, spacing } from '@/theme';
@@ -40,6 +41,8 @@ export function Home() {
   const streak = useStreak();
   const data = daily.data;
   const empty = data !== undefined && data.total === 0 && !data.started;
+  // 담은 대화가 하나도 없으면 첫 할 일 하나만 보여준다(노출 정책 UX 원칙: 앱을 열자마자 뭘 할지 알 수 있어야 함, #149).
+  const firstRun = useConversations().data?.length === 0;
   // 오늘의 학습 카드와 매일 학습 알림 배너가 같은 시작 요청을 쓴다(준비 중·실패 표시를 함께 본다).
   const start = useStartDaily();
 
@@ -71,11 +74,64 @@ export function Home() {
             {today.format(data ? new Date(`${data.date}T00:00:00`) : new Date())} · {profile.name}님
           </ThemedText>
           <ThemedText variant="display">
-            {data?.completed ? '오늘 학습을\n마쳤어요' : empty ? '오늘은\n쉬어도 돼요' : '오늘 학습할\n지식이 있어요'}
+            {firstRun
+              ? 'AI 대화를 담아\n첫 복습을 만들어요'
+              : data?.completed
+                ? '오늘 학습을\n마쳤어요'
+                : empty
+                  ? '오늘은\n쉬어도 돼요'
+                  : '오늘 학습할\n지식이 있어요'}
           </ThemedText>
         </View>
       </View>
 
+      {firstRun ? <FirstRun /> : <Today daily={daily} start={start} openDaily={openDaily} streak={streak} />}
+    </ScrollView>
+  );
+}
+
+/** 처음 사용자: 서비스가 하는 일 세 줄과 첫 할 일(대화 담기) 하나. */
+function FirstRun() {
+  return (
+    <View style={styles.section}>
+      <Card style={styles.firstSteps}>
+        {INTRO_STEPS.map((step, i) => (
+          <View key={step.title} style={[styles.firstStep, i > 0 && styles.divided]}>
+            <View style={styles.firstStepIcon}>
+              <Icon name={step.icon} color={colors.primaryInk} />
+            </View>
+            <View style={styles.firstStepText}>
+              <ThemedText variant="headline">{step.title}</ThemedText>
+              <ThemedText variant="caption" tone="inkSecondary">
+                {step.detail}
+              </ThemedText>
+            </View>
+          </View>
+        ))}
+      </Card>
+      <Button title="AI 대화 담기" onPress={() => router.navigate('/add')} />
+      <ThemedText variant="caption" tone="inkMuted">
+        {AI_NOTICE}
+      </ThemedText>
+    </View>
+  );
+}
+
+/** 대화를 담은 뒤의 홈: 오늘의 학습 → 연속 학습·오늘 문제 → 기억 요약 → 최근 받은 대화. */
+function Today({
+  daily,
+  start,
+  openDaily,
+  streak,
+}: {
+  daily: ReturnType<typeof useDaily>;
+  start: ReturnType<typeof useStartDaily>;
+  openDaily: () => void;
+  streak: ReturnType<typeof useStreak>;
+}) {
+  const data = daily.data;
+  return (
+    <>
       <TodayStudy
         daily={daily.data}
         isPending={daily.isPending}
@@ -105,7 +161,7 @@ export function Home() {
       <MemorySummary />
 
       <RecentConversations serverToday={data?.date} />
-    </ScrollView>
+    </>
   );
 }
 
@@ -431,6 +487,17 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
   title: { flex: 1, gap: spacing.xs },
   stats: { flexDirection: 'row', gap: spacing.md },
+  firstSteps: { paddingVertical: spacing.xs },
+  firstStep: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg },
+  firstStepIcon: {
+    width: components.iconCircle.size,
+    height: components.iconCircle.size,
+    borderRadius: components.iconCircle.rounded,
+    backgroundColor: components.iconCircle.backgroundColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  firstStepText: { flex: 1, gap: spacing['2xs'] },
   hero: {
     flexDirection: 'row',
     alignItems: 'flex-end',

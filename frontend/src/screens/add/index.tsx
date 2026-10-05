@@ -4,6 +4,8 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IntakeError, useSubmitConversation, type ConversationInput } from '@/api/conversation-input';
+import { useSession } from '@/api/session';
+import { AI_NOTICE } from '@/screens/intro-steps';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { useTabBarSpace } from '@/components/tab-bar';
@@ -12,6 +14,13 @@ import { colors, components, spacing } from '@/theme';
 import { inToss } from '@/toss';
 
 type Mode = ConversationInput['kind'];
+
+/** 대화를 처음 저장할 때 동의받는 문서(#149). 로그인 전후 모두 열리는 공개 페이지다. */
+const AGREEMENT_LINKS = [
+  { label: '이용약관', href: '/terms' },
+  { label: '개인정보 수집·이용', href: '/consent/privacy' },
+  { label: '개인정보 국외 이전', href: '/consent/overseas' },
+] as const;
 
 const MODES: { mode: Mode; label: string }[] = [
   { mode: 'share_link', label: '공유 링크' },
@@ -26,6 +35,11 @@ export function AddConversation() {
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const submit = useSubmitConversation();
+  const { user, agree } = useSession();
+  // 토스 익명 계정은 대화를 처음 저장할 때 약관에 동의한다(#149). 저장 버튼이 동의까지 함께 한다.
+  const needsAgreement = user?.agreementRequired === true;
+  const [agreeing, setAgreeing] = useState(false);
+  const [agreeError, setAgreeError] = useState(false);
 
   const value = mode === 'share_link' ? url.trim() : text.trim();
   const error = submit.error instanceof IntakeError ? submit.error : null;
@@ -35,7 +49,19 @@ export function AddConversation() {
     submit.reset();
   }
 
-  function send() {
+  async function send() {
+    if (needsAgreement) {
+      setAgreeing(true);
+      setAgreeError(false);
+      try {
+        await agree();
+      } catch {
+        setAgreeError(true);
+        return;
+      } finally {
+        setAgreeing(false);
+      }
+    }
     submit.mutate(mode === 'share_link' ? { kind: 'share_link', url: value } : { kind: 'paste', text: value });
   }
 
@@ -163,8 +189,36 @@ export function AddConversation() {
         </View>
       )}
 
+      {needsAgreement && (
+        <View style={styles.agreement}>
+          <ThemedText variant="headline">학습 내용을 만들려면 대화를 저장해야 해요</ThemedText>
+          <ThemedText variant="subhead" tone="inkSecondary">
+            저장하기 전에 아래 내용에 동의해 주세요. {AI_NOTICE}
+          </ThemedText>
+          <View style={styles.agreementLinks}>
+            {AGREEMENT_LINKS.map((link) => (
+              <Pressable key={link.href} accessibilityRole="link" hitSlop={8} onPress={() => router.push(link.href)}>
+                <ThemedText variant="subhead" tone="primaryInk">
+                  {link.label}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+          {agreeError && (
+            <ThemedText variant="caption" tone="dangerInk">
+              동의를 저장하지 못했어요. 다시 시도해 주세요.
+            </ThemedText>
+          )}
+        </View>
+      )}
+
       <View style={styles.submit}>
-        <Button title="학습 내용 만들기" disabled={value.length === 0} loading={submit.isPending} onPress={send} />
+        <Button
+          title={needsAgreement ? '동의하고 학습 내용 만들기' : '학습 내용 만들기'}
+          disabled={value.length === 0}
+          loading={agreeing || submit.isPending}
+          onPress={send}
+        />
         {submit.isPending && (
           <ThemedText variant="caption" tone="inkMuted" style={styles.centerText}>
             대화에서 학습 내용을 뽑는 중이에요. 30초쯤 걸릴 수 있어요.
@@ -254,4 +308,12 @@ const styles = StyleSheet.create({
     backgroundColor: components.feedbackWrong.backgroundColor,
   },
   submit: { gap: spacing.sm },
+  agreement: {
+    gap: spacing.sm,
+    padding: spacing.xl,
+    borderRadius: components.card.rounded,
+    borderCurve: 'continuous',
+    backgroundColor: colors.surfaceSoft,
+  },
+  agreementLinks: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg, rowGap: spacing.xs },
 });
