@@ -248,14 +248,16 @@ export function AddConversation() {
   );
 }
 
-/** 공유 링크 만드는 법(#168)으로 간다. 입력한 링크로 서비스를 알 수 있으면 그 안내를 먼저 연다. */
+/** 공유 링크 만드는 법(#168)으로 간다. 입력한 링크로 서비스를 알 수 있으면 그 서비스 안내로 바로 간다. */
 function GuideLink({ label, url }: { label: string; url: string }) {
   const source = guessShareSource(url);
   return (
     <Pressable
       accessibilityRole="link"
       hitSlop={8}
-      onPress={() => router.push({ pathname: '/share-guide', params: source ? { source } : {} })}
+      onPress={() =>
+        source ? router.push({ pathname: '/share-guide/[source]', params: { source } }) : router.push('/share-guide')
+      }
       style={styles.guideLink}>
       <Icon name="help-circle" size="sm" color={colors.primaryInk} />
       <ThemedText variant="subhead" tone="primaryInk">
