@@ -8,6 +8,10 @@
 .env
 .env.*
 !.env.example
+# 토스 mTLS 인증서 (#149). backend/certs/toss/에 두고 커밋하지 않는다.
+backend/certs/
+*.key
+*.crt
 
 # backend
 backend/build/

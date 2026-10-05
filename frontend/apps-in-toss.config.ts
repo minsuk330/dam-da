@@ -6,7 +6,7 @@ import { defineConfig } from '@apps-in-toss/web-framework/config';
  * appName은 앱인토스 콘솔에 등록한 이름과 같아야 한다(intoss://{appName}).
  */
 export default defineConfig({
-  appName: 'damda',
+  appName: 'damda-ai',
   brand: {
     // DESIGN.md colors.primary. 이 파일은 앱 밖 빌드 설정이라 @/theme을 가져오지 않는다.
     primaryColor: '#2E5BE8',
