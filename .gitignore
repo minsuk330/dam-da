@@ -14,6 +14,8 @@ backend/certs/
 *.crt
 
 # backend
+# 서버별 메모리 설정 등 (docs/deploy.md)
+backend/deploy/compose.override.yml
 backend/build/
 backend/.gradle/
 backend/data/
