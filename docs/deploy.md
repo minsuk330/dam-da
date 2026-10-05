@@ -1,31 +1,35 @@
 # 배포
 
-백엔드(Spring + PostgreSQL)는 VPS에 Docker Compose로, 프론트엔드(Expo 웹 빌드)는 Vercel에 올린다. 앱은 Vercel 주소에서 `/api/**`를 부르고, Vercel rewrites가 이를 VPS로 넘겨 같은 출처로 동작한다.
+백엔드(Spring + PostgreSQL)는 서버(Azure VM, RAM 1GiB)에 Docker Compose로, 프론트엔드(Expo 웹 빌드)는 Vercel에 올린다. 앱은 Vercel 주소에서 `/api/**`를 부르고, Vercel rewrites가 이를 서버로 넘겨 같은 출처로 동작한다. 백엔드 이미지는 GitHub Actions가 빌드해 GHCR에 올리고 서버는 받아서 실행만 한다.
 
 ```
 브라우저 ──▶ Vercel (frontend/dist)
-              └─ /api/** ──rewrite──▶ https://hack.refit-100.site ──▶ 호스트 nginx(:443) ──▶ app(127.0.0.1:18080) ──▶ postgres
-Claude 커넥터 ──▶ https://hack.refit-100.site/mcp ─────────────────────┘
+              └─ /api/** ──rewrite──▶ https://hack.refit-100.site ──▶ caddy(:443) ──▶ app(:8080) ──▶ postgres
+Claude 커넥터 ──▶ https://hack.refit-100.site/mcp ──────────────────┘
+
+main push(backend/**) ──▶ GitHub Actions(backend-image) ──▶ ghcr.io/minsuk330/ku-hack-backend ──pull──▶ 서버
 ```
 
-## 백엔드 (VPS)
+## 백엔드 (서버)
 
 구성 파일은 `backend/deploy/`에 있다.
 
 | 파일 | 내용 |
 |---|---|
-| `compose.yml` | `postgres`(17, 외부 포트 없음), `app`(`backend/Dockerfile` 빌드, `127.0.0.1:${APP_PORT}`에만 열림), `caddy`(선택 프로필) |
+| `compose.yml` | `postgres`(17, 외부 포트 없음), `app`(`APP_IMAGE` 이미지, 비우면 `backend/Dockerfile` 빌드, `127.0.0.1:${APP_PORT}`에만 열림), `caddy`(선택 프로필) |
 | `nginx.conf.example` | 호스트 nginx 사이트 예시. `/v3/api-docs`·`/swagger-ui` 차단, `/mcp` 스트리밍을 위해 버퍼링 끔 |
-| `Caddyfile` | 80·443이 비어 있는 VPS용(`--profile caddy`). `DOMAIN` 인증서 자동 발급 |
+| `Caddyfile` | 80·443이 비어 있는 서버용(`--profile caddy`). `DOMAIN` 인증서 자동 발급 |
+| `compose.override.yml` | 서버별 설정(커밋하지 않음). 아래 "작은 서버" 참고 |
 | `.env.example` | 배포용 환경 변수. `.env`로 복사해 채운다(커밋 금지) |
 
-현재 VPS(`85.113.70.112`)는 호스트 nginx가 80·443을 쓰고 다른 서비스도 같이 돌므로 nginx 방식으로 올린다. 앱 포트 `18080`은 다른 서비스(`127.0.0.1:8080` 등)와 겹치지 않게 고른 값이다.
+현재 서버(Azure VM, 2026-10-05 VPS에서 이전)는 khack만 돌리므로 Caddy 방식으로 올린다. 다른 서비스와 같이 쓰는 서버라면 호스트 nginx(`nginx.conf.example`) 방식을 쓴다.
 
 ### 준비
 
-- DNS: `hack.refit-100.site`의 A(필요하면 AAAA) 레코드가 VPS IP를 가리킨다.
+- DNS: `hack.refit-100.site`의 A(필요하면 AAAA) 레코드가 서버 IP를 가리킨다(Vercel DNS).
 - 방화벽: 80·443 허용. 인증서 발급에 80이 필요하다.
-- Docker와 Compose 플러그인(`docker compose version`), 호스트 nginx와 certbot.
+- Docker와 Compose 플러그인(`docker compose version`). nginx 방식이면 호스트 nginx와 certbot.
+- GHCR 패키지 `ku-hack-backend`가 public이어야 서버가 로그인 없이 받는다. private이면 서버에서 `docker login ghcr.io`(`read:packages` 토큰)를 먼저 한다.
 
 ### 처음 배포
 
@@ -33,10 +37,15 @@ Claude 커넥터 ──▶ https://hack.refit-100.site/mcp ───────
 cd ~/apps && git clone https://github.com/minsuk330/ku-hack.git khack && cd khack/backend/deploy
 cp .env.example .env
 # .env 채우기: DB_PASSWORD, OPENAI_API_KEY, TYPESAFE_API_KEY, DEV_TOOLS_TOKEN(openssl rand -hex 32)
-docker compose up -d --build
+docker compose pull app
+docker compose --profile caddy up -d  # Caddy가 인증서까지 받는다
 docker compose ps                     # app이 healthy가 될 때까지 (첫 기동 1분 안팎)
+curl https://hack.refit-100.site/healthz
+```
 
-# 호스트 nginx 사이트와 인증서
+호스트 nginx를 쓰는 서버라면 `--profile caddy` 없이 올리고 nginx 사이트와 인증서를 붙인다.
+
+```bash
 cp nginx.conf.example /etc/nginx/sites-available/hack.refit-100.site
 ln -s /etc/nginx/sites-available/hack.refit-100.site /etc/nginx/sites-enabled/
 nginx -t && systemctl reload nginx
@@ -44,16 +53,31 @@ certbot --nginx -d hack.refit-100.site --redirect
 curl https://hack.refit-100.site/healthz
 ```
 
-80·443이 비어 있는 VPS라면 nginx 대신 `docker compose --profile caddy up -d --build`로 Caddy가 인증서까지 처리한다.
-
 빈 DB로 시작한다. 테이블은 앱이 기동하면서 만든다(`ddl-auto: update`).
+
+### 작은 서버 (RAM 1GiB)
+
+swap 2GiB를 켜고, `backend/deploy/compose.override.yml`로 메모리를 줄인다. compose가 자동으로 합친다.
+
+```yaml
+services:
+  app:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx400m -Xss512k -XX:MaxMetaspaceSize=192m -XX:+UseSerialGC -Duser.timezone=Asia/Seoul
+  postgres:
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30"]
+```
 
 ### 업데이트
 
 ```bash
-cd ~/apps/khack && git pull
-cd backend/deploy && docker compose up -d --build app
+# main에 backend/** 변경이 merge되면 Actions(backend-image)가 이미지를 올린다. 끝난 뒤:
+cd ~/apps/khack && git pull           # compose·Caddyfile 변경 반영
+cd backend/deploy && docker compose pull app && docker compose --profile caddy up -d
+docker image prune -f                 # 이전 이미지 정리(디스크)
 ```
+
+특정 커밋으로 되돌리려면 `.env`의 `APP_IMAGE`를 `ghcr.io/minsuk330/ku-hack-backend:sha-<7자리>`로 바꾸고 같은 명령을 실행한다. Actions 없이 서버에서 직접 빌드하려면 `APP_IMAGE`를 비우고 `docker compose up -d --build app`(RAM 2GiB 이상 권장).
 
 ### 운영
 

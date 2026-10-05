@@ -94,6 +94,6 @@ npm run design:tokens  # frontend/DESIGN.md → src/theme/tokens.ts
 
 API 계약 규칙과 변경 절차는 [`AGENTS.md`](AGENTS.md#api-계약-필수)를 따른다. 로컬 Swagger UI는 `API_DOCS_ENABLED=true`로 띄운 뒤 `/swagger-ui/index.html`.
 
-- 배포: 프론트엔드는 Vercel(Root Directory `frontend`), 백엔드는 VPS에 Docker Compose(`backend/deploy/`)로 올린다. 절차는 [`docs/deploy.md`](docs/deploy.md).
-- 백엔드 API는 `/api/**` 접두사를 쓴다. Vercel에서는 `frontend/vercel.json` rewrites로 `/api/**`를 VPS(`https://hack.refit-100.site`)로 넘겨 같은 출처로 호출한다.
+- 배포: 프론트엔드는 Vercel(Root Directory `frontend`), 백엔드는 서버(Azure VM)에 Docker Compose(`backend/deploy/`)로 올린다. 이미지는 GitHub Actions가 GHCR에 올린다. 절차는 [`docs/deploy.md`](docs/deploy.md).
+- 백엔드 API는 `/api/**` 접두사를 쓴다. Vercel에서는 `frontend/vercel.json` rewrites로 `/api/**`를 백엔드(`https://hack.refit-100.site`)로 넘겨 같은 출처로 호출한다.
 - `X-Dev-Token`은 코드·프론트엔드 번들에 넣지 않는다. 배포 환경에서 `/dev/**`는 서버에서 curl로만 호출한다.
