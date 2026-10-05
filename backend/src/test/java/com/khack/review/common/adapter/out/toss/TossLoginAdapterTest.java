@@ -79,6 +79,19 @@ class TossLoginAdapterTest {
     }
 
     @Test
+    void disconnectSendsTheNumericUserKey() {
+        server.expect(requestTo("https://toss.test/api-partner/v1/apps-in-toss/user/oauth2/access/remove-by-user-key"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json("""
+                        {"userKey": 443731104}""", JsonCompareMode.STRICT))
+                .andRespond(withSuccess("""
+                        {"resultType": "SUCCESS", "success": {"userKey": 443731104}}""", MediaType.APPLICATION_JSON));
+
+        adapter.disconnect("443731104");
+        server.verify();
+    }
+
+    @Test
     void refusesWithoutCertificates() {
         TossLoginAdapter unconfigured = new TossLoginAdapter(RestClient.builder(), "https://toss.test", "", "");
 

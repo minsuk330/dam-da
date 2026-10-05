@@ -12,6 +12,12 @@ public interface TossLoginPort {
 	 */
 	TossUser login(String authorizationCode, String referrer);
 
+	/**
+	 * 이 앱과 토스 사용자의 로그인 연결을 끊는다(회원 탈퇴). 다음에 들어오면 토스 약관 동의부터 다시 한다.
+	 * 실패하면 {@link TossLoginException}을 던진다. 직접 끊은 경우에는 토스가 연결 끊기 콜백을 보내지 않는다.
+	 */
+	void disconnect(String userKey);
+
 	/** {@code userKey}는 이 미니앱에서만 쓰이는 토스 사용자 식별자다. */
 	record TossUser(String userKey) {
 	}
