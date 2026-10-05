@@ -12,6 +12,7 @@ import com.khack.review.collection.domain.KeyPoint;
 import com.khack.review.collection.domain.ReviewUnit;
 import com.khack.review.collection.domain.SessionInput;
 import com.khack.review.collection.domain.UserTurn;
+import com.khack.review.common.application.CurrentUser;
 import com.khack.review.common.application.TimeTravelClock;
 import com.khack.review.common.application.port.out.JevAnswer;
 import com.khack.review.common.application.port.out.JevCallException;
@@ -24,6 +25,8 @@ import com.khack.review.practice.application.AnswerJudgeFixtures;
 import com.khack.review.practice.application.AnswerJudgeQuestions;
 import com.khack.review.question.application.QuestionQualityQuestions;
 import com.khack.review.question.application.port.out.FakeQuestionGenerator;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.metamodel.EntityType;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -36,6 +39,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +55,7 @@ import tools.jackson.databind.JsonNode;
 /**
  * 데모 시나리오(스펙 §11.3, 도메인 스토리 S1·S2)를 앱이 부르는 API 순서대로 한 번에 확인한다.
  * 대화 저장 → 학습 내용 도착 알림 → 확인 → 학습 목표 → 첫 학습 → 완료 요약 → 시간 이동 → 게이지 하락 →
- * 매일 학습 알림 → 매일 학습 → 게이지 회복 → 연속 학습 일수. LLM·Jev는 가짜이고, 답은 모두 맞게 낸다.
+ * 매일 학습 알림 → 매일 학습 → 게이지 회복 → 연속 학습 일수 → 회원 탈퇴. LLM·Jev는 가짜이고, 답은 모두 맞게 낸다.
  * 이 클래스만 쓰는 설정이라 컨텍스트와 H2 DB가 따로 만들어져 다른 테스트의 데이터와 섞이지 않는다.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -130,6 +135,12 @@ class DemoScenarioIT {
     @Autowired
     TimeTravelClock clock;
 
+    @Autowired
+    CurrentUser currentUser;
+
+    @Autowired
+    EntityManager entities;
+
     @AfterEach
     void resetClock() {
         clock.reset();
@@ -206,6 +217,43 @@ class DemoScenarioIT {
         JsonNode streak = get("/api/streak");
         assertThat(streak.get("current").asInt()).isEqualTo(1);
         assertThat(streak.get("today").asString()).isEqualTo("COMPLETED");
+
+        // 12. 회원 탈퇴(#148): 이 사용자의 데이터는 모두 지워지고 다른 사용자의 데이터는 남는다
+        Long me = currentUser.devUser().getId();
+        Long other = currentUser.switchTo("다른 사용자").getId();
+        connector.intake(CONVERSATION);
+        await(() -> get("/api/learning-sessions").isEmpty() ? null : true, "다른 사용자의 세션 생성");
+        currentUser.reset();
+        assertThat(ownedTables(me)).as("시나리오가 거의 모든 사용자 데이터를 만든다").contains(
+                "LearningConversation", "LearningSession", "Question", "PracticeSession", "QuestionPresentation", "PracticeAttempt",
+                "FirstStudyPlan", "MemoryState", "ReviewLog", "UserStudySettings", "Notification", "DailyRecord", "DailyReminderSettings");
+        assertThat(count("select count(j) from AnswerJudgment j")).isPositive();
+
+        assertThat(exchange("DELETE", "/api/me", null).statusCode()).isEqualTo(204);
+        assertThat(ownedTables(me)).isEmpty();
+        assertThat(count("select count(u) from AppUser u where u.id = " + me)).isZero();
+        assertThat(count("select count(f) from SessionField f where f.sessionId not in (select s.id from LearningSession s)")).isZero();
+        assertThat(count("select count(j) from AnswerJudgment j where j.attemptId not in (select a.id from PracticeAttempt a)")).isZero();
+        assertThat(count("select count(e) from AidExposure e where e.presentationId not in (select p.id from QuestionPresentation p)")).isZero();
+        assertThat(ownedTables(other)).contains("LearningConversation", "LearningSession");
+    }
+
+    /** 사용자 ID 열({@code userId}, {@code ownerUserId})이 있는 엔티티 중 이 사용자의 행이 있는 것. */
+    private Set<String> ownedTables(Long userId) {
+        Set<String> owned = new TreeSet<>();
+        for (EntityType<?> type : entities.getMetamodel().getEntities()) {
+            for (String column : List.of("userId", "ownerUserId")) {
+                if (type.getAttributes().stream().anyMatch(attribute -> attribute.getName().equals(column))
+                        && count("select count(e) from %s e where e.%s = %d".formatted(type.getName(), column, userId)) > 0) {
+                    owned.add(type.getName());
+                }
+            }
+        }
+        return owned;
+    }
+
+    private long count(String jpql) {
+        return entities.createQuery(jpql, Long.class).getSingleResult();
     }
 
     /** 풀이의 문제를 끝까지 맞게 푼다. 객관식은 0번(가짜 생성기의 정답), 그 밖에는 가짜 Jev가 맞다고 판정한다. 받은 등급을 돌려준다. */

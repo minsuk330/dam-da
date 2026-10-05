@@ -91,6 +91,18 @@ class AuthIT {
     }
 
     @Test
+    void deletingTheAccountRejectsItsTokens() throws Exception {
+        Long user = signIn.signIn(new SocialProfile("google", "auth-it-delete", "탈퇴할 사용자", null)).getId();
+        String token = tokens.issue(user).accessToken();
+
+        assertThat(send("DELETE", "/api/me", null, null).statusCode()).isEqualTo(401);
+        assertThat(send("DELETE", "/api/me", token, null).statusCode()).isEqualTo(204);
+        assertThat(send("GET", "/api/me", token, null).statusCode()).isEqualTo(401);
+        assertThat(signIn.signIn(new SocialProfile("google", "auth-it-delete", "탈퇴할 사용자", null)).getId())
+                .as("다시 로그인하면 새 계정").isNotEqualTo(user);
+    }
+
+    @Test
     void usersSeeOnlyTheirOwnSessions() throws Exception {
         Long user = signIn.signIn(new SocialProfile("kakao", "auth-it-2", "새 사용자", null)).getId();
         String token = tokens.issue(user).accessToken();

@@ -12,4 +12,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findByMemoryItemIdOrderByIdAsc(Long memoryItemId);
 
     List<Question> findByMemoryItemIdAndStatusOrderByIdAsc(Long memoryItemId, QuestionStatus status);
+
+    void deleteByUserId(Long userId);
 }

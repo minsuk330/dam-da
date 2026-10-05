@@ -11,4 +11,6 @@ public interface FsrsParametersRepository extends JpaRepository<FsrsParameters, 
     Optional<FsrsParameters> findTopByOrderByVersionDesc();
 
     List<FsrsParameters> findAllByOrderByVersionAsc();
+
+    void deleteByOwnerUserId(Long ownerUserId);
 }

@@ -13,4 +13,6 @@ public interface LearningConversationRepository extends JpaRepository<LearningCo
     Optional<LearningConversation> findBySessionIdAndUserId(String sessionId, Long userId);
 
     Optional<LearningConversation> findBySessionId(String sessionId);
+
+    void deleteByUserId(Long userId);
 }
