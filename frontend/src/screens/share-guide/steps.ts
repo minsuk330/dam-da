@@ -75,28 +75,37 @@ export const SHARE_GUIDES: ShareGuide[] = [
     label: 'Claude',
     where: 'Claude 앱',
     openUrl: 'https://claude.ai',
+    // 2026-10-05 Claude iOS 앱 캡처 기준. 3번 캡처에 ③④ 두 동작이 있어 같은 캡처로 두 단계를 보여준다.
     steps: [
       {
-        title: '담을 대화 열기',
-        detail: ['Claude에서 복습하고 싶은 내용을 나눈 ', { strong: '대화' }, '를 열어요.'],
-        icon: 'message-square',
+        title: '더보기 누르기',
+        detail: ['담을 대화를 열고 오른쪽 위 ', { strong: '⋯' }, ' 버튼을 눌러요.'],
+        icon: 'more-horizontal',
+        image: { source: require('@/assets/share-guide/claude-1-more.png'), aspectRatio: 1206 / 645 },
       },
       {
         title: '공유 누르기',
-        detail: ['대화 제목이나 ', { strong: '⋯' }, ' 메뉴에서 ', { strong: '공유' }, '를 눌러요.'],
+        detail: ['메뉴에서 ', { strong: '공유' }, '를 눌러요.'],
         icon: 'share',
+        image: { source: require('@/assets/share-guide/claude-2-share.png'), aspectRatio: 1206 / 855 },
       },
       {
-        title: '공개 링크 복사하기',
+        title: '링크로 공개하기',
         detail: [
-          { strong: '공개 링크 만들기' },
-          '로 공유를 켠 뒤 ',
-          { strong: '링크 복사' },
-          '를 눌러요. 공유를 켜지 않은 링크는 담을 수 없어요.',
+          '액세스 권한에서 ',
+          { strong: '링크가 있는 모든 사용자' },
+          '를 골라요. 나만 접근 가능으로 두면 담을 수 없어요.',
         ],
-        icon: 'copy',
+        icon: 'globe',
+        image: { source: require('@/assets/share-guide/claude-3-link.png'), aspectRatio: 1206 / 1305 },
       },
-      pasteStep(require('@/assets/share-guide/claude-4-paste.png')),
+      {
+        title: '링크 공유 누르기',
+        detail: ['아래쪽 ', { strong: '링크 공유' }, '를 누른 뒤 ', { strong: '복사' }, '를 골라요.'],
+        icon: 'copy',
+        image: { source: require('@/assets/share-guide/claude-3-link.png'), aspectRatio: 1206 / 1305 },
+      },
+      pasteStep(require('@/assets/share-guide/claude-5-paste.png')),
     ],
   },
   {
