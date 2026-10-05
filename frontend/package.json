@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@apps-in-toss/web-framework": "^3.7.0",
     "@expo/ui": "~57.0.21",
     "@expo/vector-icons": "^15.0.2",
     "@lottiefiles/dotlottie-react": "^0.13.5",
@@ -57,6 +58,8 @@
     "ios": "expo start --ios",
     "android": "expo start --android",
     "build:web": "expo export -p web",
+    "toss:web": "EXPO_PUBLIC_TOSS=true expo start --web --clear",
+    "toss:build": "EXPO_PUBLIC_TOSS=true EXPO_PUBLIC_API_MOCK=false EXPO_PUBLIC_API_URL=https://hack.refit-100.site expo export -p web --clear --output-dir dist-toss && ait build",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "api:types": "npx --yes openapi-typescript@7.13.0 openapi.json -o src/api/schema.d.ts",
