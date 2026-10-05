@@ -6,8 +6,8 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * 로컬 개발용 CORS. Expo 개발 서버(웹 :8081)는 Spring과 출처가 달라 `/api/**`만 허용한다.
- * 배포 웹은 Vercel rewrites로 같은 출처라 CORS가 필요 없으므로 배포 서버에서는 비워 둔다.
+ * `/api/**` CORS. 로컬은 Expo 개발 서버(웹 :8081), 배포 서버는 토스 인앱 미니앱 출처(#149)를 허용한다.
+ * 배포 웹은 Vercel rewrites로 같은 출처라 CORS가 필요 없다.
  */
 @Configuration
 class WebCorsConfig implements WebMvcConfigurer {

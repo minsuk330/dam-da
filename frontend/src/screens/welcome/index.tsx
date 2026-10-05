@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLoginOptions, useSession, type Provider } from '@/api/session';
+import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Icon, type IconName } from '@/components/icon';
 import { Logo } from '@/components/logo';
@@ -23,13 +24,13 @@ const STEPS: { icon: IconName; title: string; detail: string }[] = [
 /**
  * 앱 메인(로그인 전) 화면 (스펙 §7.9). 서비스가 하는 일을 세 줄로 보여주고 구글·카카오 소셜 로그인만 둔다.
  * 아래에 이용약관·개인정보 처리방침 링크를 둔다(#148).
- * 토스 인앱(#149)에서는 토스 로그인만 쓸 수 있어 구글·카카오 버튼을 숨긴다. 토스 로그인은 다음 단계에서 붙인다.
+ * 토스 인앱(#149)에서는 토스 로그인만 쓸 수 있어(앱인토스 서비스 오픈 정책 2-3) 구글·카카오 대신 토스 로그인 버튼을 둔다.
  */
 export function Welcome() {
   const insets = useSafeAreaInsets();
-  const { signIn } = useSession();
+  const { signIn, signInWithToss } = useSession();
   const options = useLoginOptions();
-  const [pending, setPending] = useState<Provider | null>(null);
+  const [pending, setPending] = useState<Provider | 'toss' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function start(provider: Provider) {
@@ -39,6 +40,18 @@ export function Welcome() {
       await signIn(provider, options.data);
     } catch (e) {
       setError(e instanceof Error ? e.message : '로그인하지 못했어요. 다시 시도해 주세요.');
+      setPending(null);
+    }
+  }
+
+  async function startToss() {
+    setPending('toss');
+    setError(null);
+    try {
+      await signInWithToss();
+      router.replace('/');
+    } catch {
+      setError('토스 로그인을 마치지 못했어요. 다시 시도해 주세요.');
       setPending(null);
     }
   }
@@ -79,7 +92,7 @@ export function Welcome() {
         {error && <Notice tone="danger">{error}</Notice>}
         {options.isError && !inToss && <Notice tone="danger">로그인 방법을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</Notice>}
         {inToss ? (
-          <Notice>토스 로그인을 준비하고 있어요. 조금만 기다려 주세요.</Notice>
+          <Button title="토스로 시작하기" loading={pending === 'toss'} onPress={startToss} />
         ) : (
           <>
             <SocialButton
@@ -125,7 +138,7 @@ function SocialButton({
   provider: 'kakao' | 'google';
   label: string;
   logo: ReactNode;
-  pending: Provider | null;
+  pending: Provider | 'toss' | null;
   onPress: () => void;
 }) {
   const kakao = provider === 'kakao';
