@@ -10,6 +10,7 @@ import { Logo } from '@/components/logo';
 import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
 import { colors, components, opacity, spacing } from '@/theme';
+import { inToss } from '@/toss';
 
 import { GoogleLogo, KakaoLogo } from './logos';
 
@@ -22,6 +23,7 @@ const STEPS: { icon: IconName; title: string; detail: string }[] = [
 /**
  * 앱 메인(로그인 전) 화면 (스펙 §7.9). 서비스가 하는 일을 세 줄로 보여주고 구글·카카오 소셜 로그인만 둔다.
  * 아래에 이용약관·개인정보 처리방침 링크를 둔다(#148).
+ * 토스 인앱(#149)에서는 토스 로그인만 쓸 수 있어 구글·카카오 버튼을 숨긴다. 토스 로그인은 다음 단계에서 붙인다.
  */
 export function Welcome() {
   const insets = useSafeAreaInsets();
@@ -75,21 +77,27 @@ export function Welcome() {
 
       <View style={styles.footer}>
         {error && <Notice tone="danger">{error}</Notice>}
-        {options.isError && <Notice tone="danger">로그인 방법을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</Notice>}
-        <SocialButton
-          provider="kakao"
-          label="카카오로 시작하기"
-          logo={<KakaoLogo />}
-          pending={pending}
-          onPress={() => start('kakao')}
-        />
-        <SocialButton
-          provider="google"
-          label="Google로 시작하기"
-          logo={<GoogleLogo />}
-          pending={pending}
-          onPress={() => start('google')}
-        />
+        {options.isError && !inToss && <Notice tone="danger">로그인 방법을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</Notice>}
+        {inToss ? (
+          <Notice>토스 로그인을 준비하고 있어요. 조금만 기다려 주세요.</Notice>
+        ) : (
+          <>
+            <SocialButton
+              provider="kakao"
+              label="카카오로 시작하기"
+              logo={<KakaoLogo />}
+              pending={pending}
+              onPress={() => start('kakao')}
+            />
+            <SocialButton
+              provider="google"
+              label="Google로 시작하기"
+              logo={<GoogleLogo />}
+              pending={pending}
+              onPress={() => start('google')}
+            />
+          </>
+        )}
         <ThemedText variant="caption" tone="inkMuted" style={styles.note}>
           처음 로그인하면 계정이 만들어지며,{' '}
           <ThemedText variant="caption" tone="primaryInk" accessibilityRole="link" onPress={() => router.push('/terms')}>

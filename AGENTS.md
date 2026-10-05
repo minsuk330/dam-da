@@ -31,6 +31,7 @@ npm run web           # :8081 웹 개발 서버. 기본은 mock 데이터(src/ap
 npm run api:types     # API 계약(frontend/openapi.json) 바뀌면 타입 재생성
 npm run design:lint   # DESIGN.md 검사 (대비·깨진 참조)
 npm run design:tokens # DESIGN.md → src/theme/tokens.ts
+npm run toss:build    # 토스 인앱(앱인토스) WebView 번들: dist-toss/ → damda.ait (apps-in-toss.config.ts)
 
 cd optimizer           # 개인 FSRS 매개변수 학습 배치 (Python, uv). 상세는 optimizer/README.md
 uv run pytest         # optimizer/ 변경 PR 전 필수
