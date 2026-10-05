@@ -2,10 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { Linking } from 'react-native'
 
+import { inToss } from '@/toss'
+
 import { api, ApiError, unwrap, type Schemas } from './client'
 import { mockEnabled, mockResponse } from './mock'
 
-// 앱 로그인 상태 (스펙 §7.9). 구글·카카오 소셜 로그인만 둔다. 토스 인앱(#149)에서는 토스 로그인만 쓴다. 소셜 인증은 서버가 하고 앱은 서버가 준 토큰을 쓴다.
+// 앱 로그인 상태 (스펙 §7.9). 웹은 구글·카카오 소셜 로그인. 토스 인앱(#149)은 로그인 화면 없이 익명 식별키로 계정에 들어간다
+// (노출 정책: 로그인 전에 주요 기능을 써볼 수 있어야 함). 대화를 처음 저장할 때만 앱 안에서 약관 동의를 받는다. 소셜 인증은 서버가 하고 앱은 서버가 준 토큰을 쓴다.
 // 흐름: 로그인 버튼 → 서버 loginUrl(구글·카카오) → 서버가 {앱}/auth/callback?code=…로 돌려보냄 → POST /api/auth/token으로
 // 앱 토큰을 받아 저장 → 모든 /api 요청에 Bearer로 붙인다. 401이 오면 로그아웃해 메인 화면으로 돌아간다.
 
@@ -65,6 +68,21 @@ function mockToken(): AuthToken {
   return { accessToken: 'mock', expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), user: { id: 1, name: '지원', agreementRequired: false } }
 }
 
+/** 지금 약관 버전(시행일). 서버 AgreementService.CURRENT_VERSION과 같아야 한다. */
+export const TERMS_VERSION = '2026-10-05'
+
+/** 토스 인앱 자동 진입 상태. 웹에서는 늘 idle이다. */
+export type Entry = 'idle' | 'connecting' | 'error'
+
+/** 토스 익명 식별키 일회용 코드(5분, 1회용)를 앱 토큰으로 바꾼다. 토스 앱 밖이면 SDK가 던진다. */
+async function enterWithAnonymousKey(): Promise<AuthToken> {
+  if (mockEnabled) return mockResponse(mockToken())
+  // 토스 SDK는 토스 빌드에서만 쓰므로 일반 웹 번들에 섞이지 않게 필요할 때 불러온다.
+  const { User } = await import('@apps-in-toss/web-framework')
+  const { code } = await User.createAnonymousKeyAuthCode()
+  return unwrap(await api.POST('/api/auth/toss/anonymous', { body: { code } }))
+}
+
 /** 켜진 로그인 제공자. */
 export function useLoginOptions() {
   return useQuery({
@@ -85,8 +103,13 @@ type Session = {
   user: AuthToken['user'] | null
   /** 구글·카카오 서버 로그인 페이지로 떠난다(돌아오면 /auth/callback). */
   signIn: (provider: Provider, options?: LoginOptions) => Promise<void>
-  /** 토스 인앱(#149). 토스 로그인 창에서 받은 인가 코드를 서버가 앱 토큰으로 바꾼다. 사용자가 창을 닫으면 오류를 던진다. */
+  /** 토스 인앱(#149). 토스 로그인 창에서 받은 인가 코드를 서버가 앱 토큰으로 바꾼다. 지금 화면에서는 쓰지 않는다(익명 진입). */
   signInWithToss: () => Promise<void>
+  /** 토스 인앱 자동 진입 상태와 다시 시도. */
+  entry: Entry
+  retryEntry: () => void
+  /** 지금 약관에 동의한다(토스 익명 계정이 대화를 처음 저장할 때). */
+  agree: () => Promise<void>
   /** /auth/callback에서 받은 토큰으로 로그인 상태를 만든다. */
   complete: (token: AuthToken) => void
   signOut: () => void
@@ -117,6 +140,33 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       onUnauthorized = () => {}
     }
   }, [apply])
+
+  // 토스 인앱은 토큰이 없으면(처음, 만료, 401) 화면 없이 익명 식별키로 다시 들어간다.
+  const [entryFailed, setEntryFailed] = useState(false)
+  useEffect(() => {
+    if (!inToss || token || entryFailed) return
+    let cancelled = false
+    enterWithAnonymousKey()
+      .then((next) => {
+        if (!cancelled) apply(next)
+      })
+      .catch(() => {
+        if (!cancelled) setEntryFailed(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token, entryFailed, apply])
+  const entry: Entry = !inToss || token ? 'idle' : entryFailed ? 'error' : 'connecting'
+
+  async function agree() {
+    if (!current) return
+    if (!mockEnabled) {
+      const { response } = await api.POST('/api/me/agreements', { body: { version: TERMS_VERSION } })
+      if (!response.ok) throw new ApiError(response.status)
+    }
+    apply({ ...current, user: { ...current.user, agreementRequired: false } })
+  }
 
   async function signIn(provider: Provider, options?: LoginOptions) {
     if (mockEnabled) {
@@ -158,6 +208,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         user: token?.user ?? null,
         signIn,
         signInWithToss,
+        entry,
+        retryEntry: () => setEntryFailed(false),
+        agree,
         complete: apply,
         signOut: () => apply(null),
         deleteAccount,

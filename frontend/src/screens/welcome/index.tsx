@@ -6,31 +6,61 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLoginOptions, useSession, type Provider } from '@/api/session';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
-import { Icon, type IconName } from '@/components/icon';
+import { Icon } from '@/components/icon';
 import { Logo } from '@/components/logo';
 import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
 import { colors, components, opacity, spacing } from '@/theme';
 import { inToss } from '@/toss';
 
+import { AI_NOTICE, INTRO_STEPS } from '../intro-steps';
+
 import { GoogleLogo, KakaoLogo } from './logos';
 
-const STEPS: { icon: IconName; title: string; detail: string }[] = [
-  { icon: 'message-circle', title: 'Claude와 나눈 대화를 보내요', detail: '커넥터나 공유 링크로 한 번에 담아요' },
-  { icon: 'check-square', title: '배운 내용을 문제로 확인해요', detail: '대화 속 내 질문에서 나온 것만 물어봐요' },
-  { icon: 'calendar', title: '잊을 때쯤 매일 몇 분 복습해요', detail: '기억 상태를 계산해 복습할 때를 골라요' },
-];
 
 /**
- * 앱 메인(로그인 전) 화면 (스펙 §7.9). 서비스가 하는 일을 세 줄로 보여주고 구글·카카오 소셜 로그인만 둔다.
- * 아래에 이용약관·개인정보 처리방침 링크를 둔다(#148).
- * 토스 인앱(#149)에서는 토스 로그인만 쓸 수 있어(앱인토스 서비스 오픈 정책 2-3) 구글·카카오 대신 토스 로그인 버튼을 둔다.
+ * 로그인 전 화면. 웹은 소셜 로그인 화면, 토스 인앱(#149)은 로그인 없이 들어가는 동안의 준비 화면이다
+ * (노출 정책: 로그인 전에 주요 기능을 써볼 수 있어야 함. 서비스 소개는 홈의 첫 사용자 화면이 맡는다).
  */
 export function Welcome() {
+  return inToss ? <TossEntry /> : <SocialWelcome />;
+}
+
+/** 토스 인앱 자동 진입(익명 식별키) 중이거나 실패했을 때. 성공하면 보호된 화면 전환으로 홈이 열린다. */
+function TossEntry() {
+  const { entry, retryEntry } = useSession();
+  return (
+    <View style={[styles.screen, styles.entry]}>
+      <Logo size={components.iconButtonPrimary.size} />
+      {entry === 'error' ? (
+        <>
+          <ThemedText variant="title">담다를 열지 못했어요</ThemedText>
+          <ThemedText variant="subhead" tone="inkSecondary" style={styles.note}>
+            잠시 후 다시 시도해 주세요.
+          </ThemedText>
+          <Button variant="secondary" title="다시 시도" onPress={retryEntry} />
+        </>
+      ) : (
+        <>
+          <ActivityIndicator color={colors.primary} />
+          <ThemedText variant="subhead" tone="inkSecondary">
+            담다를 여는 중이에요
+          </ThemedText>
+        </>
+      )}
+    </View>
+  );
+}
+
+/**
+ * 웹 메인(로그인 전) 화면 (스펙 §7.9). 서비스가 하는 일을 세 줄로 보여주고 구글·카카오 소셜 로그인만 둔다.
+ * 아래에 이용약관·개인정보 처리방침 링크를 둔다(#148).
+ */
+function SocialWelcome() {
   const insets = useSafeAreaInsets();
-  const { signIn, signInWithToss } = useSession();
+  const { signIn } = useSession();
   const options = useLoginOptions();
-  const [pending, setPending] = useState<Provider | 'toss' | null>(null);
+  const [pending, setPending] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function start(provider: Provider) {
@@ -40,18 +70,6 @@ export function Welcome() {
       await signIn(provider, options.data);
     } catch (e) {
       setError(e instanceof Error ? e.message : '로그인하지 못했어요. 다시 시도해 주세요.');
-      setPending(null);
-    }
-  }
-
-  async function startToss() {
-    setPending('toss');
-    setError(null);
-    try {
-      await signInWithToss();
-      router.replace('/');
-    } catch {
-      setError('토스 로그인을 마치지 못했어요. 다시 시도해 주세요.');
       setPending(null);
     }
   }
@@ -71,12 +89,12 @@ export function Welcome() {
           </ThemedText>
           {/* 생성형 AI 사전 고지(앱인토스 서비스 오픈 정책 2-4, #149). */}
           <ThemedText variant="caption" tone="inkMuted">
-            배울 내용 정리, 문제·힌트·설명, 답 채점은 생성형 AI가 해요. AI 결과는 틀릴 수 있어요.
+            {AI_NOTICE}
           </ThemedText>
         </View>
 
         <Card style={styles.steps}>
-          {STEPS.map((step, i) => (
+          {INTRO_STEPS.map((step, i) => (
             <View key={step.title} style={[styles.step, i > 0 && styles.divided]}>
               <View style={styles.stepIcon}>
                 <Icon name={step.icon} color={colors.primaryInk} />
@@ -94,27 +112,21 @@ export function Welcome() {
 
       <View style={styles.footer}>
         {error && <Notice tone="danger">{error}</Notice>}
-        {options.isError && !inToss && <Notice tone="danger">로그인 방법을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</Notice>}
-        {inToss ? (
-          <Button title="토스로 시작하기" loading={pending === 'toss'} onPress={startToss} />
-        ) : (
-          <>
-            <SocialButton
-              provider="kakao"
-              label="카카오로 시작하기"
-              logo={<KakaoLogo />}
-              pending={pending}
-              onPress={() => start('kakao')}
-            />
-            <SocialButton
-              provider="google"
-              label="Google로 시작하기"
-              logo={<GoogleLogo />}
-              pending={pending}
-              onPress={() => start('google')}
-            />
-          </>
-        )}
+        {options.isError && <Notice tone="danger">로그인 방법을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</Notice>}
+        <SocialButton
+          provider="kakao"
+          label="카카오로 시작하기"
+          logo={<KakaoLogo />}
+          pending={pending}
+          onPress={() => start('kakao')}
+        />
+        <SocialButton
+          provider="google"
+          label="Google로 시작하기"
+          logo={<GoogleLogo />}
+          pending={pending}
+          onPress={() => start('google')}
+        />
         <ThemedText variant="caption" tone="inkMuted" style={styles.note}>
           처음 로그인하면 계정이 만들어지며,{' '}
           <ThemedText variant="caption" tone="primaryInk" accessibilityRole="link" onPress={() => router.push('/terms')}>
@@ -142,7 +154,7 @@ function SocialButton({
   provider: 'kakao' | 'google';
   label: string;
   logo: ReactNode;
-  pending: Provider | 'toss' | null;
+  pending: Provider | null;
   onPress: () => void;
 }) {
   const kakao = provider === 'kakao';
@@ -175,6 +187,7 @@ function SocialButton({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
+  entry: { alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
   content: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, gap: spacing['2xl'] },
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   intro: { gap: spacing.md },
