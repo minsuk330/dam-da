@@ -35,7 +35,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           # 이미지 이름은 소문자여야 한다.
-          images: ghcr.io/${{ github.repository_owner }}/ku-hack-backend
+          images: ghcr.io/${{ github.repository_owner }}/dam-da-backend
           tags: |
             type=raw,value=latest
             type=sha,format=short
