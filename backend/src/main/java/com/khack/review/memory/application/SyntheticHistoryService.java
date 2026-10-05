@@ -61,11 +61,17 @@ public class SyntheticHistoryService {
         logs.flush();
         states.flush();
         parameters.activate(userId, FsrsParametersService.DEFAULT_VERSION);
-        Map<Integer, List<SyntheticReview>> cards = byCard(reviews);
+        Map<Integer, List<SyntheticReview>> cards = new TreeMap<>();
+        for (SyntheticReview review : reviews) {
+            if (review.cardId() < 1 || review.cardId() > MAX_CARDS) {
+                throw new IllegalArgumentException("card_id는 1~%d여야 합니다: %d".formatted(MAX_CARDS, review.cardId()));
+            }
+            cards.computeIfAbsent(review.cardId(), id -> new ArrayList<>()).add(review);
+        }
         FsrsParametersService.Active active = parameters.activeFor(userId, defaultRetention);
         long attempt = 0;
         for (Map.Entry<Integer, List<SyntheticReview>> card : cards.entrySet()) {
-            List<SyntheticReview> history = card.getValue();
+            List<SyntheticReview> history = card.getValue().stream().sorted(Comparator.comparing(SyntheticReview::reviewedAt)).toList();
             long itemId = itemId(userId, card.getKey());
             Instant previous = null;
             for (SyntheticReview review : history) {
@@ -76,74 +82,6 @@ public class SyntheticHistoryService {
             states.save(state(userId, itemId, history, active.scheduler(), active.version()));
         }
         return new Imported(cards.size(), reviews.size());
-    }
-
-    /** 합성 항목 {@code cardId}의 기록을 실제 기억 항목 {@code memoryItemId}에 붙인다. */
-    public record Link(int cardId, Long memoryItemId) {
-    }
-
-    /**
-     * 합성 기록을 사용자의 실제 기억 항목에 붙인다(로그인 계정 시연 데이터). {@link #replace}와 달리 실제 풀이 기록과 다른 항목은 지우지 않는다.
-     * 이 사용자의 이전 합성 기록만 지우고 다시 넣으므로 반복 실행해도 된다. 연결한 항목은 초기 평가(대화 근거)에 합성 기록을 이어
-     * 기본 매개변수로 상태를 다시 계산한다. 연결하지 않은 합성 항목은 기억 상태 없이 기록만 남는다. 세션·매일 학습에는 나오지 않고
-     * 개인 매개변수 학습에만 쓰인다.
-     */
-    @Transactional
-    public Imported attach(Long userId, List<Link> links, List<SyntheticReview> reviews) {
-        Map<Integer, Long> linked = new TreeMap<>();
-        for (Link link : links) {
-            if (link.memoryItemId() == null || link.memoryItemId() <= 0 || linked.put(link.cardId(), link.memoryItemId()) != null) {
-                throw new IllegalArgumentException("연결이 잘못됐습니다: card_id %d".formatted(link.cardId()));
-            }
-            states.findByMemoryItemId(link.memoryItemId()).filter(state -> !state.getUserId().equals(userId)).ifPresent(state -> {
-                throw new IllegalArgumentException("기억 항목 %d는 다른 사용자의 것입니다.".formatted(link.memoryItemId()));
-            });
-        }
-        logs.deleteByUserIdAndPolicyVersion(userId, ReviewLog.SYNTHETIC_POLICY_VERSION);
-        logs.flush();
-        parameters.activate(userId, FsrsParametersService.DEFAULT_VERSION);
-        Map<Integer, List<SyntheticReview>> cards = byCard(reviews);
-        long attempt = 0;
-        int items = 0;
-        for (Map.Entry<Integer, List<SyntheticReview>> card : cards.entrySet()) {
-            Long memoryItemId = linked.get(card.getKey());
-            Long itemId = memoryItemId != null ? memoryItemId : itemId(userId, card.getKey());
-            MemoryState state = memoryItemId == null ? null : states.findByMemoryItemId(memoryItemId).orElse(null);
-            List<SyntheticReview> history = card.getValue();
-            if (state != null && state.isSeeded() && history.getFirst().reviewedAt().isBefore(state.getInitialRatedAt())) {
-                throw new IllegalArgumentException("기억 항목 %d의 합성 기록이 대화 시각보다 이릅니다.".formatted(memoryItemId));
-            }
-            Instant previous = state != null && state.isSeeded() ? state.getInitialRatedAt() : null;
-            for (SyntheticReview review : history) {
-                logs.save(ReviewLog.synthetic(userId, itemId, -(userId * 10_000_000L + ++attempt), review.rating(),
-                        review.reviewedAt(), elapsedDays(previous, review.reviewedAt()), review.responseTimeMs(),
-                        FsrsParametersService.DEFAULT_VERSION));
-                previous = review.reviewedAt();
-            }
-            if (memoryItemId != null) {
-                MemoryState target = state != null ? state
-                        : new MemoryState(userId, memoryItemId, defaultRetention, history.getFirst().reviewedAt());
-                FsrsParametersService.Active active = parameters.activeFor(userId, target.getDesiredRetention());
-                target.replay(active.scheduler(), active.version(), history.stream()
-                        .map(review -> new MemoryState.Replay(review.rating(), review.reviewedAt()))
-                        .toList());
-                states.save(target);
-                items++;
-            }
-        }
-        return new Imported(items, reviews.size());
-    }
-
-    private static Map<Integer, List<SyntheticReview>> byCard(List<SyntheticReview> reviews) {
-        Map<Integer, List<SyntheticReview>> cards = new TreeMap<>();
-        for (SyntheticReview review : reviews) {
-            if (review.cardId() < 1 || review.cardId() > MAX_CARDS) {
-                throw new IllegalArgumentException("card_id는 1~%d여야 합니다: %d".formatted(MAX_CARDS, review.cardId()));
-            }
-            cards.computeIfAbsent(review.cardId(), id -> new ArrayList<>()).add(review);
-        }
-        cards.replaceAll((id, history) -> history.stream().sorted(Comparator.comparing(SyntheticReview::reviewedAt)).toList());
-        return cards;
     }
 
     /** 실제 기억 항목 ID(양수)와 겹치지 않도록 음수를 쓴다. java-fsrs 카드 ID가 int라 사용자 ID 약 21만까지 쓸 수 있다. */

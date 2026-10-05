@@ -63,7 +63,7 @@ public class CurrentUser implements ApplicationRunner {
         return users.findById(id()).orElseThrow(UnauthenticatedException::new);
     }
 
-    /** 데모 사용자 ID. 개발 환경의 "데모 계정으로 시작"이 이 사용자로 로그인한다. */
+    /** 데모 사용자 ID. 인증 없는 개발 도구 요청의 기본 사용자다. */
     @Transactional
     public Long demoUserId() {
         return findOrCreate(demoUserName).getId();
@@ -78,14 +78,6 @@ public class CurrentUser implements ApplicationRunner {
     @Transactional
     public AppUser switchTo(String name) {
         AppUser user = findOrCreate(name);
-        devUserId = user.getId();
-        return user;
-    }
-
-    /** 개발 도구 전용: 인증 없는 개발 도구 요청의 사용자를 기존 사용자 ID로 바꾼다. 로그인 계정에 시연 데이터를 넣을 때 쓴다. */
-    @Transactional(readOnly = true)
-    public AppUser switchTo(Long id) {
-        AppUser user = users.findById(id).orElseThrow(() -> new IllegalArgumentException("사용자 %d가 없습니다.".formatted(id)));
         devUserId = user.getId();
         return user;
     }

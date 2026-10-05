@@ -70,9 +70,6 @@ review:
     enabled: ${DEV_TOOLS_ENABLED:false}
     # 배포 서버에서 원격 데모용. 비어 있으면 원격 요청은 모두 막는다. 길고 무작위인 값을 쓰고 커밋하지 않는다.
     token: ${DEV_TOOLS_TOKEN:}
-  demo-clock:
-    # 앱 시연 도구의 서버 시계 이동(/api/demo/clock). 로그인한 사용자면 토큰 없이 쓴다. 시계는 서버 전체에 적용되므로 시연 기간에만 켠다.
-    enabled: ${DEMO_CLOCK_ENABLED:false}
   demo-user:
     name: 지원
   analysis:

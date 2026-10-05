@@ -69,19 +69,12 @@ class AuthIT {
 
         HttpResponse<String> options = send("GET", "/api/auth/options", null, null);
         assertThat(options.statusCode()).isEqualTo(200);
-        assertThat(options.body()).contains("\"providers\":[]", "\"demoLogin\":true");
+        assertThat(options.body()).contains("\"providers\":[]");
     }
 
     @Test
-    void demoLoginGivesATokenForTheDemoUser() throws Exception {
-        HttpResponse<String> demo = send("POST", "/api/auth/demo", null, null);
-        assertThat(demo.statusCode()).isEqualTo(200);
-        String token = accessToken(demo.body());
-
-        HttpResponse<String> me = send("GET", "/api/me", token, null);
-        assertThat(me.statusCode()).isEqualTo(200);
-        assertThat(me.body()).contains("\"id\":" + currentUser.demoUserId(), "\"name\":\"지원\"");
-        assertThat(send("GET", "/api/learning-sessions", token, null).statusCode()).isEqualTo(200);
+    void demoLoginIsGone() throws Exception {
+        assertThat(send("POST", "/api/auth/demo", null, null).statusCode()).isIn(401, 404);
     }
 
     @Test

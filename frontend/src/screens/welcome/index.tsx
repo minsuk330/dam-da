@@ -92,19 +92,6 @@ export function Welcome() {
         <ThemedText variant="caption" tone="inkMuted" style={styles.note}>
           처음 로그인하면 계정이 만들어져요.
         </ThemedText>
-        {options.data?.demoLogin && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: pending !== null }}
-            disabled={pending !== null}
-            hitSlop={8}
-            onPress={() => start('demo')}
-            style={styles.demo}>
-            <ThemedText variant="subhead" tone="primaryInk">
-              {pending === 'demo' ? '데모 계정으로 들어가는 중…' : '데모 계정으로 시작'}
-            </ThemedText>
-          </Pressable>
-        )}
       </View>
     </View>
   );
@@ -188,5 +175,4 @@ const styles = StyleSheet.create({
   googlePressed: { backgroundColor: components.cardPressed.backgroundColor },
   disabled: { opacity: opacity.disabled },
   note: { textAlign: 'center' },
-  demo: { alignSelf: 'center', paddingVertical: spacing.sm },
 });

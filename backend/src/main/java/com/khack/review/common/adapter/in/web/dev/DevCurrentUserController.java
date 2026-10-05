@@ -22,8 +22,7 @@ class DevCurrentUserController {
         this.currentUser = currentUser;
     }
 
-    /** {@code id}가 있으면 그 기존 사용자로, 없으면 {@code name} 사용자로(없으면 만든다) 바꾼다. */
-    record SwitchRequest(String name, Long id) {
+    record SwitchRequest(String name) {
     }
 
     record UserView(Long id, String name, boolean demoUser) {
@@ -39,15 +38,8 @@ class DevCurrentUserController {
 
     @PostMapping("/dev/current-user")
     ResponseEntity<?> switchTo(@RequestBody SwitchRequest request) {
-        if (request.id() != null) {
-            try {
-                return ResponseEntity.ok(view(currentUser.switchTo(request.id())));
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.badRequest().body(new UserError(e.getMessage()));
-            }
-        }
         if (request.name() == null || request.name().isBlank()) {
-            return ResponseEntity.badRequest().body(new UserError("name 또는 id가 필요합니다."));
+            return ResponseEntity.badRequest().body(new UserError("name이 필요합니다."));
         }
         return ResponseEntity.ok(view(currentUser.switchTo(request.name().strip())));
     }

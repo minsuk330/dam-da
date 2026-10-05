@@ -9,7 +9,7 @@ import { mockEnabled, mockResponse } from './mock'
 // 흐름: 로그인 버튼 → 서버 loginUrl(구글·카카오) → 서버가 {앱}/auth/callback?code=…로 돌려보냄 → POST /api/auth/token으로
 // 앱 토큰을 받아 저장 → 모든 /api 요청에 Bearer로 붙인다. 401이 오면 로그아웃해 메인 화면으로 돌아간다.
 
-export type Provider = 'google' | 'kakao' | 'demo'
+export type Provider = 'google' | 'kakao'
 export type AuthToken = Schemas['AuthToken']
 export type LoginOptions = Schemas['LoginOptions']
 
@@ -59,14 +59,13 @@ const MOCK_OPTIONS: LoginOptions = {
     { id: 'kakao', name: '카카오', loginUrl: '' },
     { id: 'google', name: '구글', loginUrl: '' },
   ],
-  demoLogin: true,
 }
 
 function mockToken(): AuthToken {
   return { accessToken: 'mock', expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), user: { id: 1, name: '지원' } }
 }
 
-/** 켜진 로그인 제공자와 데모 로그인 여부. 데모 로그인은 개발 도구가 켜진 서버에서만 열린다. */
+/** 켜진 로그인 제공자. */
 export function useLoginOptions() {
   return useQuery({
     queryKey: ['auth', 'options'],
@@ -84,7 +83,7 @@ export async function exchangeCode(code: string): Promise<AuthToken> {
 type Session = {
   signedIn: boolean
   user: AuthToken['user'] | null
-  /** 데모는 바로 토큰을 받고, 구글·카카오는 서버 로그인 페이지로 떠난다(돌아오면 /auth/callback). */
+  /** 구글·카카오 서버 로그인 페이지로 떠난다(돌아오면 /auth/callback). */
   signIn: (provider: Provider, options?: LoginOptions) => Promise<void>
   /** /auth/callback에서 받은 토큰으로 로그인 상태를 만든다. */
   complete: (token: AuthToken) => void
@@ -118,10 +117,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   async function signIn(provider: Provider, options?: LoginOptions) {
     if (mockEnabled) {
       apply(await mockResponse(mockToken()))
-      return
-    }
-    if (provider === 'demo') {
-      apply(unwrap(await api.POST('/api/auth/demo')))
       return
     }
     const loginUrl = options?.providers.find((p) => p.id === provider)?.loginUrl

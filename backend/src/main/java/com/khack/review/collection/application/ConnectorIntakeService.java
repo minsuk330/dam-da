@@ -9,7 +9,6 @@ import com.khack.review.collection.domain.SessionValidator;
 import com.khack.review.collection.domain.ValidationResult;
 import com.khack.review.common.application.CurrentUser;
 import java.time.Clock;
-import java.time.Instant;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,18 +35,12 @@ public class ConnectorIntakeService {
 
     @Transactional
     public SavedSession intake(SessionInput input) {
-        return intake(input, clock.instant());
-    }
-
-    /** 개발 도구 전용(시연 데이터): 받은 시각을 지정해 저장한다. 세션 생성 시각과 초기 평가 시각이 이 값을 따른다. */
-    @Transactional
-    public SavedSession intake(SessionInput input, Instant receivedAt) {
         ValidationResult result = SessionValidator.validate(input);
         if (!result.errors().isEmpty()) {
             throw new SessionRejectedException(result.errors());
         }
         LearningConversation conversation = LearningConversation.fromConnector(
-                currentUser.id(), input, result.warnings(), receivedAt);
+                currentUser.id(), input, result.warnings(), clock.instant());
         LearningConversation saved = conversations.save(conversation);
         events.publishEvent(new ConversationSubmitted(saved.getId(), saved.getUserId(), input, saved.getReceivedAt()));
         return saved.toSavedSession();
