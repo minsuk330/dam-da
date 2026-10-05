@@ -14,7 +14,7 @@ import { useProfile } from '@/profile';
 import { colors, components, spacing } from '@/theme';
 
 /**
- * 내 정보: 나에게 맞춰진 것들을 모아 둔 곳. 내 기억 패턴(망각 곡선·개인 모델)과 매일 학습 설정으로 간다.
+ * 내 정보: 나에게 맞춰진 것들을 모아 둔 곳. 내 기억 패턴(망각 곡선·개인 모델)과 매일 학습 설정, 정책·회원 탈퇴로 간다.
  * 각 행은 자기 데이터를 불러오기 전·실패해도 설명 문구로 열 수 있게 둔다(눌러서 들어간 화면이 상태를 보여준다).
  */
 export function Me() {
@@ -49,6 +49,12 @@ export function Me() {
           href="/settings"
           divided
         />
+      </Card>
+
+      <Card style={styles.list}>
+        <Row icon="shield" title="개인정보 처리방침" status="어떤 정보를 받고 언제 지우는지" href="/privacy" />
+        <Row icon="file-text" title="이용약관" status="서비스 이용 조건" href="/terms" divided />
+        <Row icon="user-x" title="회원 탈퇴" status="계정과 학습 기록을 모두 지워요" href="/account-deletion" divided />
       </Card>
 
       <Button variant="secondary" title="로그아웃" onPress={signOut} />

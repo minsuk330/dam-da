@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +21,7 @@ const STEPS: { icon: IconName; title: string; detail: string }[] = [
 
 /**
  * 앱 메인(로그인 전) 화면 (스펙 §7.9). 서비스가 하는 일을 세 줄로 보여주고 구글·카카오 소셜 로그인만 둔다.
- * "데모 계정으로 시작"은 개발 도구가 켜진 서버에서만 보인다.
+ * 아래에 이용약관·개인정보 처리방침 링크를 둔다(#148).
  */
 export function Welcome() {
   const insets = useSafeAreaInsets();
@@ -90,7 +91,15 @@ export function Welcome() {
           onPress={() => start('google')}
         />
         <ThemedText variant="caption" tone="inkMuted" style={styles.note}>
-          처음 로그인하면 계정이 만들어져요.
+          처음 로그인하면 계정이 만들어지며,{' '}
+          <ThemedText variant="caption" tone="primaryInk" accessibilityRole="link" onPress={() => router.push('/terms')}>
+            이용약관
+          </ThemedText>
+          과{' '}
+          <ThemedText variant="caption" tone="primaryInk" accessibilityRole="link" onPress={() => router.push('/privacy')}>
+            개인정보 처리방침
+          </ThemedText>
+          에 동의하는 것으로 봐요.
         </ThemedText>
       </View>
     </View>

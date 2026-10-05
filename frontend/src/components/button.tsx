@@ -5,9 +5,10 @@ import { components, opacity, spacing } from '@/theme';
 const variants = {
   primary: components.buttonPrimary,
   secondary: components.buttonSecondary,
+  danger: components.buttonDanger,
 } as const;
 
-/** DESIGN.md의 button-primary / button-secondary. 높이 56 알약형, 기본 전체 폭. 주 버튼은 화면당 하나. */
+/** DESIGN.md의 button-primary / button-secondary / button-danger(되돌릴 수 없는 일의 마지막 확인). 높이 56 알약형, 기본 전체 폭. 주 버튼은 화면당 하나. */
 export function Button({
   title,
   variant = 'primary',

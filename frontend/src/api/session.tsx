@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { Linking } from 'react-native'
 
-import { api, unwrap, type Schemas } from './client'
+import { api, ApiError, unwrap, type Schemas } from './client'
 import { mockEnabled, mockResponse } from './mock'
 
 // 앱 로그인 상태 (스펙 §7.9). 구글·카카오 소셜 로그인만 둔다. 소셜 인증은 서버가 하고 앱은 서버가 준 토큰을 쓴다.
@@ -88,6 +88,8 @@ type Session = {
   /** /auth/callback에서 받은 토큰으로 로그인 상태를 만든다. */
   complete: (token: AuthToken) => void
   signOut: () => void
+  /** 회원 탈퇴(#148). 서버가 이 사용자의 데이터를 모두 지운 뒤 로그아웃한다. 실패하면 로그인 상태를 그대로 두고 오류를 던진다. */
+  deleteAccount: () => Promise<void>
 }
 
 const SessionContext = createContext<Session | null>(null)
@@ -126,9 +128,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     else await Linking.openURL(loginUrl)
   }
 
+  async function deleteAccount() {
+    if (mockEnabled) {
+      await mockResponse(null)
+    } else {
+      const { response } = await api.DELETE('/api/me')
+      if (!response.ok) throw new ApiError(response.status)
+    }
+    apply(null)
+  }
+
   return (
     <SessionContext.Provider
-      value={{ signedIn: token !== null, user: token?.user ?? null, signIn, complete: apply, signOut: () => apply(null) }}>
+      value={{
+        signedIn: token !== null,
+        user: token?.user ?? null,
+        signIn,
+        complete: apply,
+        signOut: () => apply(null),
+        deleteAccount,
+      }}>
       {children}
     </SessionContext.Provider>
   )
