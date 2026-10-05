@@ -20,18 +20,21 @@ export function TossBridge() {
     let unsubscribe: (() => void) | undefined;
     let cancelled = false;
     // 토스 SDK는 토스 빌드에서만 쓰므로 일반 웹 번들에 섞이지 않게 필요할 때 불러온다.
-    import('@apps-in-toss/web-framework').then(({ graniteEvent, closeView }) => {
-      if (cancelled) return;
-      unsubscribe = graniteEvent.addEventListener('backEvent', {
-        onEvent: () => {
-          if (router.canGoBack()) router.back();
-          else void closeView();
-        },
-        onError: () => {
-          // 이벤트를 못 받으면 토스 기본 동작에 맡긴다.
-        },
-      });
-    });
+    // 토스 앱 밖(로컬 브라우저의 toss:web 등)에서는 SDK가 "웹뷰 환경이 아니에요"로 던진다. 그때는 브라우저 기본 동작에 맡긴다.
+    import('@apps-in-toss/web-framework')
+      .then(({ graniteEvent, closeView }) => {
+        if (cancelled) return;
+        unsubscribe = graniteEvent.addEventListener('backEvent', {
+          onEvent: () => {
+            if (router.canGoBack()) router.back();
+            else closeView().catch(() => {});
+          },
+          onError: () => {
+            // 이벤트를 못 받으면 토스 기본 동작에 맡긴다.
+          },
+        });
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
       unsubscribe?.();
