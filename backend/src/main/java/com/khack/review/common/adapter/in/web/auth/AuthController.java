@@ -26,25 +26,22 @@ class AuthController {
     private final AuthTokenService tokens;
     private final CurrentUser currentUser;
     private final List<Provider> providers;
-    private final boolean demoLogin;
 
     AuthController(AuthTokenService tokens, CurrentUser currentUser, SocialRegistrations social,
-            @Value("${review.auth.server-url}") String serverUrl, @Value("${review.dev-tools.enabled:false}") boolean devTools) {
+            @Value("${review.auth.server-url}") String serverUrl) {
         this.tokens = tokens;
         this.currentUser = currentUser;
         String base = serverUrl.replaceAll("/+$", "");
         this.providers = social.registrations().stream()
                 .map(r -> new Provider(r.getRegistrationId(), r.getClientName(), base + "/oauth2/authorization/" + r.getRegistrationId()))
                 .toList();
-        this.demoLogin = devTools;
     }
 
     /** {@code loginUrl}은 서버 주소 기준 절대 URL이다. 앱은 이 주소로 페이지를 이동한다. */
     record Provider(String id, String name, String loginUrl) {
     }
 
-    /** {@code demoLogin}은 개발 도구가 켜진 환경에서만 true다. */
-    record LoginOptions(List<Provider> providers, boolean demoLogin) {
+    record LoginOptions(List<Provider> providers) {
     }
 
     record TokenRequest(String code) {
@@ -55,22 +52,13 @@ class AuthController {
 
     @GetMapping("/api/auth/options")
     LoginOptions options() {
-        return new LoginOptions(providers, demoLogin);
+        return new LoginOptions(providers);
     }
 
     /** 소셜 로그인 후 받은 1회용 코드를 토큰으로 바꾼다. 코드는 한 번만 쓸 수 있고 2분 안에 써야 한다. */
     @PostMapping("/api/auth/token")
     AuthToken token(@RequestBody TokenRequest request) {
         return tokens.exchange(request.code()).orElseThrow(UnauthenticatedException::new);
-    }
-
-    /** 개발 환경 전용 "데모 계정으로 시작". 개발 도구가 꺼져 있으면 404. */
-    @PostMapping("/api/auth/demo")
-    ResponseEntity<AuthToken> demo() {
-        if (!demoLogin) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(tokens.issue(currentUser.demoUserId()));
     }
 
     @GetMapping("/api/me")

@@ -8,34 +8,6 @@
     "url" : "/"
   } ],
   "paths" : {
-    "/api/auth/demo" : {
-      "post" : {
-        "operationId" : "demo",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/AuthToken"
-                }
-              }
-            },
-            "description" : "OK"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          }
-        },
-        "tags" : [ "auth-controller" ]
-      }
-    },
     "/api/auth/options" : {
       "get" : {
         "operationId" : "options_2",
@@ -299,109 +271,6 @@
           }
         },
         "tags" : [ "daily-practice-controller" ]
-      }
-    },
-    "/api/demo/clock" : {
-      "get" : {
-        "operationId" : "current_1",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/DemoClock"
-                }
-              }
-            },
-            "description" : "OK"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          }
-        },
-        "tags" : [ "demo-clock-controller" ]
-      }
-    },
-    "/api/demo/clock/reset" : {
-      "post" : {
-        "operationId" : "reset",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/DemoClock"
-                }
-              }
-            },
-            "description" : "OK"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          }
-        },
-        "tags" : [ "demo-clock-controller" ]
-      }
-    },
-    "/api/demo/clock/travel" : {
-      "post" : {
-        "operationId" : "travel",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "days",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64",
-            "default" : 0
-          }
-        }, {
-          "in" : "query",
-          "name" : "hours",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64",
-            "default" : 0
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/DemoClock"
-                }
-              }
-            },
-            "description" : "OK"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          }
-        },
-        "tags" : [ "demo-clock-controller" ]
       }
     },
     "/api/fields" : {
@@ -1883,19 +1752,6 @@
         },
         "required" : [ "carriedOver", "completed", "date", "estimatedSeconds", "items", "newCount", "practiceId", "reviewCount", "started", "total", "unavailable" ]
       },
-      "DemoClock" : {
-        "type" : "object",
-        "properties" : {
-          "now" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "offset" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "now", "offset" ]
-      },
       "Edge" : {
         "type" : "object",
         "properties" : {
@@ -2401,9 +2257,6 @@
       "LoginOptions" : {
         "type" : "object",
         "properties" : {
-          "demoLogin" : {
-            "type" : "boolean"
-          },
           "providers" : {
             "type" : "array",
             "items" : {
@@ -2411,7 +2264,7 @@
             }
           }
         },
-        "required" : [ "demoLogin", "providers" ]
+        "required" : [ "providers" ]
       },
       "Me" : {
         "type" : "object",

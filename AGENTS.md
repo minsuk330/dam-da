@@ -64,7 +64,6 @@ uv run khack-optimizer --server http://localhost:8080   # 서버(DEV_TOOLS_ENABL
 - 현재 시각은 주입받은 `Clock`으로만 얻는다(`LocalDateTime.now()` 등 직접 호출 금지). 시간 이동 데모 모드의 전제다.
 - API 키·ngrok URL·공유 링크 등 비밀/개인 데이터는 커밋하지 않는다. 키는 `backend/.env`(gitignore)에만 둔다.
 - `/dev/**` 개발 도구(세션 뷰어, 시간 이동)는 `DEV_TOOLS_ENABLED=true`일 때만 열린다. 로컬 직접 요청 또는 `X-Dev-Token` 헤더가 `DEV_TOOLS_TOKEN`과 같은 원격 요청만 허용한다. 토큰은 커밋하지 않고, 프론트엔드 번들에도 넣지 않는다.
-  - 예외(2026-10-02 사용자 결정): 앱 시연 도구의 서버 시계(`/api/demo/clock`)는 `DEMO_CLOCK_ENABLED=true`일 때 로그인한 사용자면 토큰 없이 쓴다. 시계 조회·앞으로 이동·되돌리기만 열고, 세션 뷰어 등 나머지 개발 도구는 계속 토큰으로 막는다. 시계는 서버 전체에 적용되므로 시연 기간에만 켠다.
 
 ## 아키텍처 (필수)
 

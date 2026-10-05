@@ -67,9 +67,7 @@ docker compose down -v                              # 전부 지우고 처음부
 
 ### 시간 이동 데모 (`/dev/**`)
 
-배포 서버의 `/dev/**`는 `X-Dev-Token` 헤더가 `.env`의 `DEV_TOOLS_TOKEN`과 같을 때만 열린다(그 외 404). 토큰은 코드·프론트엔드 번들에 넣지 않는다. Vercel은 `/dev/**`도 `/api/**`처럼 서버로 넘긴다(`frontend/vercel.json`).
-
-앱의 내 정보 → 시연 도구는 토큰 없이 `/api/demo/clock`을 쓴다. `.env`에 `DEMO_CLOCK_ENABLED=true`를 넣으면 로그인한 사용자 누구나 서버 날짜를 옮기고 되돌릴 수 있다(서버 전체에 적용). 시연 기간에만 켠다.
+배포 서버의 `/dev/**`는 `X-Dev-Token` 헤더가 `.env`의 `DEV_TOOLS_TOKEN`과 같을 때만 열린다(그 외 404). 토큰은 코드·프론트엔드 번들에 넣지 않는다. Vercel은 `/dev/**`를 넘기지 않으므로 서버 주소로 직접 호출한다.
 
 ```bash
 export DEV_TOOLS_TOKEN=...   # .env와 같은 값
@@ -95,7 +93,6 @@ curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://hack.refit-100.site/dev/
 
 - `.env`에 `PUBLIC_SERVER_URL`, `APP_URL`(Vercel 주소), `AUTH_SIGNING_KEY`, `GOOGLE_*`, `KAKAO_*`를 넣는다. `AUTH_SIGNING_KEY`가 비면 재시작할 때마다 모두 로그아웃된다. 키는 PKCS#8 DER이어야 한다(`openssl genpkey ... | openssl pkcs8 -topk8 -nocrypt -outform DER | base64 | tr -d '\n'`). OpenSSL 3.0.x의 `genpkey -outform DER`는 PKCS#1로 내보내 기동이 실패한다(`Unable to decode key`).
 - 구글 Cloud Console·Kakao Developers의 redirect URI에 `https://hack.refit-100.site/login/oauth2/code/google`, `.../kakao`를 추가한다.
-- `DEV_TOOLS_ENABLED=true`면 앱에 "데모 계정으로 시작"이 열린다(`POST /api/auth/demo`). 누구나 데모 사용자로 들어올 수 있으므로 시연 기간에만 켠다.
 
 ## 프론트엔드 (Vercel)
 
