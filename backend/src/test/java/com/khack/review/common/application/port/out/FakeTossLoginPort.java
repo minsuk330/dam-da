@@ -15,6 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class FakeTossLoginPort implements TossLoginPort {
 
 	private final Map<String, String> userKeys = new HashMap<>();
+	private final Map<String, String> anonKeys = new HashMap<>();
 
 	/** {@link #disconnect}로 받은 userKey. */
 	public final List<String> disconnected = new CopyOnWriteArrayList<>();
@@ -31,6 +32,21 @@ public class FakeTossLoginPort implements TossLoginPort {
 			throw new TossLoginException("invalid_grant");
 		}
 		return new TossUser(userKey);
+	}
+
+	/** 익명 식별키 인증 코드마다 돌려줄 anonKey를 정한다. 정하지 않은 코드는 거절한다. */
+	public FakeTossLoginPort willExchangeAnonymous(String code, String anonKey) {
+		anonKeys.put(code, anonKey);
+		return this;
+	}
+
+	@Override
+	public String anonymousKey(String code) {
+		String anonKey = anonKeys.get(code);
+		if (anonKey == null) {
+			throw new TossLoginException("4011");
+		}
+		return anonKey;
 	}
 
 	@Override

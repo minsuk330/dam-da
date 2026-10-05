@@ -18,6 +18,12 @@ public interface TossLoginPort {
 	 */
 	void disconnect(String userKey);
 
+	/**
+	 * 미니앱 {@code User.createAnonymousKeyAuthCode()}가 준 일회용 코드(5분, 1회용)를 익명 사용자 식별키(anonKey)로 바꾼다.
+	 * 로그인·동의 없이 사용자를 구분한다. 같은 토스 사용자는 기기를 바꿔도 같은 값이다. 실패하면 {@link TossLoginException}.
+	 */
+	String anonymousKey(String code);
+
 	/** {@code userKey}는 이 미니앱에서만 쓰이는 토스 사용자 식별자다. */
 	record TossUser(String userKey) {
 	}

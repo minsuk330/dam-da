@@ -62,7 +62,7 @@ const MOCK_OPTIONS: LoginOptions = {
 }
 
 function mockToken(): AuthToken {
-  return { accessToken: 'mock', expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), user: { id: 1, name: '지원' } }
+  return { accessToken: 'mock', expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), user: { id: 1, name: '지원', agreementRequired: false } }
 }
 
 /** 켜진 로그인 제공자. */

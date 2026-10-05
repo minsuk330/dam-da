@@ -79,6 +79,28 @@ class TossLoginAdapterTest {
     }
 
     @Test
+    void exchangesTheAnonymousAuthCode() {
+        server.expect(requestTo("https://toss.test/api-partner/v1/apps-in-toss/users/anon-key/exchange"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json("""
+                        {"code": "anon-code"}""", JsonCompareMode.STRICT))
+                .andRespond(withSuccess("""
+                        {"resultType": "SUCCESS", "success": {"anonKey": "anon-hash-1"}}""", MediaType.APPLICATION_JSON));
+
+        assertThat(adapter.anonymousKey("anon-code")).isEqualTo("anon-hash-1");
+    }
+
+    @Test
+    void invalidAnonymousAuthCodeFails() {
+        server.expect(requestTo("https://toss.test/api-partner/v1/apps-in-toss/users/anon-key/exchange"))
+                .andRespond(withSuccess("""
+                        {"resultType": "FAIL", "error": {"errorCode": "4011", "reason": "익명 사용자 인증 코드가 유효하지 않아요."}}""",
+                        MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> adapter.anonymousKey("expired")).isInstanceOf(TossLoginException.class).hasMessageContaining("4011");
+    }
+
+    @Test
     void disconnectSendsTheNumericUserKey() {
         server.expect(requestTo("https://toss.test/api-partner/v1/apps-in-toss/user/oauth2/access/remove-by-user-key"))
                 .andExpect(method(HttpMethod.POST))
