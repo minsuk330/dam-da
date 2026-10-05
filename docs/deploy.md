@@ -22,7 +22,7 @@ main push(backend/**) ──▶ GitHub Actions(backend-image) ──▶ ghcr.io/
 | `compose.override.yml` | 서버별 설정(커밋하지 않음). 아래 "작은 서버" 참고 |
 | `.env.example` | 배포용 환경 변수. `.env`로 복사해 채운다(커밋 금지) |
 
-현재 서버(Azure VM, 2026-10-05 VPS에서 이전)는 khack만 돌리므로 Caddy 방식으로 올린다. 다른 서비스와 같이 쓰는 서버라면 호스트 nginx(`nginx.conf.example`) 방식을 쓴다.
+현재 서버는 Azure VM(Malaysia West, 2026-10-05 이전)이고 khack만 돌리므로 Caddy 방식으로 올린다. **리전은 OpenAI 지원 국가여야 한다**(홍콩 등 미지원 지역에서는 OpenAI가 `403 unsupported_country_region_territory`로 모든 호출을 거절한다. https://developers.openai.com/api/docs/supported-countries). 서버를 옮기면 개인정보 국외 이전 동의(`frontend/src/screens/policies/content.ts`)의 서버 국가도 고친다. 다른 서비스와 같이 쓰는 서버라면 호스트 nginx(`nginx.conf.example`) 방식을 쓴다.
 
 ### 준비
 
