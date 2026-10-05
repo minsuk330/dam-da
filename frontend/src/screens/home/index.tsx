@@ -110,6 +110,7 @@ function FirstRun() {
         ))}
       </Card>
       <Button title="AI 대화 담기" onPress={() => router.navigate('/add')} />
+      <Button variant="secondary" title="공유 링크 만드는 법 보기" onPress={() => router.push('/share-guide')} />
       <ThemedText variant="caption" tone="inkMuted">
         {AI_NOTICE}
       </ThemedText>

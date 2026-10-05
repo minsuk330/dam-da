@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IntakeError, useSubmitConversation, type ConversationInput } from '@/api/conversation-input';
 import { useSession } from '@/api/session';
 import { AI_NOTICE } from '@/screens/intro-steps';
+import { guessShareSource } from '@/screens/share-guide/steps';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { useTabBarSpace } from '@/components/tab-bar';
@@ -151,6 +152,7 @@ export function AddConversation() {
           <ThemedText variant="caption" tone="inkMuted">
             ChatGPT·Claude·Codex 대화의 공유 버튼으로 만든 링크를 붙여넣어 주세요.
           </ThemedText>
+          <GuideLink label="공유 링크 만드는 법" url={url} />
         </View>
       ) : (
         <View style={styles.fieldGroup}>
@@ -176,6 +178,7 @@ export function AddConversation() {
           <ThemedText variant="subhead" tone="dangerInk">
             {error.message}
           </ThemedText>
+          {mode === 'share_link' && <GuideLink label="공유 링크를 맞게 만들었는지 확인하기" url={url} />}
           {error.fallback === 'paste' && mode === 'share_link' && (
             <Button variant="secondary" title="붙여넣기로 바꾸기" onPress={() => changeMode('paste')} />
           )}
@@ -245,6 +248,25 @@ export function AddConversation() {
   );
 }
 
+/** 공유 링크 만드는 법(#168)으로 간다. 입력한 링크로 서비스를 알 수 있으면 그 서비스 안내로 바로 간다. */
+function GuideLink({ label, url }: { label: string; url: string }) {
+  const source = guessShareSource(url);
+  return (
+    <Pressable
+      accessibilityRole="link"
+      hitSlop={8}
+      onPress={() =>
+        source ? router.push({ pathname: '/share-guide/[source]', params: { source } }) : router.push('/share-guide')
+      }
+      style={styles.guideLink}>
+      <Icon name="help-circle" size="sm" color={colors.primaryInk} />
+      <ThemedText variant="subhead" tone="primaryInk">
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   content: { padding: spacing.xl, gap: spacing['2xl'] },
   intro: { gap: spacing.sm },
@@ -292,6 +314,7 @@ const styles = StyleSheet.create({
     borderColor: components.answerOptionSelected.backgroundColor,
   },
   fieldGroup: { gap: spacing.sm },
+  guideLink: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: spacing.xs },
   field: {
     ...components.field.typography,
     color: components.field.textColor,
