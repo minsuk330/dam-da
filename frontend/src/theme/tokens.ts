@@ -144,6 +144,17 @@ export const components = {
     "rounded": 9999,
     "height": 56
   },
+  "buttonDanger": {
+    "backgroundColor": "#FFE3E3",
+    "textColor": "#A8242B",
+    "typography": {
+      "fontFamily": "SUIT-SemiBold",
+      "fontSize": 17,
+      "lineHeight": 24
+    },
+    "rounded": 9999,
+    "height": 56
+  },
   "buttonKakao": {
     "backgroundColor": "#FEE500",
     "textColor": "#000000D9",

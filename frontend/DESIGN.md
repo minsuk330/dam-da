@@ -118,6 +118,12 @@ components:
     typography: "{typography.headline}"
     rounded: "{rounded.full}"
     height: 56px
+  button-danger:
+    backgroundColor: "{colors.danger-tint}"
+    textColor: "{colors.danger-ink}"
+    typography: "{typography.headline}"
+    rounded: "{rounded.full}"
+    height: 56px
   button-kakao:
     backgroundColor: "{colors.kakao}"
     textColor: "{colors.kakao-ink}"
@@ -416,6 +422,7 @@ AI와 나눈 대화에서 배운 것을 매일 짧게 복습하는 학습 앱. �
 
 - **주 버튼**: primary, 흰 글자, 높이 56, 전체 폭, 알약형. 화면 하단에 하나. 누르면 `primary-pressed`로 어두워진다(크기 변화 없음).
 - **보조 버튼**: 흰 바탕, ink 글자, 알약형.
+- **위험 버튼** (#148): 되돌릴 수 없는 일(회원 탈퇴)의 마지막 확인에만. `danger-tint` 면 + `danger-ink` 글자, 알약형. 진한 빨강 면에 흰 글자를 쓰지 않는다. 한 번 더 묻는 단계 없이 바로 보이지 않게, 앞 단계(보조 버튼)를 누른 뒤에 나타낸다.
 - **소셜 로그인 버튼** (스펙 §7.9, 2026-10-02 사용자 결정: 구글·카카오만): 각 회사 브랜드 가이드를 따르고 높이·라운드만 우리 버튼과 맞춘다(56, 알약형).
   - 카카오: `button-kakao`(노랑 `kakao` + 85% 검정 `kakao-ink`) + 검정 말풍선 심볼. 눌리면 `button-kakao-pressed`.
   - 구글: `button-google`(흰 바탕 + 1px `button-google-outline`) + 4색 G 로고. 눌리면 `card-pressed` 면.
