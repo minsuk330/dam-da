@@ -20,7 +20,7 @@ export type GuideStep = {
 export type ShareGuide = {
   source: ShareSource;
   label: string;
-  /** 어디서 하는 안내인지. 토스 사용자는 휴대폰이라 앱 기준으로 쓰고, Codex는 PC 웹 기준이다. */
+  /** 어디서 하는 안내인지. 토스 사용자는 휴대폰이라 앱 기준으로 쓴다. */
   where: string;
   /** 단계 화면의 "열기" 링크. */
   openUrl: string;
@@ -40,7 +40,7 @@ function pasteStep(image: ImageSourcePropType): GuideStep {
   };
 }
 
-// 버튼 이름·위치는 각 서비스 화면이 바뀌면 달라진다. 캡처를 받을 때 실제 화면과 맞춘다(#168).
+// 버튼 이름·위치는 각 서비스 화면이 바뀌면 달라진다(#168). Codex 사용자는 공유 링크를 만들 줄 안다고 보고 안내하지 않는다.
 export const SHARE_GUIDES: ShareGuide[] = [
   {
     source: 'chatgpt',
@@ -108,41 +108,17 @@ export const SHARE_GUIDES: ShareGuide[] = [
       pasteStep(require('@/assets/share-guide/claude-5-paste.png')),
     ],
   },
-  {
-    source: 'codex',
-    label: 'Codex',
-    where: 'PC 웹의 Codex',
-    openUrl: 'https://chatgpt.com/codex',
-    steps: [
-      {
-        title: '담을 작업 열기',
-        detail: ['PC에서 ', { strong: 'chatgpt.com/codex' }, '를 열고 복습하고 싶은 ', { strong: '작업' }, '을 열어요.'],
-        icon: 'monitor',
-      },
-      {
-        title: '공유 누르기',
-        detail: ['작업 화면 오른쪽 위 ', { strong: '공유' }, ' 버튼을 눌러요.'],
-        icon: 'share',
-      },
-      {
-        title: '링크 복사하기',
-        detail: [{ strong: '링크 복사' }, '를 눌러요.'],
-        icon: 'copy',
-      },
-      pasteStep(require('@/assets/share-guide/codex-4-paste.png')),
-    ],
-  },
 ];
 
 export function findGuide(source: string | undefined): ShareGuide | undefined {
   return SHARE_GUIDES.find((g) => g.source === source);
 }
 
-/** 입력한 링크로 어느 서비스 안내를 보여줄지 고른다. 모르면 null. */
+/** 입력한 링크로 어느 서비스 안내를 보여줄지 고른다. 안내가 없는 서비스(Codex)나 모르는 링크면 null. */
 export function guessShareSource(url: string): ShareSource | null {
   const value = url.trim().toLowerCase();
   if (value.includes('claude.ai')) return 'claude';
-  if (value.includes('/s/cx_')) return 'codex';
+  if (value.includes('/s/cx_')) return null;
   if (value.includes('chatgpt.com') || value.includes('chat.openai.com')) return 'chatgpt';
   return null;
 }
