@@ -10,4 +10,6 @@ public interface AnswerJudgmentRepository extends JpaRepository<AnswerJudgment, 
     Optional<AnswerJudgment> findByAttemptId(Long attemptId);
 
     List<AnswerJudgment> findByAttemptIdIn(Collection<Long> attemptIds);
+
+    void deleteByAttemptIdIn(Collection<Long> attemptIds);
 }

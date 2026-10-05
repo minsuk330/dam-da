@@ -5,6 +5,7 @@ import static org.springaicommunity.mcp.security.server.config.McpServerOAuth2Co
 
 import com.khack.review.common.adapter.in.web.connector.ConnectorConsentGate;
 import com.khack.review.common.application.AuthTokenService;
+import com.khack.review.common.domain.AppUserRepository;
 import com.khack.review.common.config.SocialLoginConfig.SocialRegistrations;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -22,8 +23,10 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
@@ -69,13 +72,13 @@ class SecurityConfig {
     /** {@code /mcp}: 인가 서버가 발급한 커넥터 토큰만 받는다. 토큰이 없으면 401과 보호 리소스 메타데이터 위치를 알려 준다. */
     @Bean
     @Order(2)
-    SecurityFilterChain connectorResource(HttpSecurity http, JWKSource<SecurityContext> jwkSource,
+    SecurityFilterChain connectorResource(HttpSecurity http, JWKSource<SecurityContext> jwkSource, AppUserRepository users,
             @Value("${review.auth.server-url}") String issuer) throws Exception {
         return http.securityMatcher("/mcp", "/mcp/**", "/.well-known/oauth-protected-resource/**")
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
                 .csrf(AbstractHttpConfigurer::disable)
                 .with(mcpServerOAuth2(), mcp -> mcp.authorizationServer(issuer).resourceName("복습 앱")
-                        .jwtDecoder(connectorTokenDecoder(jwkSource, issuer)))
+                        .jwtDecoder(connectorTokenDecoder(jwkSource, users, issuer)))
                 .build();
     }
 
@@ -117,9 +120,9 @@ class SecurityConfig {
      * 커넥터 토큰: 이 서버가 발급했고 앱 토큰이 아닌 것. 인가 서버가 실제 시각으로 발급하므로 만료도 실제 시각으로 본다
      * (시간 이동 데모 중에도 Claude 연결이 끊기지 않게, 주입 Clock을 쓰지 않는다).
      */
-    private static JwtDecoder connectorTokenDecoder(JWKSource<SecurityContext> jwkSource, String issuer) {
+    private static JwtDecoder connectorTokenDecoder(JWKSource<SecurityContext> jwkSource, AppUserRepository users, String issuer) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSource(jwkSource).build();
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(new JwtTimestampValidator(), new JwtIssuerValidator(issuer),
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(new JwtTimestampValidator(), new JwtIssuerValidator(issuer), userExists(users),
                 jwt -> jwt.getAudience() != null && jwt.getAudience().contains(AuthTokenService.APP_AUDIENCE)
                         ? OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "커넥터 토큰이 아닙니다", null))
                         : OAuth2TokenValidatorResult.success()));
@@ -133,14 +136,29 @@ class SecurityConfig {
 
     /** 이 서버가 발급한 앱 토큰만 받는다. 만료는 주입받은 Clock 기준이다(시간 이동 데모). */
     @Bean
-    JwtDecoder appTokenDecoder(JWKSource<SecurityContext> jwkSource, Clock clock, @Value("${review.auth.server-url}") String issuer) {
+    JwtDecoder appTokenDecoder(JWKSource<SecurityContext> jwkSource, Clock clock, AppUserRepository users,
+            @Value("${review.auth.server-url}") String issuer) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSource(jwkSource).build();
         JwtTimestampValidator timestamps = new JwtTimestampValidator();
         timestamps.setClock(clock);
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(timestamps, new JwtIssuerValidator(issuer),
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(timestamps, new JwtIssuerValidator(issuer), userExists(users),
                 jwt -> jwt.getAudience() != null && jwt.getAudience().contains(AuthTokenService.APP_AUDIENCE)
                         ? OAuth2TokenValidatorResult.success()
                         : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "앱 토큰이 아닙니다", null))));
         return decoder;
+    }
+
+    /** 토큰의 사용자(subject = 앱 사용자 ID)가 아직 있는지 본다. 탈퇴하면 이미 발급된 토큰도 거부된다(#148). */
+    private static OAuth2TokenValidator<Jwt> userExists(AppUserRepository users) {
+        return jwt -> {
+            try {
+                if (jwt.getSubject() != null && users.existsById(Long.valueOf(jwt.getSubject()))) {
+                    return OAuth2TokenValidatorResult.success();
+                }
+            } catch (NumberFormatException e) {
+                // 앱 사용자 ID가 아닌 subject
+            }
+            return OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "사용자가 없습니다", null));
+        };
     }
 }

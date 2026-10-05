@@ -1,5 +1,6 @@
 package com.khack.review.common.adapter.in.web.auth;
 
+import com.khack.review.common.application.AccountDeletionService;
 import com.khack.review.common.application.AuthTokenService;
 import com.khack.review.common.application.AuthTokenService.AuthToken;
 import com.khack.review.common.application.AuthTokenService.Me;
@@ -10,10 +11,12 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -25,12 +28,14 @@ class AuthController {
 
     private final AuthTokenService tokens;
     private final CurrentUser currentUser;
+    private final AccountDeletionService accounts;
     private final List<Provider> providers;
 
-    AuthController(AuthTokenService tokens, CurrentUser currentUser, SocialRegistrations social,
+    AuthController(AuthTokenService tokens, CurrentUser currentUser, AccountDeletionService accounts, SocialRegistrations social,
             @Value("${review.auth.server-url}") String serverUrl) {
         this.tokens = tokens;
         this.currentUser = currentUser;
+        this.accounts = accounts;
         String base = serverUrl.replaceAll("/+$", "");
         this.providers = social.registrations().stream()
                 .map(r -> new Provider(r.getRegistrationId(), r.getClientName(), base + "/oauth2/authorization/" + r.getRegistrationId()))
@@ -64,6 +69,13 @@ class AuthController {
     @GetMapping("/api/me")
     Me me() {
         return tokens.me(currentUser.id());
+    }
+
+    /** 회원 탈퇴. 이 사용자의 데이터를 바로 모두 지우며 되돌릴 수 없다. 이후 이 사용자의 토큰은 401이다. */
+    @DeleteMapping("/api/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteMe() {
+        accounts.delete(currentUser.id());
     }
 
     @ExceptionHandler(UnauthenticatedException.class)

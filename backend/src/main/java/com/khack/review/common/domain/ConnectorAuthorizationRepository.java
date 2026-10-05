@@ -19,4 +19,6 @@ public interface ConnectorAuthorizationRepository extends JpaRepository<Connecto
             select a from ConnectorAuthorization a
             where a.stateHash = :hash or a.codeHash = :hash or a.accessTokenHash = :hash or a.refreshTokenHash = :hash""")
     Optional<ConnectorAuthorization> findByAnyTokenHash(@Param("hash") String hash);
+
+    void deleteByPrincipalName(String principalName);
 }

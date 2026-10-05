@@ -9,4 +9,6 @@ public interface FirstStudyPlanRepository extends JpaRepository<FirstStudyPlan, 
     Optional<FirstStudyPlan> findBySessionId(Long sessionId);
 
     List<FirstStudyPlan> findByGenerationStatus(GenerationStatus status);
+
+    void deleteByUserId(Long userId);
 }
