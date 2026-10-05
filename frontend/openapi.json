@@ -74,6 +74,44 @@
         "tags" : [ "auth-controller" ]
       }
     },
+    "/api/auth/toss" : {
+      "post" : {
+        "operationId" : "toss",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TossLoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthToken"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
     "/api/conversations" : {
       "get" : {
         "operationId" : "list_3",
@@ -2967,6 +3005,18 @@
           }
         },
         "required" : [ "code" ]
+      },
+      "TossLoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "authorizationCode" : {
+            "type" : "string"
+          },
+          "referrer" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "authorizationCode", "referrer" ]
       },
       "Turn" : {
         "type" : "object",
