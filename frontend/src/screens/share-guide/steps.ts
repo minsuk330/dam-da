@@ -13,8 +13,8 @@ export type GuideStep = {
   detail: DetailPart[];
   /** 캡처가 없을 때 캡처 자리에 크게 보여줄 아이콘. */
   icon: IconName;
-  /** 그 단계의 실제 화면 캡처(#168). 받기 전에는 아이콘으로 대신한다. */
-  image?: ImageSourcePropType;
+  /** 그 단계의 실제 화면 캡처(#168)와 원본 가로/세로 비율. 캡처가 없으면 아이콘으로 대신한다. */
+  image?: { source: ImageSourcePropType; aspectRatio: number };
 };
 
 export type ShareGuide = {
@@ -42,21 +42,25 @@ export const SHARE_GUIDES: ShareGuide[] = [
     label: 'ChatGPT',
     where: 'ChatGPT 앱',
     openUrl: 'https://chatgpt.com',
+    // 2026-10-05 ChatGPT iOS 앱 캡처 기준.
     steps: [
       {
-        title: '담을 대화 열기',
-        detail: ['ChatGPT에서 복습하고 싶은 내용을 나눈 ', { strong: '대화' }, '를 열어요.'],
-        icon: 'message-square',
+        title: '더보기 누르기',
+        detail: ['담을 대화를 열고 오른쪽 위 ', { strong: '⋯' }, ' 버튼을 눌러요.'],
+        icon: 'more-horizontal',
+        image: { source: require('@/assets/share-guide/chatgpt-1-more.png'), aspectRatio: 1206 / 645 },
       },
       {
         title: '공유 누르기',
-        detail: ['화면 오른쪽 위 ', { strong: '공유' }, ' 버튼을 눌러요. 안 보이면 ', { strong: '⋯ → 공유' }, '에 있어요.'],
+        detail: ['메뉴 맨 위의 ', { strong: '공유' }, '를 눌러요.'],
         icon: 'share',
+        image: { source: require('@/assets/share-guide/chatgpt-2-share.png'), aspectRatio: 1206 / 1060 },
       },
       {
-        title: '링크 복사하기',
-        detail: [{ strong: '링크 만들기' }, ' → ', { strong: '링크 복사' }, '를 눌러요.'],
+        title: '링크 공유 누르기',
+        detail: ['아래쪽 ', { strong: '링크 공유' }, '를 누른 뒤 ', { strong: '복사' }, '를 골라요.'],
         icon: 'copy',
+        image: { source: require('@/assets/share-guide/chatgpt-3-link.png'), aspectRatio: 1206 / 550 },
       },
       pasteStep,
     ],

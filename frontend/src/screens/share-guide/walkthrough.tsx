@@ -41,20 +41,22 @@ export function ShareGuideWalkthrough({ guide }: { guide: ShareGuide }) {
           </ThemedText>
         </Pressable>
 
-        <View style={styles.shot}>
-          {step.image ? (
+        {step.image ? (
+          <View style={[styles.shot, { aspectRatio: step.image.aspectRatio }]}>
             <Image
-              source={step.image}
+              source={step.image.source}
               accessibilityLabel={`${guide.label} ${step.title} 화면`}
               resizeMode="contain"
               style={styles.shotImage}
             />
-          ) : (
+          </View>
+        ) : (
+          <View style={[styles.shot, styles.shotPlaceholder]}>
             <View style={styles.shotIcon}>
               <Icon name={step.icon} size="xl" color={colors.primaryInk} />
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
         <View style={styles.text}>
           <Chip label={`STEP ${String(index + 1).padStart(2, '0')}`} />
@@ -114,11 +116,8 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: components.gaugeFill.backgroundColor },
   content: { flexGrow: 1, padding: spacing.xl, gap: spacing['2xl'] },
   skip: { alignSelf: 'flex-end' },
-  // 캡처 카드: 흰 면 + 1px outline(배경과 구분), 그림자 없음. 캡처 비율은 받은 뒤 정한다(#168).
+  // 캡처 카드: 흰 면 + 1px outline(배경과 구분), 그림자 없음. 캡처는 원본 비율, 캡처가 없으면 정사각형.
   shot: {
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     overflow: 'hidden',
     borderRadius: radius.lg,
     borderCurve: 'continuous',
@@ -126,6 +125,7 @@ const styles = StyleSheet.create({
     borderColor: colors.outline,
     backgroundColor: colors.surface,
   },
+  shotPlaceholder: { aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
   shotImage: { width: '100%', height: '100%' },
   shotIcon: {
     width: components.doneMark.size,
