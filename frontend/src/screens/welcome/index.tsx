@@ -69,6 +69,10 @@ export function Welcome() {
           <ThemedText variant="body" tone="inkSecondary">
             공부하며 나눈 대화에서 배운 것을 골라 문제로 만들고, 매일 짧게 복습하게 도와드려요.
           </ThemedText>
+          {/* 생성형 AI 사전 고지(앱인토스 서비스 오픈 정책 2-4, #149). */}
+          <ThemedText variant="caption" tone="inkMuted">
+            배울 내용 정리, 문제·힌트·설명, 답 채점은 생성형 AI가 해요. AI 결과는 틀릴 수 있어요.
+          </ThemedText>
         </View>
 
         <Card style={styles.steps}>

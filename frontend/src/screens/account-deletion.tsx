@@ -10,6 +10,7 @@ import { Icon } from '@/components/icon';
 import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
 import { colors, spacing } from '@/theme';
+import { inToss } from '@/toss';
 
 import { OPERATOR } from './policies/content';
 
@@ -80,7 +81,9 @@ export function AccountDeletion() {
           <ThemedText variant="headline">탈퇴하는 방법</ThemedText>
           <ThemedText tone="inkSecondary">앱에 로그인한 뒤 내 정보 → 회원 탈퇴에서 바로 지울 수 있어요.</ThemedText>
           <ThemedText tone="inkSecondary">
-            앱을 쓸 수 없으면 로그인한 계정(구글·카카오)을 적어 {OPERATOR.email}로 요청해 주세요. 확인 후 7일 안에 지워요.
+            {inToss
+              ? `토스 앱에서 담다의 토스 로그인 연결을 끊어도 데이터가 바로 지워져요. 그 밖의 문의는 ${OPERATOR.email}로 보내 주세요.`
+              : `앱을 쓸 수 없으면 로그인한 계정(구글·카카오)을 적어 ${OPERATOR.email}로 요청해 주세요. 확인 후 7일 안에 지워요.`}
           </ThemedText>
         </View>
       )}

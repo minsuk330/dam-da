@@ -9,6 +9,7 @@ import { Icon } from '@/components/icon';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { ThemedText } from '@/components/themed-text';
 import { colors, components, spacing } from '@/theme';
+import { inToss } from '@/toss';
 
 type Mode = ConversationInput['kind'];
 
@@ -171,18 +172,21 @@ export function AddConversation() {
         )}
       </View>
 
-      {/* 앱의 기본 입력 경로는 Claude 커넥터다(스펙 §7.6). 링크·붙여넣기는 커넥터를 못 쓸 때의 대안이다. */}
-      <View style={styles.tip}>
-        <View style={styles.tipIcon}>
-          <Icon name="message-circle" color={colors.primaryInk} />
+      {/* 앱의 기본 입력 경로는 Claude 커넥터다(스펙 §7.6). 링크·붙여넣기는 커넥터를 못 쓸 때의 대안이다.
+          토스 인앱(#149)은 토스 로그인 계정이라 커넥터(구글·카카오 로그인)를 쓸 수 없어 안내하지 않는다. */}
+      {!inToss && (
+        <View style={styles.tip}>
+          <View style={styles.tipIcon}>
+            <Icon name="message-circle" color={colors.primaryInk} />
+          </View>
+          <View style={styles.tipText}>
+            <ThemedText variant="headline">Claude에서 바로 보낼 수도 있어요</ThemedText>
+            <ThemedText variant="subhead" tone="inkSecondary">
+              커넥터를 연결해 두면 대화 중에 “복습에 넣어줘”라고만 말해도 여기로 들어와요.
+            </ThemedText>
+          </View>
         </View>
-        <View style={styles.tipText}>
-          <ThemedText variant="headline">Claude에서 바로 보낼 수도 있어요</ThemedText>
-          <ThemedText variant="subhead" tone="inkSecondary">
-            커넥터를 연결해 두면 대화 중에 “복습에 넣어줘”라고만 말해도 여기로 들어와요.
-          </ThemedText>
-        </View>
-      </View>
+      )}
     </ScrollView>
   );
 }

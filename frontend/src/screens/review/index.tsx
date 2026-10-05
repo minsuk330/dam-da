@@ -266,6 +266,8 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
         <View style={[styles.chips, presentation.stem.length > LONG_STEM && styles.chipsLong]}>
           {recheck && <Chip variant="status" label="확인 문제" />}
           <Chip label={questionTypeLabel[presentation.type]} />
+          {/* 생성형 AI 결과물 표시(앱인토스 서비스 오픈 정책 2-4, #149). */}
+          <Chip label="AI 생성" />
         </View>
 
         <ThemedText variant="question" style={[styles.prompt, presentation.stem.length > LONG_STEM && styles.promptLong]}>
@@ -275,6 +277,7 @@ export function Review({ practiceId, sessionId }: { practiceId: number | null; s
         {hint && (retry || feedback?.action === 'GIVE_HINT') && (
           <Card variant="lavender" style={styles.box}>
             <ThemedText variant="headline">힌트</ThemedText>
+            <AiNote>AI가 만든 힌트예요</AiNote>
             <ThemedText variant="subhead" tone="inkSecondary">
               {hint}
             </ThemedText>
@@ -432,6 +435,7 @@ function ResultView({
       {feedback?.action === 'EXPLAIN_CONCEPT' && feedback.explanation && (
         <Card style={styles.box}>
           <ThemedText variant="headline">개념 설명</ThemedText>
+          <AiNote>AI가 만든 설명이에요</AiNote>
           <ThemedText variant="subhead" tone="inkSecondary">
             {feedback.explanation}
           </ThemedText>
@@ -453,7 +457,18 @@ function ResultView({
           먼저 「{feedback.prerequisite.concept}」을(를) 다시 보면 좋아요. {feedback.prerequisite.reason}
         </Notice>
       )}
+
+      <AiNote>채점과 다음 학습 안내는 생성형 AI가 해요. 틀릴 수 있어요.</AiNote>
     </>
+  );
+}
+
+/** 생성형 AI 결과물 표시(앱인토스 서비스 오픈 정책 2-4, #149). */
+function AiNote({ children }: { children: string }) {
+  return (
+    <ThemedText variant="caption" tone="inkMuted">
+      {children}
+    </ThemedText>
   );
 }
 

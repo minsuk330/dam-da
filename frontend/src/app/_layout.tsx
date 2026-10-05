@@ -10,6 +10,8 @@ import { SessionProvider, useSession } from '@/api/session';
 import { PhoneFrame } from '@/components/phone-frame';
 import { MockBadge } from '@/screens/mock-badge';
 import { colors, fonts, typography } from '@/theme';
+import { inToss } from '@/toss';
+import { TossBridge } from '@/toss-bridge';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,6 +39,7 @@ export default function RootLayout() {
         <PhoneFrame>
           <StatusBar style="dark" />
           <MockBadge />
+          <TossBridge />
           <AppStack />
         </PhoneFrame>
       </SessionProvider>
@@ -56,6 +59,8 @@ function AppStack() {
         headerTintColor: colors.ink,
         headerTitleStyle: { fontFamily: typography.headline.fontFamily, fontSize: typography.headline.fontSize },
         contentStyle: { backgroundColor: colors.canvas },
+        // 토스 인앱(#149)은 토스 내비게이션 바의 뒤로가기만 쓴다(자체 뒤로가기와 동시 노출 금지, TossBridge가 처리).
+        ...(inToss && { headerBackVisible: false, headerLeft: () => null }),
       }}>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
