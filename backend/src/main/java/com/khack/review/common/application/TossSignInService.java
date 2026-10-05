@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 public class TossSignInService {
 
     public static final String PROVIDER = "toss";
+    /** 로그인 없이 익명 식별키로 만든 토스 계정(#149). {@code providerUserId=HMAC(anonKey)}. */
+    public static final String ANONYMOUS_PROVIDER = "toss-anon";
     static final String DEFAULT_NICKNAME = "토스 사용자";
 
     private static final Logger log = LoggerFactory.getLogger(TossSignInService.class);
@@ -34,6 +36,29 @@ public class TossSignInService {
         this.social = social;
         this.tokens = tokens;
         this.cipher = cipher;
+    }
+
+    /**
+     * 토스 인앱 기본 진입(#149). 미니앱이 {@code createAnonymousKeyAuthCode()}로 받은 코드를 앱 토큰으로 바꾼다. 로그인·동의 화면이 없다.
+     * 처음이면 계정을 만들고, 대화를 저장할 때 약관 동의를 받는다({@link AgreementService}). 코드가 거절되면 401.
+     */
+    public AuthToken signInAnonymously(String code) {
+        if (code == null || code.isBlank()) {
+            throw new UnauthenticatedException();
+        }
+        if (!cipher.configured()) {
+            log.warn("[toss-anon] TOSS_USER_KEY_SECRET이 없어 익명 계정을 만들지 않습니다");
+            throw new UnauthenticatedException();
+        }
+        String anonKey;
+        try {
+            anonKey = toss.anonymousKey(code);
+        } catch (TossLoginException e) {
+            log.warn("[toss-anon] {}", e.getMessage());
+            throw new UnauthenticatedException();
+        }
+        AppUser appUser = social.signIn(new SocialProfile(ANONYMOUS_PROVIDER, cipher.lookupId(anonKey), DEFAULT_NICKNAME, null));
+        return tokens.issue(appUser.getId());
     }
 
     /** 인가 코드를 앱 토큰으로 바꾼다. 토스가 코드를 거절하면 401({@link UnauthenticatedException})이다. */

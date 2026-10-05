@@ -17,6 +17,7 @@ import com.khack.review.collection.domain.ShareStatus;
 import com.khack.review.collection.domain.ShareTurn;
 import com.khack.review.collection.domain.TranscriptAlignment;
 import com.khack.review.collection.domain.ValidationResult;
+import com.khack.review.common.application.AgreementService;
 import com.khack.review.common.application.CurrentUser;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -48,10 +49,11 @@ public class TranscriptIntakeService {
     private final Clock clock;
     private final ApplicationEventPublisher events;
     private final TransactionTemplate transaction;
+    private final AgreementService agreements;
 
     public TranscriptIntakeService(ShareLinkFetcher fetcher, ObjectProvider<ConversationExtractor> extractor,
             LearningConversationRepository conversations, CurrentUser currentUser, Clock clock,
-            ApplicationEventPublisher events, TransactionTemplate transaction) {
+            ApplicationEventPublisher events, TransactionTemplate transaction, AgreementService agreements) {
         this.fetcher = fetcher;
         this.extractor = extractor;
         this.conversations = conversations;
@@ -59,9 +61,11 @@ public class TranscriptIntakeService {
         this.clock = clock;
         this.events = events;
         this.transaction = transaction;
+        this.agreements = agreements;
     }
 
     public SavedSession fromShareLink(String url) {
+        agreements.requireAgreed(currentUser.id());
         ShareLink allowed = ShareLinkPolicy.requireAllowed(url);
         ShareExtraction fetched;
         try {
@@ -82,6 +86,7 @@ public class TranscriptIntakeService {
     }
 
     public SavedSession fromPaste(String text) {
+        agreements.requireAgreed(currentUser.id());
         if (text == null || text.isBlank()) {
             throw new IllegalArgumentException("붙여넣을 대화를 입력하세요.");
         }

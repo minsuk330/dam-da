@@ -39,6 +39,11 @@ public class AppUser {
      */
     private String encryptedProviderUserId;
 
+    /** 마지막으로 동의한 약관 버전과 시각(#149). 토스 익명 계정만 앱에서 따로 동의한다. 웹 소셜 로그인은 로그인을 동의로 본다. */
+    private String agreedTermsVersion;
+
+    private Instant agreedAt;
+
     /** 화면에 보이는 이름. 소셜 닉네임이며 없으면 {@code name}을 쓴다. */
     private String nickname;
 
@@ -76,6 +81,15 @@ public class AppUser {
 
     public String getEncryptedProviderUserId() {
         return encryptedProviderUserId;
+    }
+
+    public void agree(String termsVersion, Instant at) {
+        this.agreedTermsVersion = termsVersion;
+        this.agreedAt = at;
+    }
+
+    public String getAgreedTermsVersion() {
+        return agreedTermsVersion;
     }
 
     public String displayName() {

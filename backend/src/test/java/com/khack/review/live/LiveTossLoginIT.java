@@ -35,4 +35,17 @@ class LiveTossLoginIT {
         }
         System.out.println("[live-toss] " + e.getMessage());
     }
+
+    @Test
+    void anonymousKeyExchangeReachesTossAndRejectsAFakeCode() {
+        TossLoginException e = catchThrowableOfType(TossLoginException.class, () -> toss.anonymousKey("not-a-real-code"));
+
+        assertThat(e).as("가짜 코드는 거절돼야 한다").isNotNull();
+        Throwable cause = e;
+        while (cause != null) {
+            assertThat(cause).as("TLS 연결 실패: " + e.getMessage()).isNotInstanceOf(SSLException.class);
+            cause = cause.getCause();
+        }
+        System.out.println("[live-toss-anon] " + e.getMessage());
+    }
 }

@@ -72,6 +72,20 @@ public class TossLoginAdapter implements TossLoginPort {
     }
 
     @Override
+    public String anonymousKey(String code) {
+        if (!configured) {
+            throw new TossLoginException("토스 mTLS 인증서가 설정되지 않았습니다 (TOSS_MTLS_CERT, TOSS_MTLS_KEY)");
+        }
+        JsonNode exchanged = success(call(() -> restClient.post()
+                .uri("/api-partner/v1/apps-in-toss/users/anon-key/exchange")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("code", code))
+                .retrieve()
+                .body(JsonNode.class)), "anon-key/exchange");
+        return text(exchanged, "anonKey", "anon-key/exchange");
+    }
+
+    @Override
     public void disconnect(String userKey) {
         if (!configured) {
             throw new TossLoginException("토스 mTLS 인증서가 설정되지 않았습니다 (TOSS_MTLS_CERT, TOSS_MTLS_KEY)");

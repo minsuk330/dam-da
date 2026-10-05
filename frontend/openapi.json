@@ -31,6 +31,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "auth-controller" ]
@@ -69,6 +79,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "auth-controller" ]
@@ -107,6 +127,64 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/api/auth/toss/anonymous" : {
+      "post" : {
+        "operationId" : "tossAnonymous",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TossAnonymousRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthToken"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "auth-controller" ]
@@ -138,6 +216,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "conversation-controller" ]
@@ -176,6 +264,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "conversation-input-controller" ]
@@ -214,6 +312,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "conversation-input-controller" ]
@@ -250,6 +358,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "conversation-controller" ]
@@ -278,6 +396,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "daily-practice-controller" ]
@@ -306,6 +434,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "daily-practice-controller" ]
@@ -337,6 +475,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "field-controller" ]
@@ -365,6 +513,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "knowledge-graph-controller" ]
@@ -396,6 +554,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-session-controller" ]
@@ -433,6 +601,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-session-controller" ]
@@ -470,6 +648,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-session-controller" ]
@@ -517,6 +705,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-session-controller" ]
@@ -572,6 +770,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-session-controller" ]
@@ -619,6 +827,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-session-controller" ]
@@ -674,6 +892,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-session-controller" ]
@@ -729,6 +957,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-session-controller" ]
@@ -750,6 +988,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "auth-controller" ]
@@ -776,6 +1024,57 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/api/me/agreements" : {
+      "post" : {
+        "operationId" : "agree",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AgreementRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "auth-controller" ]
@@ -804,6 +1103,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "memory-model-controller" ]
@@ -832,6 +1141,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "notification-controller" ]
@@ -853,6 +1172,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "notification-controller" ]
@@ -883,6 +1212,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "notification-controller" ]
@@ -930,6 +1269,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "practice-controller" ]
@@ -977,6 +1326,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "practice-controller" ]
@@ -1014,6 +1373,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "feedback-controller" ]
@@ -1049,6 +1418,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "feedback-controller" ]
@@ -1086,6 +1465,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "practice-controller" ]
@@ -1123,6 +1512,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "first-study-controller" ]
@@ -1160,6 +1559,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "practice-controller" ]
@@ -1197,6 +1606,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "first-study-controller" ]
@@ -1234,6 +1653,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-goal-controller" ]
@@ -1279,6 +1708,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "learning-goal-controller" ]
@@ -1316,6 +1755,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "memory-gauge-controller" ]
@@ -1353,6 +1802,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "memory-strength-controller" ]
@@ -1391,6 +1850,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "memory-strength-controller" ]
@@ -1419,6 +1888,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "daily-habit-controller" ]
@@ -1455,6 +1934,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "daily-habit-controller" ]
@@ -1483,6 +1972,16 @@
               }
             },
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
           }
         },
         "tags" : [ "daily-habit-controller" ]
@@ -1491,6 +1990,15 @@
   },
   "components" : {
     "schemas" : {
+      "AgreementRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "version" ]
+      },
       "AidRequest" : {
         "type" : "object",
         "properties" : {
@@ -2334,6 +2842,9 @@
       "Me" : {
         "type" : "object",
         "properties" : {
+          "agreementRequired" : {
+            "type" : "boolean"
+          },
           "id" : {
             "type" : "integer",
             "format" : "int64"
@@ -2342,7 +2853,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "id", "name" ]
+        "required" : [ "agreementRequired", "id", "name" ]
       },
       "MemoryModel" : {
         "type" : "object",
@@ -2998,6 +3509,15 @@
         "required" : [ "content", "gauge", "kind", "memoryItemId", "nextReviewAt", "unitId", "unitTitle" ]
       },
       "TokenRequest" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code" ]
+      },
+      "TossAnonymousRequest" : {
         "type" : "object",
         "properties" : {
           "code" : {

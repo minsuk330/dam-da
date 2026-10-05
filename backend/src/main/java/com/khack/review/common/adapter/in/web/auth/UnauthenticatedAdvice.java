@@ -1,5 +1,6 @@
 package com.khack.review.common.adapter.in.web.auth;
 
+import com.khack.review.common.application.AgreementRequiredException;
 import com.khack.review.common.application.UnauthenticatedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,5 +18,12 @@ class UnauthenticatedAdvice {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     ErrorResponse unauthenticated(UnauthenticatedException e) {
         return new ErrorResponse("unauthenticated", e.getMessage());
+    }
+
+    /** 토스 익명 계정이 약관 동의 전에 대화를 저장하려 했다(#149). 앱은 동의 카드를 보여준다. */
+    @ExceptionHandler(AgreementRequiredException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    ErrorResponse agreementRequired(AgreementRequiredException e) {
+        return new ErrorResponse("agreement_required", e.getMessage());
     }
 }

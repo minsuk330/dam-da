@@ -47,7 +47,8 @@ public class AuthTokenService {
         this.issuer = issuer;
     }
 
-    public record Me(Long id, String name) {
+    /** {@code agreementRequired}: 대화를 저장하기 전에 앱 안에서 약관 동의가 필요하다(토스 익명 계정, #149). */
+    public record Me(Long id, String name, boolean agreementRequired) {
     }
 
     public record AuthToken(String accessToken, Instant expiresAt, Me user) {
@@ -99,6 +100,6 @@ public class AuthTokenService {
     }
 
     private static Me me(AppUser user) {
-        return new Me(user.getId(), user.displayName());
+        return new Me(user.getId(), user.displayName(), AgreementService.required(user));
     }
 }

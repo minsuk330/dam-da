@@ -1,6 +1,7 @@
 package com.khack.review.common.adapter.in.web.auth;
 
 import com.khack.review.common.application.AccountDeletionService;
+import com.khack.review.common.application.AgreementService;
 import com.khack.review.common.application.AuthTokenService;
 import com.khack.review.common.application.AuthTokenService.AuthToken;
 import com.khack.review.common.application.AuthTokenService.Me;
@@ -31,14 +32,16 @@ class AuthController {
     private final CurrentUser currentUser;
     private final AccountDeletionService accounts;
     private final TossSignInService toss;
+    private final AgreementService agreements;
     private final List<Provider> providers;
 
     AuthController(AuthTokenService tokens, CurrentUser currentUser, AccountDeletionService accounts, TossSignInService toss,
-            SocialRegistrations social, @Value("${review.auth.server-url}") String serverUrl) {
+            AgreementService agreements, SocialRegistrations social, @Value("${review.auth.server-url}") String serverUrl) {
         this.tokens = tokens;
         this.currentUser = currentUser;
         this.accounts = accounts;
         this.toss = toss;
+        this.agreements = agreements;
         String base = serverUrl.replaceAll("/+$", "");
         this.providers = social.registrations().stream()
                 .map(r -> new Provider(r.getRegistrationId(), r.getClientName(), base + "/oauth2/authorization/" + r.getRegistrationId()))
@@ -59,6 +62,14 @@ class AuthController {
     record TossLoginRequest(String authorizationCode, String referrer) {
     }
 
+    /** 미니앱 {@code User.createAnonymousKeyAuthCode()}의 {@code code}(5분, 1회용). */
+    record TossAnonymousRequest(String code) {
+    }
+
+    /** 동의한 약관 버전. 앱이 보여준 약관의 시행일이다. */
+    record AgreementRequest(String version) {
+    }
+
     record ErrorResponse(String code, String message) {
     }
 
@@ -77,6 +88,24 @@ class AuthController {
     @PostMapping("/api/auth/toss")
     AuthToken toss(@RequestBody TossLoginRequest request) {
         return toss.signIn(request.authorizationCode(), request.referrer());
+    }
+
+    /** 토스 인앱 기본 진입(#149). 로그인 없이 익명 식별키로 계정을 찾거나 만든다. */
+    @PostMapping("/api/auth/toss/anonymous")
+    AuthToken tossAnonymous(@RequestBody TossAnonymousRequest request) {
+        return toss.signInAnonymously(request.code());
+    }
+
+    /** 약관 동의(#149). 토스 익명 계정이 대화를 처음 저장할 때 앱이 부른다. 버전이 지금 약관과 다르면 400. */
+    @PostMapping("/api/me/agreements")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void agree(@RequestBody AgreementRequest request) {
+        agreements.agree(currentUser.id(), request.version());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<ErrorResponse> invalid(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(new ErrorResponse("invalid_input", e.getMessage()));
     }
 
     @GetMapping("/api/me")
