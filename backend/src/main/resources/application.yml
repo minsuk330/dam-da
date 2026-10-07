@@ -74,7 +74,7 @@ review:
     # 연결 끊기 콜백(/toss/unlink)의 Basic Auth 값(디코딩한 값, 콘솔에 등록한 것과 같게). 비면 콜백을 모두 거절한다.
     unlink-basic-auth: ${TOSS_UNLINK_BASIC_AUTH:}
   cors:
-    # 로컬 Expo 웹 개발 서버만. 배포 웹은 Vercel rewrites로 같은 출처다.
+    # 로컬 Expo 웹 개발 서버만. 앱 주소(review.auth.app-url, 배포는 Vercel)의 출처는 여기 없어도 항상 허용된다(WebCorsConfig).
     # 토스 인앱(#149) 배포 서버: CORS_ALLOWED_ORIGINS=https://damda-ai.apps.tossmini.com,https://damda-ai.private-apps.tossmini.com
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8081}
   dev-tools:
