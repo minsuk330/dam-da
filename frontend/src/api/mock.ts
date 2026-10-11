@@ -11,6 +11,11 @@ export function mockResponse<T>(data: T, delayMs = 400): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), delayMs))
 }
 
+/** mock 로그인 토큰(30일). */
+export function mockAuthToken(): Schemas['AuthToken'] {
+  return { accessToken: 'mock', expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), user: { id: 1, name: '지원', agreementRequired: false } }
+}
+
 type Detail = Schemas['ConversationDetailResponse']
 
 const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()

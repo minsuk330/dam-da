@@ -78,7 +78,7 @@ function SettingsForm({ saved }: { saved: DailySettings }) {
           <View style={styles.sectionText}>
             <ThemedText variant="title">매일 학습 알림</ThemedText>
             <ThemedText variant="subhead" tone="inkSecondary">
-              통학 시간에 맞춰 오늘의 학습을 알려드려요. 이미 끝낸 날은 알리지 않아요.
+              통학 시간에 맞춰 오늘의 학습을 앱 안 알림으로 알려드려요. 이미 끝낸 날은 알리지 않아요.
             </ThemedText>
           </View>
           <View accessibilityRole="radiogroup" accessibilityLabel="알림 시각" style={styles.pills}>

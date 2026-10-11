@@ -7,9 +7,9 @@ const config = getDefaultConfig(__dirname);
 // dotLottie 애니메이션(assets/animations/*.lottie)을 자산으로 번들한다.
 config.resolver.assetExts.push('lottie');
 
-// 토스 인앱 빌드(EXPO_PUBLIC_TOSS=true, #149): 앱인토스 검수는 번들 안에 eval·new Function이 있으면 반려한다
-// ("외부에서 코드를 받아와 실행할 수 있는 코드"). 그런 코드가 든 모듈을 eval 없는 판으로 바꿔 끼우고, pixi.js는 뺀다.
-// 바꾼 뒤 `npm run toss:build`가 번들을 검사한다(scripts/check-no-eval.mjs).
+// 토스 인앱 빌드(EXPO_PUBLIC_TOSS=true, #149): 앱인토스 검수는 번들 안의 코드도 본다. eval·new Function이나 외부 CDN에서
+// 받아 실행하는 코드("외부에서 코드를 받아와 실행할 수 있는 코드")가 든 모듈은 그런 코드가 없는 판으로 바꿔 끼우고 pixi.js는 뺀다.
+// 미니앱 안에서 쓸 수 없는 웹 소셜 로그인(서비스 오픈 정책 2-3)도 뺀다. 바꾼 뒤 `npm run toss:build`가 번들을 검사한다(scripts/check-toss-bundle.mjs).
 if (process.env.EXPO_PUBLIC_TOSS === 'true') {
   const shim = (name) => ({ type: 'sourceFile', filePath: path.join(__dirname, 'metro-shims/toss', name) });
   const replaced = [
@@ -17,6 +17,11 @@ if (process.env.EXPO_PUBLIC_TOSS === 'true') {
     [path.join('expo', 'src', 'async-require', 'fetchThenEvalJs.ts'), 'fetch-then-eval.ts'],
     // Node 환경용 eval('require') 분기가 있는 uuid(web).
     [path.join('expo-modules-core', 'src', 'uuid', 'index.web.ts'), 'uuid.web.ts'],
+    // 복습 완료 축하(dotLottie). 플레이어가 WASM 렌더러를 CDN에서 받아 실행한다.
+    [path.join('src', 'screens', 'review', 'celebration.web.tsx'), 'celebration.ts'],
+    // 웹 소셜 로그인(구글·카카오) 화면과 로그인 이동.
+    [path.join('src', 'screens', 'welcome', 'social.tsx'), 'social-welcome.ts'],
+    [path.join('src', 'api', 'social-login.ts'), 'social-login.ts'],
   ];
   config.resolver.resolveRequest = (context, moduleName, platform) => {
     if (moduleName === 'pixi.js' || moduleName.startsWith('pixi.js/')) return shim('pixi.ts');

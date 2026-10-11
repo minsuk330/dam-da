@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
-import { exchangeCode, useSession } from '@/api/session';
+import { useSession } from '@/api/session';
+import { exchangeCode } from '@/api/social-login';
 import { Button } from '@/components/button';
 import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';

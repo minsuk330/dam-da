@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { dailySettingsStatus, memoryModelStatus } from '@/labels';
 import { useProfile } from '@/profile';
 import { colors, components, spacing } from '@/theme';
+import { inToss } from '@/toss';
 
 /**
  * 내 정보: 나에게 맞춰진 것들을 모아 둔 곳. 내 기억 패턴(망각 곡선·개인 모델)과 매일 학습 설정, 정책·회원 탈퇴로 간다.
@@ -58,7 +59,8 @@ export function Me() {
         <Row icon="user-x" title="회원 탈퇴" status="계정과 학습 기록을 모두 지워요" href="/account-deletion" divided />
       </Card>
 
-      <Button variant="secondary" title="로그아웃" onPress={signOut} />
+      {/* 토스 인앱(#149)은 익명 식별키로 바로 다시 들어가 같은 계정이 열리므로 로그아웃이 아무 일도 하지 않는다. 계정을 지우는 건 회원 탈퇴다. */}
+      {!inToss && <Button variant="secondary" title="로그아웃" onPress={signOut} />}
     </ScrollView>
   );
 }
