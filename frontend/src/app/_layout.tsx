@@ -9,6 +9,7 @@ import { ApiError } from '@/api/client';
 import { SessionProvider, useSession } from '@/api/session';
 import { PhoneFrame } from '@/components/phone-frame';
 import { MockBadge } from '@/screens/mock-badge';
+import { TossEntry } from '@/screens/welcome';
 import { colors, fonts, typography } from '@/theme';
 import { inToss } from '@/toss';
 import { TossBridge } from '@/toss-bridge';
@@ -50,6 +51,9 @@ export default function RootLayout() {
 /** 로그인 전에는 메인(로그인) 화면만, 로그인 뒤에는 앱 화면만 열린다 (스펙 §7.9). */
 function AppStack() {
   const { signedIn } = useSession();
+  // 토스 인앱(#149)은 익명 식별키로 들어가는 동안 내비게이터를 그리지 않는다. 그리면 로그인 전 화면(welcome)으로 밀려났다가
+  // 홈으로 가서, 주요 기능 주소(intoss://damda-ai/add 등)로 처음 들어온 사용자가 그 화면을 못 본다. 들어간 뒤 지금 주소의 화면이 열린다.
+  if (inToss && !signedIn) return <TossEntry />;
   return (
     <Stack
       screenOptions={{
