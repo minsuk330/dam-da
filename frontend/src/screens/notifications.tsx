@@ -37,7 +37,7 @@ export function Notifications() {
         <Icon name="bell" size="xl" color={colors.inkMuted} />
         <ThemedText variant="headline">아직 알림이 없어요</ThemedText>
         <ThemedText variant="subhead" tone="inkMuted" style={styles.centerText}>
-          대화를 추가하면 학습 내용이 준비됐을 때, 매일 학습 시각이 되면 알려드릴게요.
+          대화를 추가하면 학습 내용이 준비됐을 때, 매일 학습 시각이 되면 여기에 알려드릴게요.
         </ThemedText>
       </View>
     );

@@ -1,20 +1,17 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { Linking } from 'react-native'
 
 import { inToss } from '@/toss'
 
 import { api, ApiError, unwrap, type Schemas } from './client'
-import { mockEnabled, mockResponse } from './mock'
+import { mockAuthToken, mockEnabled, mockResponse } from './mock'
+import { openLoginPage, type LoginOptions, type Provider } from './social-login'
 
-// 앱 로그인 상태 (스펙 §7.9). 웹은 구글·카카오 소셜 로그인. 토스 인앱(#149)은 로그인 화면 없이 익명 식별키로 계정에 들어간다
+// 앱 로그인 상태 (스펙 §7.9). 웹은 구글·카카오 소셜 로그인(social-login.ts). 토스 인앱(#149)은 로그인 화면 없이 익명 식별키로 계정에 들어간다
 // (노출 정책: 로그인 전에 주요 기능을 써볼 수 있어야 함). 대화를 처음 저장할 때만 앱 안에서 약관 동의를 받는다. 소셜 인증은 서버가 하고 앱은 서버가 준 토큰을 쓴다.
-// 흐름: 로그인 버튼 → 서버 loginUrl(구글·카카오) → 서버가 {앱}/auth/callback?code=…로 돌려보냄 → POST /api/auth/token으로
-// 앱 토큰을 받아 저장 → 모든 /api 요청에 Bearer로 붙인다. 401이 오면 로그아웃해 메인 화면으로 돌아간다.
+// 받은 앱 토큰은 저장해 두고 모든 /api 요청에 Bearer로 붙인다. 401이 오면 로그아웃해 메인 화면으로 돌아간다.
 
-export type Provider = 'google' | 'kakao'
 export type AuthToken = Schemas['AuthToken']
-export type LoginOptions = Schemas['LoginOptions']
 
 const STORAGE_KEY = 'khack.auth'
 
@@ -57,17 +54,6 @@ api.use({
   },
 })
 
-const MOCK_OPTIONS: LoginOptions = {
-  providers: [
-    { id: 'kakao', name: '카카오', loginUrl: '' },
-    { id: 'google', name: '구글', loginUrl: '' },
-  ],
-}
-
-function mockToken(): AuthToken {
-  return { accessToken: 'mock', expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), user: { id: 1, name: '지원', agreementRequired: false } }
-}
-
 /** 지금 약관 버전(시행일). 서버 AgreementService.CURRENT_VERSION과 같아야 한다. */
 export const TERMS_VERSION = '2026-10-05'
 
@@ -76,26 +62,11 @@ export type Entry = 'idle' | 'connecting' | 'error'
 
 /** 토스 익명 식별키 일회용 코드(5분, 1회용)를 앱 토큰으로 바꾼다. 토스 앱 밖이면 SDK가 던진다. */
 async function enterWithAnonymousKey(): Promise<AuthToken> {
-  if (mockEnabled) return mockResponse(mockToken())
+  if (mockEnabled) return mockResponse(mockAuthToken())
   // 토스 SDK는 토스 빌드에서만 쓰므로 일반 웹 번들에 섞이지 않게 필요할 때 불러온다.
   const { User } = await import('@apps-in-toss/web-framework')
   const { code } = await User.createAnonymousKeyAuthCode()
   return unwrap(await api.POST('/api/auth/toss/anonymous', { body: { code } }))
-}
-
-/** 켜진 로그인 제공자. */
-export function useLoginOptions() {
-  return useQuery({
-    queryKey: ['auth', 'options'],
-    queryFn: async () => (mockEnabled ? mockResponse(MOCK_OPTIONS) : unwrap(await api.GET('/api/auth/options'))),
-    staleTime: Infinity,
-  })
-}
-
-/** 서버가 돌려보낸 1회용 코드를 앱 토큰으로 바꾼다(/auth/callback). */
-export async function exchangeCode(code: string): Promise<AuthToken> {
-  if (mockEnabled) return mockResponse(mockToken())
-  return unwrap(await api.POST('/api/auth/token', { body: { code } }))
 }
 
 type Session = {
@@ -103,8 +74,6 @@ type Session = {
   user: AuthToken['user'] | null
   /** 구글·카카오 서버 로그인 페이지로 떠난다(돌아오면 /auth/callback). */
   signIn: (provider: Provider, options?: LoginOptions) => Promise<void>
-  /** 토스 인앱(#149). 토스 로그인 창에서 받은 인가 코드를 서버가 앱 토큰으로 바꾼다. 지금 화면에서는 쓰지 않는다(익명 진입). */
-  signInWithToss: () => Promise<void>
   /** 토스 인앱 자동 진입 상태와 다시 시도. */
   entry: Entry
   retryEntry: () => void
@@ -170,25 +139,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   async function signIn(provider: Provider, options?: LoginOptions) {
     if (mockEnabled) {
-      apply(await mockResponse(mockToken()))
+      apply(await mockResponse(mockAuthToken()))
       return
     }
-    const loginUrl = options?.providers.find((p) => p.id === provider)?.loginUrl
-    if (!loginUrl) throw new Error('이 로그인 방법은 지금 쓸 수 없어요.')
-    // 웹은 같은 창에서 서버 로그인으로 이동한다. 끝나면 /auth/callback으로 돌아온다.
-    if (typeof window !== 'undefined' && window.location) window.location.assign(loginUrl)
-    else await Linking.openURL(loginUrl)
-  }
-
-  async function signInWithToss() {
-    if (mockEnabled) {
-      apply(await mockResponse(mockToken()))
-      return
-    }
-    // 토스 SDK는 토스 빌드에서만 쓰므로 일반 웹 번들에 섞이지 않게 필요할 때 불러온다.
-    const { appLogin } = await import('@apps-in-toss/web-framework')
-    const { authorizationCode, referrer } = await appLogin()
-    apply(unwrap(await api.POST('/api/auth/toss', { body: { authorizationCode, referrer } })))
+    await openLoginPage(provider, options)
   }
 
   async function deleteAccount() {
@@ -207,7 +161,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         signedIn: token !== null,
         user: token?.user ?? null,
         signIn,
-        signInWithToss,
         entry,
         retryEntry: () => setEntryFailed(false),
         agree,
