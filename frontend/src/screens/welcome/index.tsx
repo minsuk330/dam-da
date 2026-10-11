@@ -17,8 +17,8 @@ export function Welcome() {
   return inToss ? <TossEntry /> : <SocialWelcome />;
 }
 
-/** 토스 인앱 자동 진입(익명 식별키) 중이거나 실패했을 때. 성공하면 보호된 화면 전환으로 홈이 열린다. */
-function TossEntry() {
+/** 토스 인앱 자동 진입(익명 식별키) 중이거나 실패했을 때. _layout이 내비게이터 대신 그리고, 들어가면 지금 주소의 화면이 열린다. */
+export function TossEntry() {
   const { entry, retryEntry } = useSession();
   return (
     <View style={[styles.screen, styles.entry]}>
