@@ -129,4 +129,4 @@ uv run khack-optimizer --server http://localhost:8080   # 서버(DEV_TOOLS_ENABL
 
 ## 협업 요약
 
-GitHub Flow + squash merge, 승인 없이 셀프 merge, CI 없음(로컬 테스트 필수), 이슈는 GitHub Issues(`owner:server` / `owner:ai`). 상세는 [`CONTRIBUTING.md`](CONTRIBUTING.md).
+GitHub Flow + squash merge, 승인 없이 셀프 merge, 로컬 테스트 필수 + PR CI(`checks`), 이슈는 GitHub Issues(`owner:server` / `owner:ai`). 상세는 [`CONTRIBUTING.md`](CONTRIBUTING.md).
