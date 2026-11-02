@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 소셜 로그인 사용자를 앱 사용자로 잇는다(스펙 §7.9). 처음 로그인하면 계정을 만들고(공개 가입), 이후에는 프로필만 갱신한다.
+ * 계정을 만들 때 로그인 화면 안내로 받은 약관 동의를 지금 버전으로 기록한다(#192, 토스 익명 계정 제외).
  * 같은 사람이라도 제공자가 다르면 다른 계정이다.
  */
 @Service
@@ -38,8 +39,14 @@ public class SocialSignInService {
                     found.updateProfile(profile.nickname(), profile.email());
                     return found;
                 })
-                .orElseGet(() -> users.save(AppUser.social(profile.provider(), profile.providerUserId(), profile.nickname(),
-                        profile.email(), clock.instant())));
+                .orElseGet(() -> {
+                    AppUser created = AppUser.social(profile.provider(), profile.providerUserId(), profile.nickname(),
+                            profile.email(), clock.instant());
+                    if (AgreementService.agreesAtSignIn(profile.provider())) {
+                        created.agree(AgreementService.CURRENT_VERSION, clock.instant());
+                    }
+                    return users.save(created);
+                });
         if (encryptedProviderUserId != null) {
             user.encryptedProviderUserId(encryptedProviderUserId);
         }

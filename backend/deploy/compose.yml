@@ -29,6 +29,8 @@ services:
     build:
       context: ..
     restart: unless-stopped
+    # 종료 신호 뒤 진행 중인 비동기 작업을 마칠 시간(spring.task.execution.shutdown, #189). 기본 10s면 그 전에 강제 종료된다
+    stop_grace_period: 30s
     depends_on:
       postgres:
         condition: service_healthy

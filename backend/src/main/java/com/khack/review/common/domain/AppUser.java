@@ -88,6 +88,10 @@ public class AppUser {
         this.agreedAt = at;
     }
 
+    public Instant getAgreedAt() {
+        return agreedAt;
+    }
+
     public String getAgreedTermsVersion() {
         return agreedTermsVersion;
     }

@@ -47,7 +47,7 @@ public class AuthTokenService {
         this.issuer = issuer;
     }
 
-    /** {@code agreementRequired}: 대화를 저장하기 전에 앱 안에서 약관 동의가 필요하다(토스 익명 계정, #149). */
+    /** {@code agreementRequired}: 대화를 저장하기 전에 앱 안에서 약관 동의가 필요하다(토스 익명 계정, 약관 기록이 없거나 바뀐 계정. #149, #192). */
     public record Me(Long id, String name, boolean agreementRequired) {
     }
 

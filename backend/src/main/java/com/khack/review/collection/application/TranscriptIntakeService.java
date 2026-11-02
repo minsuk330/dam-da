@@ -19,12 +19,17 @@ import com.khack.review.collection.domain.TranscriptAlignment;
 import com.khack.review.collection.domain.ValidationResult;
 import com.khack.review.common.application.AgreementService;
 import com.khack.review.common.application.CurrentUser;
+import com.khack.review.common.application.RateLimitedException;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -33,6 +38,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 공유 링크·붙여넣기 입력 (스펙 §7.5). 원문을 받아 추출 포트로 커넥터 스키마 v5를 만들고, 원문과 맞춘 뒤
  * 커넥터와 같은 검증을 거쳐 저장한다. 저장하면 {@code ConversationSubmitted}를 발행해 학습 세션이 만들어진다.
  * 링크 수집과 추출은 오래 걸리므로 트랜잭션 밖에서 하고, 저장만 트랜잭션으로 묶는다.
+ * 추출·문제 생성 비용이 들므로 사용자별 하루 입력 수와 동시에 띄우는 링크 수집 브라우저 수를 제한한다(#184).
  */
 @Service
 public class TranscriptIntakeService {
@@ -50,10 +56,14 @@ public class TranscriptIntakeService {
     private final ApplicationEventPublisher events;
     private final TransactionTemplate transaction;
     private final AgreementService agreements;
+    private final int conversationsPerDay;
+    private final Semaphore shareLinkSlots;
 
     public TranscriptIntakeService(ShareLinkFetcher fetcher, ObjectProvider<ConversationExtractor> extractor,
             LearningConversationRepository conversations, CurrentUser currentUser, Clock clock,
-            ApplicationEventPublisher events, TransactionTemplate transaction, AgreementService agreements) {
+            ApplicationEventPublisher events, TransactionTemplate transaction, AgreementService agreements,
+            @Value("${review.limits.conversations-per-day}") int conversationsPerDay,
+            @Value("${review.limits.share-link-concurrency}") int shareLinkConcurrency) {
         this.fetcher = fetcher;
         this.extractor = extractor;
         this.conversations = conversations;
@@ -62,17 +72,25 @@ public class TranscriptIntakeService {
         this.events = events;
         this.transaction = transaction;
         this.agreements = agreements;
+        this.conversationsPerDay = conversationsPerDay;
+        this.shareLinkSlots = new Semaphore(shareLinkConcurrency);
     }
 
     public SavedSession fromShareLink(String url) {
         agreements.requireAgreed(currentUser.id());
+        requireDailyQuota();
         ShareLink allowed = ShareLinkPolicy.requireAllowed(url);
+        if (!shareLinkSlots.tryAcquire()) {
+            throw new RateLimitedException("지금 대화를 가져오는 요청이 많아요. 잠시 뒤 다시 시도하거나 붙여넣기를 써 주세요.");
+        }
         ShareExtraction fetched;
         try {
             fetched = fetcher.fetch(allowed);
         } catch (RuntimeException e) {
             log.warn("share link fetch failed: {}", allowed.url(), e);
             throw new ShareLinkUnavailableException(ShareStatus.UNREACHABLE);
+        } finally {
+            shareLinkSlots.release();
         }
         ShareStatus status = ShareStatus.classify(fetched);
         if (status != ShareStatus.OK || fetched.userTurnTexts().isEmpty()) {
@@ -87,6 +105,7 @@ public class TranscriptIntakeService {
 
     public SavedSession fromPaste(String text) {
         agreements.requireAgreed(currentUser.id());
+        requireDailyQuota();
         if (text == null || text.isBlank()) {
             throw new IllegalArgumentException("붙여넣을 대화를 입력하세요.");
         }
@@ -94,6 +113,14 @@ public class TranscriptIntakeService {
             throw new IllegalArgumentException("대화가 너무 깁니다. %d자 이하로 학습한 부분만 붙여넣으세요.".formatted(MAX_PASTED_CHARS));
         }
         return intake(RawConversation.fromPaste(text));
+    }
+
+    /** 오늘(서버 시간대) 저장한 대화 수가 한도에 닿았으면 거부한다. 커넥터 저장분도 함께 센다. */
+    private void requireDailyQuota() {
+        Instant today = LocalDate.now(clock).atStartOfDay(clock.getZone()).toInstant();
+        if (conversations.countByUserIdAndReceivedAtGreaterThanEqual(currentUser.id(), today) >= conversationsPerDay) {
+            throw new RateLimitedException("오늘은 대화를 %d개까지 담을 수 있어요. 내일 다시 담아 주세요.".formatted(conversationsPerDay));
+        }
     }
 
     private SavedSession intake(RawConversation raw) {
