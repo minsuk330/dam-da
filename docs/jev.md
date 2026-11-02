@@ -105,6 +105,17 @@ JevAnswer.Choice misread = r.choice(AnswerJudgeQuestions.MISREAD);   // misread 
 - `review.analysis.field.min-confidence`(0.5)보다 신뢰도가 낮으면 1단계는 `etc.etc`, 2단계는 `<대분류>.etc`. 호출·해석 실패도 같은 값으로 두고 세션 흐름을 막지 않는다. 고른 소분류가 1단계 대분류 밖이면 `<대분류>.etc`.
 - 2026-10-02 측정(`./gradlew -q sessionFieldCheck`, 표본 15개): 15/15 일치. 신뢰도는 대부분 0.98~1.00이고, 경계 표본(엑셀 분석 → `cs.data`)의 1단계만 0.54로 기준 근처였다.
 
+## 출처 대조 (#178, 초안)
+
+정답 기준의 사실 주장을 외부 출처와 대조한다. 아직 출제 흐름에는 연결하지 않았다. 검색 포트(`question/application/port/out/SourceSearchPort`)는 인터페이스와 테스트용 fake만 있고 검색 서비스는 정하지 않았다.
+
+- 질문 정의는 `question/application/ClaimSourceQuestions`(ai 소유), 호출과 기준 적용은 `ClaimSourceJudge`(server 소유)다.
+- choice `support`: `supported` / `contradicted` / `not_addressed`. 출처에 없는 배경지식으로 판단하지 않게 질문에 적었다.
+- 상태는 `ClaimSourceState`(`claim`, `sources`). 대화 원문은 넣지 않는다.
+- `review.question.fact-check.min-confidence`(0.6) 이상일 때만 일치·모순으로 확정한다. 낮은 신뢰도, `not_addressed`, 출처 없음, 호출·해석 실패는 모두 확인 불가다.
+- 2026-11-02 측정(`./gradlew -q factCheckBenchmark`, `fixtures/benchmarks/fact-check.json` 12개, InnoDB 잠금·HTTP ETag): 12/12 일치. 일부러 틀린 주장 4/4 검출, 맞는 주장을 모순으로 판정 0/4, 출처가 다루지 않는 주장에 판정을 낸 것 0/4. 신뢰도는 대부분 0.9 이상이고, 맞는 주장 1개(`s4-etag-304`)만 0.68로 기준 근처였다.
+- **한계**: 사례가 적고 출처 하나에 결론이 분명한 쉬운 사례다(출처 문장도 직접 썼다). 실제 검색 결과는 여러 출처가 섞이고 버전·조건이 다를 수 있다. 출제에 쓰기 전에 부분적으로 맞는 주장, 버전 차이, 출처끼리 다른 사례를 벤치마크에 더하고 다시 잰다.
+
 ## 힌트·개념 설명 생성 (스펙 §7 5단계)
 
 Jev가 아니라 LLM이 만든다. 포트는 `practice/application/port/out/FeedbackContentGenerator`, 구현은 `practice/adapter/out/llm/LlmFeedbackContentGenerator`와 `FeedbackPrompt`(ai 소유)다.
@@ -128,6 +139,7 @@ Jev가 아니라 LLM이 만든다. 포트는 `practice/application/port/out/Feed
 | 어댑터 | `TypeSafeJevAdapterTest` (MockRestServiceServer) | 불필요 |
 | 실제 API | `./gradlew -q jevCheck -Pargs="<사용자 답변>"` | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 복습 단위 검수 실제 API | `./gradlew -q unitReviewCheck` (예시 단위 3개: 통과·복습 가치 없음·근거 연결 부족) | `backend/.env`의 `TYPESAFE_API_KEY` |
+| 출처 대조 벤치마크 | `./gradlew -q factCheckBenchmark -Pargs="--out build/fact-check.json"` (사례 12개, Jev 12회) | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 답변 판정 질문 실제 API | `./gradlew -q answerJudgeCheck` (표본 13개: 표현이 다른 정답, 누락, 번복, 모호한 답, 질문 오독, 대상 밖 오류, 믿음 반복) | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 다음 행동 질문 실제 API | `./gradlew -q nextActionCheck` (표본 8개: 첫 학습·매일 학습, 처음 틀림·반복 어려움, 힌트·설명 뒤 정답) | `backend/.env`의 `TYPESAFE_API_KEY` |
 
