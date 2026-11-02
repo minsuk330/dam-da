@@ -118,6 +118,9 @@ review:
     # 첫 학습 문제를 동시에 만드는 복습 단위 수, 동시에 하는 품질 검사(Jev) 수. 같은 기억 항목의 문제는 차례로 검사한다
     parallel-units: 4
     parallel-judges: 8
+    # 정답 기준의 사실 주장을 외부 출처와 대조할 때(#178) 일치·모순으로 확정하는 Jev choice 신뢰도. 아래면 확인 불가
+    fact-check:
+      min-confidence: 0.6
   practice:
     # 첫 학습 문제 상한 (스펙 §7.8)
     first-study-max-questions: 12
