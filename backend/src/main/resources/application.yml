@@ -11,6 +11,17 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/review}
     username: ${DB_USERNAME:review}
     password: ${DB_PASSWORD:review}
+  http:
+    clients:
+      # RestClient(Jev·토스 로그인) 대기 상한(#189). 없으면 응답이 오지 않을 때 작업 스레드가 계속 묶인다
+      connect-timeout: 10s
+      read-timeout: 60s
+  task:
+    execution:
+      shutdown:
+        # 배포·재시작 때 진행 중인 비동기 작업(검수·문제 생성)을 끝낼 시간을 준다. compose의 stop_grace_period보다 짧게 둔다
+        await-termination: true
+        await-termination-period: 25s
   jpa:
     # 해커톤 단계는 엔티티 기준 자동 갱신. 운영 전 마이그레이션 도구로 바꾼다.
     hibernate:
@@ -21,6 +32,9 @@ spring:
       api-key: ${OPENAI_API_KEY:}
       chat:
         model: ${OPENAI_MODEL:gpt-6-luna}
+        # OpenAI 호출 1회 대기 상한과 재시도 횟수(#189). Spring AI 기본값을 명시해 둔다. 최악은 60s × 4회
+        timeout: 60s
+        max-retries: 3
     mcp:
       server:
         name: review-connector
