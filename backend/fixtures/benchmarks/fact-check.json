@@ -1,0 +1,89 @@
+{
+  "description": "정답 기준 출처 대조 벤치마크(#178). 출처 문장은 공식 문서를 요약해 직접 쓴 것이다. contradicted 사례는 일부러 틀리게 쓴 주장이다.",
+  "cases": [
+    {
+      "id": "s1-select-no-lock",
+      "expected": "supported",
+      "claim": "InnoDB에서 일반 SELECT는 일관된 읽기(스냅샷)로 처리되어 읽는 행에 잠금을 걸지 않는다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-consistent-read.html", "title": "Consistent Nonlocking Reads",
+        "text": "기본 격리 수준에서 InnoDB의 일반 SELECT는 일관된 읽기를 쓴다. 쿼리 시점의 스냅샷을 읽으며, 읽는 테이블에 잠금을 설정하지 않아 다른 세션이 같은 행을 자유롭게 수정할 수 있다."}]
+    },
+    {
+      "id": "s2-for-update-x-lock",
+      "expected": "supported",
+      "claim": "SELECT ... FOR UPDATE는 읽은 인덱스 레코드에 배타 잠금을 건다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html", "title": "Locking Reads",
+        "text": "SELECT ... FOR UPDATE는 검색한 인덱스 레코드와 관련 행을 UPDATE 문을 실행할 때처럼 잠근다. 다른 트랜잭션은 그 행을 수정하거나 공유 모드로 잠글 수 없다."}]
+    },
+    {
+      "id": "s3-repeatable-read-default",
+      "expected": "supported",
+      "claim": "InnoDB의 기본 트랜잭션 격리 수준은 REPEATABLE READ다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-transaction-isolation-levels.html", "title": "Transaction Isolation Levels",
+        "text": "InnoDB는 SQL:1992 표준의 네 가지 격리 수준을 모두 제공한다. InnoDB의 기본 격리 수준은 REPEATABLE READ다."}]
+    },
+    {
+      "id": "s4-etag-304",
+      "expected": "supported",
+      "claim": "클라이언트가 If-None-Match에 보낸 ETag가 현재 리소스와 같으면 서버는 본문 없이 304 Not Modified로 답할 수 있다.",
+      "sources": [{"url": "https://www.rfc-editor.org/rfc/rfc9110#name-if-none-match", "title": "RFC 9110 If-None-Match",
+        "text": "GET이나 HEAD 요청에서 If-None-Match 조건이 거짓이면, 즉 보낸 엔터티 태그 중 하나가 현재 표현과 일치하면 서버는 304(Not Modified)로 응답해야 한다. 304 응답에는 본문이 없다."}]
+    },
+    {
+      "id": "c1-select-locks",
+      "expected": "contradicted",
+      "claim": "InnoDB에서 일반 SELECT는 읽는 모든 행에 공유 잠금을 건다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-consistent-read.html", "title": "Consistent Nonlocking Reads",
+        "text": "기본 격리 수준에서 InnoDB의 일반 SELECT는 일관된 읽기를 쓴다. 쿼리 시점의 스냅샷을 읽으며, 읽는 테이블에 잠금을 설정하지 않아 다른 세션이 같은 행을 자유롭게 수정할 수 있다."}]
+    },
+    {
+      "id": "c2-read-committed-default",
+      "expected": "contradicted",
+      "claim": "InnoDB의 기본 트랜잭션 격리 수준은 READ COMMITTED다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-transaction-isolation-levels.html", "title": "Transaction Isolation Levels",
+        "text": "InnoDB는 SQL:1992 표준의 네 가지 격리 수준을 모두 제공한다. InnoDB의 기본 격리 수준은 REPEATABLE READ다."}]
+    },
+    {
+      "id": "c3-for-share-exclusive",
+      "expected": "contradicted",
+      "claim": "SELECT ... FOR SHARE는 읽은 행에 배타 잠금을 걸어 다른 트랜잭션이 그 행을 읽지도 못하게 한다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html", "title": "Locking Reads",
+        "text": "SELECT ... FOR SHARE는 읽은 행에 공유 잠금을 건다. 다른 세션은 그 행을 읽을 수 있지만 트랜잭션이 커밋될 때까지 수정할 수는 없다."}]
+    },
+    {
+      "id": "c4-etag-200",
+      "expected": "contradicted",
+      "claim": "If-None-Match의 ETag가 현재 리소스와 같아도 서버는 항상 200과 전체 본문을 다시 보내야 한다.",
+      "sources": [{"url": "https://www.rfc-editor.org/rfc/rfc9110#name-if-none-match", "title": "RFC 9110 If-None-Match",
+        "text": "GET이나 HEAD 요청에서 If-None-Match 조건이 거짓이면, 즉 보낸 엔터티 태그 중 하나가 현재 표현과 일치하면 서버는 304(Not Modified)로 응답해야 한다. 304 응답에는 본문이 없다."}]
+    },
+    {
+      "id": "n1-gap-lock-unrelated-source",
+      "expected": "not_addressed",
+      "claim": "REPEATABLE READ에서 범위 조건으로 잠금 읽기를 하면 InnoDB는 갭 잠금으로 범위 안의 새 행 삽입을 막는다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-transaction-isolation-levels.html", "title": "Transaction Isolation Levels",
+        "text": "InnoDB는 SQL:1992 표준의 네 가지 격리 수준을 모두 제공한다. InnoDB의 기본 격리 수준은 REPEATABLE READ다."}]
+    },
+    {
+      "id": "n2-undo-log-unrelated-source",
+      "expected": "not_addressed",
+      "claim": "InnoDB는 스냅샷 읽기에 필요한 이전 버전을 undo 로그에서 만든다.",
+      "sources": [{"url": "https://www.rfc-editor.org/rfc/rfc9110#name-if-none-match", "title": "RFC 9110 If-None-Match",
+        "text": "GET이나 HEAD 요청에서 If-None-Match 조건이 거짓이면, 즉 보낸 엔터티 태그 중 하나가 현재 표현과 일치하면 서버는 304(Not Modified)로 응답해야 한다. 304 응답에는 본문이 없다."}]
+    },
+    {
+      "id": "n3-performance-claim",
+      "expected": "not_addressed",
+      "claim": "FOR UPDATE를 쓰면 일반 SELECT보다 쿼리가 항상 두 배 이상 느려진다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html", "title": "Locking Reads",
+        "text": "SELECT ... FOR UPDATE는 검색한 인덱스 레코드와 관련 행을 UPDATE 문을 실행할 때처럼 잠근다. 다른 트랜잭션은 그 행을 수정하거나 공유 모드로 잠글 수 없다."}]
+    },
+    {
+      "id": "n4-weak-etag",
+      "expected": "not_addressed",
+      "claim": "약한 ETag(W/ 접두사)는 바이트 단위로 같은 표현에만 쓸 수 있다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-consistent-read.html", "title": "Consistent Nonlocking Reads",
+        "text": "기본 격리 수준에서 InnoDB의 일반 SELECT는 일관된 읽기를 쓴다. 쿼리 시점의 스냅샷을 읽으며, 읽는 테이블에 잠금을 설정하지 않아 다른 세션이 같은 행을 자유롭게 수정할 수 있다."}]
+    }
+  ]
+}
