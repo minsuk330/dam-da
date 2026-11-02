@@ -27,7 +27,8 @@
 ## merge 조건
 
 - 승인 불필요. 작성자가 직접 merge한다.
-- CI는 없다. **PR 올리기 전 로컬에서 `./gradlew test` 통과 필수.**
+- **PR 올리기 전 로컬에서 `./gradlew test` 통과 필수.** CI(`.github/workflows/checks.yml`)가 PR마다 바뀐 영역의 검사를 다시 돌린다: backend `./gradlew test`, frontend `typecheck`·`lint`·`build:web`, optimizer `uv run pytest`. 실패한 PR은 merge하지 않는다.
+- `main`에 반영되면 `backend-image`가 백엔드 테스트를 다시 돌리고, 통과해야 이미지를 만든다.
 - 실제 LLM을 호출하는 테스트(`./gradlew liveTest`, `@Tag("live")`)와 벤치마크(`./gradlew benchmark`)는 로컬에서 수동 실행한다. LLM·Jev를 부르는 흐름을 바꾼 PR은 `liveTest` 결과를 본문에 적는다. 프롬프트·커넥터 스키마를 바꾼 PR은 벤치마크 결과 요약을 본문에 적는다.
 - 포트 계약 변경은 인터페이스·record·fake만 담은 PR을 먼저 merge한 뒤 구현한다.
 
