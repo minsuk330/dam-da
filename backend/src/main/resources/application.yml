@@ -42,6 +42,16 @@ springdoc:
   writer-with-order-by-keys: true
   writer-with-default-pretty-printer: true
 review:
+  # 비용이 드는 요청 한도(#184). 넘으면 429와 안내 문구로 응답한다
+  limits:
+    # 사용자별 하루(서버 시간대) 대화 저장 수. 공유 링크·붙여넣기·커넥터를 합쳐 센다
+    conversations-per-day: 20
+    # 사용자별 분당 요청 수: 대화 입력, 첫 학습 시작, 답 제출, 힌트·설명, 피드백
+    ai-requests-per-minute: 30
+    # IP별 분당 로그인 요청 수(/api/auth/**)
+    auth-requests-per-minute: 30
+    # 동시에 띄우는 공유 링크 수집 브라우저 수(서버 메모리 보호)
+    share-link-concurrency: 2
   llm:
     # 학습자가 기다리는 짧은 생성(힌트·개념 설명·선행 개념)에 보내는 reasoning_effort. 모델이 지원하는 값이어야 한다(gpt-6-luna: none·low·medium·high·xhigh)
     minimal-reasoning-effort: none
