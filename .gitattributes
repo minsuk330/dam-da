@@ -1,0 +1,4 @@
+# 테스트·스크립트가 다시 쓰는 생성 파일은 OS와 관계없이 LF로 둔다(Windows core.autocrlf 대비).
+frontend/openapi.json text eol=lf
+frontend/src/api/schema.d.ts text eol=lf
+frontend/src/theme/tokens.ts text eol=lf
