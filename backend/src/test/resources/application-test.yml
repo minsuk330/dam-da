@@ -11,6 +11,11 @@ springdoc:
   api-docs:
     enabled: true
 review:
+  # 테스트는 같은 데모 사용자로 요청을 많이 보낸다. 한도 동작은 RateLimitIT가 낮춘 값으로 확인한다
+  limits:
+    conversations-per-day: 100000
+    ai-requests-per-minute: 100000
+    auth-requests-per-minute: 100000
   auth:
     # 기존 테스트는 토큰 없이 데모 사용자로 돈다. 인증 동작은 AuthIT가 required=true로 확인한다.
     required: false
