@@ -56,8 +56,9 @@ class OpenApiSpecIT {
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         assertThat(response.statusCode()).isEqualTo(200);
 
-        String actual = response.body().strip() + "\n";
-        String committed = Files.exists(SPEC) ? Files.readString(SPEC, StandardCharsets.UTF_8) : "";
+        // Windows에서는 JSON 들여쓰기와 core.autocrlf가 CRLF를 만든다. 줄바꿈은 LF로 맞춰 비교하고 쓴다.
+        String actual = response.body().replace("\r\n", "\n").strip() + "\n";
+        String committed = Files.exists(SPEC) ? Files.readString(SPEC, StandardCharsets.UTF_8).replace("\r\n", "\n") : "";
         if (!actual.equals(committed)) {
             Files.writeString(SPEC, actual, StandardCharsets.UTF_8);
             fail("API 계약이 바뀌어 %s를 다시 썼다. 확인 후 커밋하고 frontend에서 npm run api:types를 실행한다."

@@ -18,6 +18,7 @@ AI 대화를 등록하면 학습할 지식을 추출해 문제로 만들고, FSR
 ```bash
 cd backend
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # 시스템 기본 JDK가 21이 아니면 반드시 지정
+# Windows(Git Bash): export JAVA_HOME="/c/Program Files/Java/jdk-21"   (설치 경로에 맞게. 테스트는 Windows에서도 통과해야 한다)
 ./gradlew test        # PR 전 필수. 실제 LLM 호출 없이 fake로 통과해야 한다
 ./gradlew liveTest    # 실제 Jev·OpenAI로 핵심 흐름 검증(@Tag("live")). backend/.env 키 필요, 비용 발생. worktree면 -PenvFile=경로
 ./gradlew benchmark   # 커넥터 저장 결과 채점. 서버(bootRun, DEV_TOOLS_ENABLED=true)가 떠 있어야 함. 다른 포트면 -Pserver=
