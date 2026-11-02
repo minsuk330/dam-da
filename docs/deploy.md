@@ -89,6 +89,18 @@ docker compose exec -T postgres psql -U review review < backup.sql              
 docker compose down -v                              # 전부 지우고 처음부터(DB·인증서 볼륨 삭제, 되돌릴 수 없음)
 ```
 
+### 상태 확인과 장애 알림
+
+- **서버 응답**: GitHub Actions `uptime`이 15분마다 `/healthz`를 부른다. 세 번 연속 200이 아니면 "운영 서버 응답 없음 (uptime)" 이슈를 열고(이미 열려 있으면 댓글), 회복되면 닫는다. 이슈 알림은 저장소를 Watch하는 팀원에게 간다. 주소는 저장소 변수 `UPTIME_URL`로 바꾼다. 예약 실행은 몇 분 늦을 수 있고, 저장소에 60일 동안 활동이 없으면 GitHub가 예약 실행을 멈춘다.
+- **백업**: `BACKUP_PING_URL`로 성공·실패를 감시 서비스에 보낸다(위 "백업", #183).
+- **메모리·디스크**: 서버에서 직접 본다. 1GiB 서버는 메모리가 먼저 모자라다(#188).
+
+```bash
+docker stats --no-stream                  # 컨테이너별 메모리
+free -h && df -h /                        # 서버 메모리·swap·디스크
+docker compose logs app | grep -E "WARN|ERROR" | tail -50   # 외부 호출 실패(Jev·OpenAI·공유 링크) 확인
+```
+
 ### 시간 이동 데모 (`/dev/**`)
 
 배포 서버의 `/dev/**`는 `X-Dev-Token` 헤더가 `.env`의 `DEV_TOOLS_TOKEN`과 같을 때만 열린다(그 외 404). 토큰은 코드·프론트엔드 번들에 넣지 않는다. Vercel은 `/dev/**`를 넘기지 않으므로 서버 주소로 직접 호출한다.
