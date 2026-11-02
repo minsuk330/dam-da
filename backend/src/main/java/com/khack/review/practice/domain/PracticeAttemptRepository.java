@@ -15,4 +15,8 @@ public interface PracticeAttemptRepository extends JpaRepository<PracticeAttempt
     List<Long> findIdsByUserId(@Param("userId") Long userId);
 
     void deleteByUserId(Long userId);
+
+    /** 모든 답 제출의 사용자와 시각 (#182 사용 지표). */
+    @Query("select new com.khack.review.practice.domain.AttemptTime(a.userId, a.submittedAt) from PracticeAttempt a")
+    List<AttemptTime> findAllAttemptTimes();
 }

@@ -6,6 +6,7 @@ import com.khack.review.collection.domain.SavedSession;
 import com.khack.review.common.application.CurrentUser;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,12 @@ public class ConversationQueryService {
     public ConversationQueryService(LearningConversationRepository conversations, CurrentUser currentUser) {
         this.conversations = conversations;
         this.currentUser = currentUser;
+    }
+
+    /** 대화를 한 번이라도 저장한 사용자 ID (#182 사용 지표). */
+    @Transactional(readOnly = true)
+    public Set<Long> usersWithConversations() {
+        return Set.copyOf(conversations.findDistinctUserIds());
     }
 
     /** 다른 컨텍스트가 근거 발화를 읽을 때 쓴다. 없으면 {@link IllegalArgumentException}. */
