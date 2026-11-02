@@ -27,6 +27,24 @@ class SocialSignInServiceIT {
     }
 
     @Test
+    void newSocialAccountsRecordTheTermsVersionTheyAgreedToAtSignIn() {
+        AppUser user = signIn.signIn(new SocialProfile("kakao", "consent-it", "규호", null));
+
+        assertThat(user.getAgreedTermsVersion()).isEqualTo(AgreementService.CURRENT_VERSION);
+        assertThat(user.getAgreedAt()).isNotNull();
+        assertThat(AgreementService.required(user)).isFalse();
+    }
+
+    @Test
+    void accountsWithoutTheCurrentVersionAgreeAgainInTheApp() {
+        AppUser legacy = AppUser.social("google", "legacy", "옛 사용자", null, java.time.Instant.EPOCH);
+
+        assertThat(AgreementService.required(legacy)).isTrue();
+        legacy.agree("1999-01-01", java.time.Instant.EPOCH);
+        assertThat(AgreementService.required(legacy)).as("예전 약관 버전").isTrue();
+    }
+
+    @Test
     void sameIdOnAnotherProviderIsAnotherUser() {
         AppUser google = signIn.signIn(new SocialProfile("google", "same-id", "A", null));
         AppUser kakao = signIn.signIn(new SocialProfile("kakao", "same-id", "A", null));
