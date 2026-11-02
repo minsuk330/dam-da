@@ -38,3 +38,6 @@ out/
 
 ### Env ###
 .env
+
+# 서버 DB 백업(backup.sh). 대화 원문이 들어 있어 커밋하지 않는다.
+/deploy/backups/
