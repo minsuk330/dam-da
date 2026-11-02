@@ -11,6 +11,17 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/review}
     username: ${DB_USERNAME:review}
     password: ${DB_PASSWORD:review}
+  http:
+    clients:
+      # RestClient(Jev·토스 로그인) 대기 상한(#189). 없으면 응답이 오지 않을 때 작업 스레드가 계속 묶인다
+      connect-timeout: 10s
+      read-timeout: 60s
+  task:
+    execution:
+      shutdown:
+        # 배포·재시작 때 진행 중인 비동기 작업(검수·문제 생성)을 끝낼 시간을 준다. compose의 stop_grace_period보다 짧게 둔다
+        await-termination: true
+        await-termination-period: 25s
   jpa:
     # 해커톤 단계는 엔티티 기준 자동 갱신. 운영 전 마이그레이션 도구로 바꾼다.
     hibernate:
@@ -21,6 +32,9 @@ spring:
       api-key: ${OPENAI_API_KEY:}
       chat:
         model: ${OPENAI_MODEL:gpt-6-luna}
+        # OpenAI 호출 1회 대기 상한과 재시도 횟수(#189). Spring AI 기본값을 명시해 둔다. 최악은 60s × 4회
+        timeout: 60s
+        max-retries: 3
     mcp:
       server:
         name: review-connector
@@ -42,6 +56,16 @@ springdoc:
   writer-with-order-by-keys: true
   writer-with-default-pretty-printer: true
 review:
+  # 비용이 드는 요청 한도(#184). 넘으면 429와 안내 문구로 응답한다
+  limits:
+    # 사용자별 하루(서버 시간대) 대화 저장 수. 공유 링크·붙여넣기·커넥터를 합쳐 센다
+    conversations-per-day: 20
+    # 사용자별 분당 요청 수: 대화 입력, 첫 학습 시작, 답 제출, 힌트·설명, 피드백
+    ai-requests-per-minute: 30
+    # IP별 분당 로그인 요청 수(/api/auth/**)
+    auth-requests-per-minute: 30
+    # 동시에 띄우는 공유 링크 수집 브라우저 수(서버 메모리 보호)
+    share-link-concurrency: 2
   llm:
     # 학습자가 기다리는 짧은 생성(힌트·개념 설명·선행 개념)에 보내는 reasoning_effort. 모델이 지원하는 값이어야 한다(gpt-6-luna: none·low·medium·high·xhigh)
     minimal-reasoning-effort: none
@@ -118,6 +142,9 @@ review:
     # 첫 학습 문제를 동시에 만드는 복습 단위 수, 동시에 하는 품질 검사(Jev) 수. 같은 기억 항목의 문제는 차례로 검사한다
     parallel-units: 4
     parallel-judges: 8
+    # 정답 기준의 사실 주장을 외부 출처와 대조할 때(#178) 일치·모순으로 확정하는 Jev choice 신뢰도. 아래면 확인 불가
+    fact-check:
+      min-confidence: 0.6
   practice:
     # 첫 학습 문제 상한 (스펙 §7.8)
     first-study-max-questions: 12

@@ -84,10 +84,27 @@ docker image prune -f                 # 이전 이미지 정리(디스크)
 ```bash
 docker compose logs -f app                          # 로그
 docker compose exec postgres psql -U review review  # DB 접속
-docker compose exec -T postgres pg_dump -U review review > backup-$(date +%F).sql   # 백업
-docker compose exec -T postgres psql -U review review < backup.sql                  # 복원(빈 DB에)
+./backup.sh                                         # 백업(backups/에 압축 보관, 아래 "백업")
+./restore-check.sh                                  # 최근 백업을 임시 DB에 복원해 확인(운영 DB는 그대로)
 docker compose down -v                              # 전부 지우고 처음부터(DB·인증서 볼륨 삭제, 되돌릴 수 없음)
 ```
+
+### 백업
+
+`backup.sh`가 `pg_dump`를 떠서 `backups/`에 `review-YYYYMMDD-HHMMSS.sql.gz`로 두고, 7일(`BACKUP_KEEP_DAYS`)이 지난 파일은 지운다. 백업에는 대화 원문이 있어 폴더는 소유자만 읽는다. `backups/`는 커밋하지 않는다.
+
+```bash
+cd ~/apps/khack/backend/deploy
+chmod +x backup.sh restore-check.sh
+./backup.sh && ./restore-check.sh       # 처음 한 번 손으로 돌려 복원까지 확인
+crontab -e                              # 매일 04:00(서버 시간) 백업
+# 0 4 * * * cd ~/apps/khack/backend/deploy && ./backup.sh >> backups/backup.log 2>&1
+```
+
+- **VM 밖 보관**: 디스크가 망가지면 로컬 백업도 함께 사라진다. `.env`에 `BACKUP_AZURE_CONTAINER`와 `AZURE_STORAGE_CONNECTION_STRING`을 넣으면 Azure Blob에도 올린다(서버에 `az` CLI 필요). 컨테이너 보존 기간은 Azure 쪽 수명 주기 규칙으로 정한다.
+- **실패 알림**: `.env`의 `BACKUP_PING_URL`(예: healthchecks.io 체크 주소)에 성공하면 GET, 실패하면 `/fail`을 보낸다. 하루 동안 신호가 없으면 감시 서비스가 알린다.
+- **복원**: 운영 DB에 덮어쓰려면 앱을 멈추고 `gunzip -c backups/<파일> | docker compose exec -T postgres psql -U review review` 뒤 앱을 다시 띄운다. 백업에 `DROP ... IF EXISTS`가 들어 있어 기존 테이블을 지우고 다시 만든다.
+- 탈퇴한 사용자의 데이터는 백업 보관 기간(로컬 7일, Blob 규칙)만큼 백업에 남는다. 개인정보 처리방침에 이 기간을 적는다.
 
 ### 상태 확인과 장애 알림
 

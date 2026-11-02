@@ -37,7 +37,7 @@ export function AddConversation() {
   const [text, setText] = useState('');
   const submit = useSubmitConversation();
   const { user, agree } = useSession();
-  // 토스 익명 계정은 대화를 처음 저장할 때 약관에 동의한다(#149). 저장 버튼이 동의까지 함께 한다.
+  // 토스 익명 계정과, 약관 동의 기록이 없거나 약관이 바뀐 계정은 대화를 저장할 때 앱 안에서 동의한다(#149, #192). 저장 버튼이 동의까지 함께 한다.
   const needsAgreement = user?.agreementRequired === true;
   const [agreeing, setAgreeing] = useState(false);
   const [agreeError, setAgreeError] = useState(false);
