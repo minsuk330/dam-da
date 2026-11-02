@@ -119,6 +119,16 @@ public class LearningSession {
         status = next;
     }
 
+    /**
+     * 서버가 검수 도중 멈춰 검수 중으로 남은 세션을 접수 상태로 되돌린다(#189). 서버가 뜰 때만 부른다.
+     * 검수 중이 아니면 아무것도 하지 않는다.
+     */
+    public void resumeInterruptedReview() {
+        if (status == LearningSessionStatus.REVIEWING) {
+            status = LearningSessionStatus.RECEIVED;
+        }
+    }
+
     /** 확인 대기 중에만 사용자가 내용을 고칠 수 있다(규칙 9, 12). */
     public void requireEditable() {
         if (status != LearningSessionStatus.AWAITING_CONFIRMATION) {

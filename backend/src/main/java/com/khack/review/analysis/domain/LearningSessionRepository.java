@@ -1,5 +1,6 @@
 package com.khack.review.analysis.domain;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,6 +19,10 @@ public interface LearningSessionRepository extends JpaRepository<LearningSession
 
     @Query("select s.id from LearningSession s where s.userId = :userId")
     List<Long> findIdsByUserId(@Param("userId") Long userId);
+
+    /** 아직 검수가 끝나지 않은 세션 (#189 재시작 복구). */
+    @Query("select s.id from LearningSession s where s.status in :statuses order by s.id")
+    List<Long> findIdsByStatusIn(@Param("statuses") Collection<LearningSessionStatus> statuses);
 
     void deleteByUserId(Long userId);
 }
