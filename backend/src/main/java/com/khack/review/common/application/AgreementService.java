@@ -7,8 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 약관 동의(#149). 토스 익명 계정은 로그인 없이 만들어지므로, 대화를 처음 저장할 때 이용약관·개인정보 수집·이용·국외 이전에
- * 앱 안에서 동의받는다(노출 정책 UX 원칙: 동의는 관련 기능을 고른 뒤에). 웹 소셜 로그인과 토스 로그인은 로그인 화면의 안내로 동의를 받으므로 따로 묻지 않는다.
+ * 약관 동의(#149, #192). 어느 약관 버전에 언제 동의했는지 사용자에 기록한다.
+ * <ul>
+ *   <li>웹 소셜 로그인·토스 로그인: 로그인 화면의 안내로 동의받고, 계정을 만들 때 지금 버전으로 기록한다({@link SocialSignInService}).</li>
+ *   <li>토스 익명 계정: 로그인 없이 만들어지므로 대화를 처음 저장할 때 앱 안에서 동의받는다(노출 정책 UX 원칙: 동의는 관련 기능을 고른 뒤에).</li>
+ *   <li>약관 버전이 바뀌었거나 기록이 없는 계정(#192 이전 가입)은 다음 저장 때 앱 안에서 다시 동의받는다.</li>
+ * </ul>
+ * 시작할 때 만드는 데모·개발 도구 사용자(제공자 없음)는 묻지 않는다.
  */
 @Service
 public class AgreementService {
@@ -26,7 +31,12 @@ public class AgreementService {
 
     /** 이 사용자가 앱 안에서 약관 동의를 해야 하는지. */
     public static boolean required(AppUser user) {
-        return TossSignInService.ANONYMOUS_PROVIDER.equals(user.getProvider()) && !CURRENT_VERSION.equals(user.getAgreedTermsVersion());
+        return user.getProvider() != null && !CURRENT_VERSION.equals(user.getAgreedTermsVersion());
+    }
+
+    /** 로그인 화면의 안내로 동의받는 계정인지(토스 익명 계정은 앱 안에서 따로 받는다). */
+    static boolean agreesAtSignIn(String provider) {
+        return !TossSignInService.ANONYMOUS_PROVIDER.equals(provider);
     }
 
     @Transactional
