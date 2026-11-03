@@ -1,0 +1,95 @@
+{
+  "description": "출처 대조 어려운 사례(#178). 일부만 맞는 주장, 수치·버전 차이, 출처 여러 개, 출처끼리 다른 경우. 출처 문장은 공식 문서를 요약해 직접 썼다. 출처가 서로 다르거나 주장보다 좁은 범위만 말하면 확인 불가(not_addressed)를 기대한다.",
+  "cases": [
+    {
+      "id": "hc1-partial-extra-condition",
+      "expected": "contradicted",
+      "claim": "InnoDB의 일반 SELECT가 잠금 없이 스냅샷을 읽는 것은 READ UNCOMMITTED 격리 수준에서만 그렇다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-consistent-read.html", "title": "Consistent Nonlocking Reads",
+        "text": "READ COMMITTED와 REPEATABLE READ 격리 수준에서 InnoDB는 일반 SELECT를 일관된 읽기로 처리한다. 일관된 읽기는 스냅샷을 읽으며 읽는 행에 잠금을 걸지 않는다."}]
+    },
+    {
+      "id": "hc2-number",
+      "expected": "contradicted",
+      "claim": "innodb_lock_wait_timeout의 기본값은 5초다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html", "title": "InnoDB Startup Options and System Variables",
+        "text": "innodb_lock_wait_timeout은 InnoDB 트랜잭션이 행 잠금을 기다리다 포기하기까지의 시간(초)이다. 기본값은 50이다."}]
+    },
+    {
+      "id": "hc3-version-removed-feature",
+      "expected": "contradicted",
+      "claim": "MySQL 8.0에서 쿼리 캐시를 켜면 같은 SELECT의 결과를 캐시에서 돌려준다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/5.7/en/query-cache.html", "title": "The MySQL Query Cache",
+        "text": "쿼리 캐시는 MySQL 5.7.20부터 사용 중단 예고되었고 MySQL 8.0에서 제거되었다."}]
+    },
+    {
+      "id": "hc4-scope-swap",
+      "expected": "contradicted",
+      "claim": "SELECT ... FOR UPDATE는 조건에 맞는 인덱스가 없어도 조건을 만족하는 행만 잠근다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html", "title": "Locks Set by Different SQL Statements",
+        "text": "잠금 읽기는 검색 중 스캔한 인덱스 레코드에 잠금을 건다. 문장에 맞는 적절한 인덱스가 없어 테이블 전체를 스캔하면 테이블의 모든 행이 잠긴다."}]
+    },
+    {
+      "id": "hs1-paraphrase",
+      "expected": "supported",
+      "claim": "다른 트랜잭션이 FOR SHARE로 잡아 둔 행은 읽을 수는 있지만, 그 트랜잭션이 끝날 때까지 고칠 수는 없다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html", "title": "Locking Reads",
+        "text": "SELECT ... FOR SHARE는 읽은 행에 공유 잠금을 건다. 다른 세션은 그 행을 읽을 수 있지만 트랜잭션이 커밋될 때까지 수정할 수는 없다."}]
+    },
+    {
+      "id": "hs2-one-relevant-of-two",
+      "expected": "supported",
+      "claim": "If-None-Match로 보낸 ETag가 현재 표현과 일치하면 서버는 본문 없는 304로 답할 수 있다.",
+      "sources": [
+        {"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-consistent-read.html", "title": "Consistent Nonlocking Reads",
+          "text": "READ COMMITTED와 REPEATABLE READ 격리 수준에서 InnoDB는 일반 SELECT를 일관된 읽기로 처리한다."},
+        {"url": "https://www.rfc-editor.org/rfc/rfc9110#name-if-none-match", "title": "RFC 9110 If-None-Match",
+          "text": "GET이나 HEAD 요청에서 보낸 엔터티 태그 중 하나가 현재 표현과 일치하면 서버는 304(Not Modified)로 응답해야 한다. 304 응답에는 본문이 없다."}]
+    },
+    {
+      "id": "hs3-version-supported",
+      "expected": "supported",
+      "claim": "MySQL 8.0에는 쿼리 캐시 기능이 없다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/5.7/en/query-cache.html", "title": "The MySQL Query Cache",
+        "text": "쿼리 캐시는 MySQL 5.7.20부터 사용 중단 예고되었고 MySQL 8.0에서 제거되었다."}]
+    },
+    {
+      "id": "hs4-number-supported",
+      "expected": "supported",
+      "claim": "InnoDB가 행 잠금을 기다리는 기본 제한 시간은 50초다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html", "title": "InnoDB Startup Options and System Variables",
+        "text": "innodb_lock_wait_timeout은 InnoDB 트랜잭션이 행 잠금을 기다리다 포기하기까지의 시간(초)이다. 기본값은 50이다."}]
+    },
+    {
+      "id": "hn1-sources-disagree",
+      "expected": "not_addressed",
+      "claim": "innodb_lock_wait_timeout의 기본값은 50초다.",
+      "sources": [
+        {"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html", "title": "InnoDB Startup Options and System Variables",
+          "text": "innodb_lock_wait_timeout의 기본값은 50초다."},
+        {"url": "https://blog.example.com/mysql-tuning", "title": "MySQL 튜닝 메모",
+          "text": "innodb_lock_wait_timeout은 기본 30초라서 긴 배치 작업에서는 늘려 주는 게 좋다."}]
+    },
+    {
+      "id": "hn2-claim-narrower-than-source",
+      "expected": "not_addressed",
+      "claim": "READ COMMITTED에서 갭 잠금은 외래 키 검사와 중복 키 검사에만 쓰인다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-transaction-isolation-levels.html", "title": "Transaction Isolation Levels",
+        "text": "READ COMMITTED에서는 검색과 인덱스 스캔에 갭 잠금을 쓰지 않는 것이 기본이다."}]
+    },
+    {
+      "id": "hn3-other-version",
+      "expected": "not_addressed",
+      "claim": "MySQL 5.7의 기본 문자 집합은 latin1이다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/charset-server.html", "title": "Server Character Set and Collation",
+        "text": "MySQL 8.0의 기본 서버 문자 집합은 utf8mb4다."}]
+    },
+    {
+      "id": "hn4-same-topic-other-aspect",
+      "expected": "not_addressed",
+      "claim": "innodb_deadlock_detect를 끄면 InnoDB는 교착 상태를 감지하지 않고 잠금 대기 제한 시간에 맡긴다.",
+      "sources": [{"url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html", "title": "InnoDB Startup Options and System Variables",
+        "text": "innodb_lock_wait_timeout은 InnoDB 트랜잭션이 행 잠금을 기다리다 포기하기까지의 시간(초)이다. 기본값은 50이다."}]
+    }
+  ]
+}
