@@ -2,6 +2,15 @@
 {$DOMAIN} {
 	encode zstd gzip
 
+	# 접속 로그: caddy-data 볼륨(/data/logs)에 JSON으로 남기고 10MB마다 돌려 최근 10개만 둔다.
+	log {
+		output file /data/logs/access.log {
+			roll_size 10mb
+			roll_keep 10
+		}
+		format json
+	}
+
 	# API 문서는 배포 서버에서 열지 않는다(API_DOCS_ENABLED=false와 이중 차단).
 	@docs path /v3/api-docs* /swagger-ui*
 	respond @docs 404
