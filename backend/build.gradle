@@ -31,6 +31,9 @@ dependencies {
 	implementation 'org.springaicommunity:mcp-server-security:0.1.14'
 	implementation 'org.springaicommunity:mcp-authorization-server:0.1.14'
 	runtimeOnly 'org.postgresql:postgresql'
+	// 스키마 마이그레이션(#185). src/main/resources/db/migration
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
 	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 	implementation 'com.microsoft.playwright:playwright:1.63.0'

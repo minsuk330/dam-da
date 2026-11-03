@@ -4,9 +4,7 @@ spring:
     url: jdbc:h2:mem:review-${random.uuid};MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
     username: sa
     password:
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
+  # 스키마는 운영과 같은 Flyway 마이그레이션으로 만들고 Hibernate가 validate한다(#185). 마이그레이션이 엔티티와 어긋나면 테스트가 실패한다.
 springdoc:
   api-docs:
     enabled: true

@@ -53,7 +53,9 @@ certbot --nginx -d hack.refit-100.site --redirect
 curl https://hack.refit-100.site/healthz
 ```
 
-빈 DB로 시작한다. 테이블은 앱이 기동하면서 만든다(`ddl-auto: update`).
+빈 DB로 시작한다. 테이블은 앱이 기동하면서 Flyway 마이그레이션으로 만든다.
+
+`ddl-auto: update` 시절에 만든 기존 DB는 첫 기동 때 `flyway_schema_history`가 생기며 V1(기준 스키마)을 적용된 것으로 표시한다(`baseline-on-migrate`). 그 뒤 Hibernate `validate`가 엔티티와 다르면 앱이 뜨지 않는다. Flyway를 처음 넣는 배포 전에는 백업을 받고(`pg_dump`, 아래 운영 명령), 가능하면 백업을 로컬 DB에 복원해 앱이 뜨는지 먼저 확인한다.
 
 ### 작은 서버 (RAM 1GiB)
 

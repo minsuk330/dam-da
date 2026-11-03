@@ -63,6 +63,8 @@ uv run khack-optimizer --server http://localhost:8080   # 서버(DEV_TOOLS_ENABL
 
 ### 코드
 - 영속성은 JPA만 쓴다. MyBatis·jOOQ·JdbcTemplate 직접 SQL을 추가하지 않는다. 필요한 경우 JPQL 또는 Spring Data 쿼리 메서드, 불가피하면 `@Query(nativeQuery = true)`.
+- 스키마는 Flyway 마이그레이션(`backend/src/main/resources/db/migration`)으로만 바꾼다(위 규칙의 예외는 이 DDL 파일뿐이다). 엔티티의 컬럼·테이블·enum 값을 바꾸면 같은 PR에 `V<다음 번호>__<설명>.sql`을 추가한다. Hibernate는 `ddl-auto: validate`로 확인만 하므로 마이그레이션을 빠뜨리면 테스트가 실패한다. 이미 적용된 마이그레이션 파일은 고치지 않는다.
+  - enum 컬럼에는 허용 값 `check` 제약이 있다. enum 값을 추가하면 제약도 마이그레이션으로 바꾼다(`validate`가 잡지 못한다).
 - 현재 시각은 주입받은 `Clock`으로만 얻는다(`LocalDateTime.now()` 등 직접 호출 금지). 시간 이동 데모 모드의 전제다.
 - API 키·ngrok URL·공유 링크 등 비밀/개인 데이터는 커밋하지 않는다. 키는 `backend/.env`(gitignore)에만 둔다.
 - `/dev/**` 개발 도구(세션 뷰어, 시간 이동)는 `DEV_TOOLS_ENABLED=true`일 때만 열린다. 로컬 직접 요청 또는 `X-Dev-Token` 헤더가 `DEV_TOOLS_TOKEN`과 같은 원격 요청만 허용한다. 토큰은 커밋하지 않고, 프론트엔드 번들에도 넣지 않는다.
