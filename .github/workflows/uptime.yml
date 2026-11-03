@@ -1,0 +1,61 @@
+# 운영 서버 상태 확인(#187). 15분마다 /healthz를 부르고, 세 번 연속 실패하면 이슈를 열어 팀에 알린다.
+# 회복되면 열린 이슈에 회복 댓글을 달고 닫는다. 예약 실행은 GitHub 부하에 따라 몇 분 늦을 수 있다.
+# 확인할 주소는 저장소 변수 UPTIME_URL로 바꿀 수 있다(Settings → Secrets and variables → Actions → Variables).
+name: uptime
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+
+jobs:
+  healthz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      URL: ${{ vars.UPTIME_URL || 'https://hack.refit-100.site/healthz' }}
+      TITLE: "운영 서버 응답 없음 (uptime)"
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Check /healthz
+        id: check
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$URL" || true)
+            echo "try $i: $code"
+            if [ "$code" = "200" ]; then
+              echo "up=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "up=false" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Open an issue when down
+        if: steps.check.outputs.up == 'false'
+        run: |
+          open=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+          body="$URL 이 세 번 연속 200이 아니었습니다(마지막 응답 ${{ steps.check.outputs.code }}). $(date -u '+%F %T') UTC. 실행: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "$body"
+          else
+            gh issue create --title "$TITLE" --body "$body"
+          fi
+          exit 1
+
+      - name: Close the issue when back up
+        if: steps.check.outputs.up == 'true'
+        run: |
+          open=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue close "$open" --comment "$URL 응답이 돌아왔습니다. $(date -u '+%F %T') UTC"
+          fi
