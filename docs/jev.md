@@ -111,10 +111,20 @@ JevAnswer.Choice misread = r.choice(AnswerJudgeQuestions.MISREAD);   // misread 
 
 - 질문 정의는 `question/application/ClaimSourceQuestions`(ai 소유), 호출과 기준 적용은 `ClaimSourceJudge`(server 소유)다.
 - choice `support`: `supported` / `contradicted` / `not_addressed`. 출처에 없는 배경지식으로 판단하지 않게 질문에 적었다.
-- 상태는 `ClaimSourceState`(`claim`, `sources`). 대화 원문은 넣지 않는다.
-- `review.question.fact-check.min-confidence`(0.6) 이상일 때만 일치·모순으로 확정한다. 낮은 신뢰도, `not_addressed`, 출처 없음, 호출·해석 실패는 모두 확인 불가다.
-- 2026-11-02 측정(`./gradlew -q factCheckBenchmark`, `fixtures/benchmarks/fact-check.json` 12개, InnoDB 잠금·HTTP ETag): 12/12 일치. 일부러 틀린 주장 4/4 검출, 맞는 주장을 모순으로 판정 0/4, 출처가 다루지 않는 주장에 판정을 낸 것 0/4. 신뢰도는 대부분 0.9 이상이고, 맞는 주장 1개(`s4-etag-304`)만 0.68로 기준 근처였다.
-- **한계**: 사례가 적고 출처 하나에 결론이 분명한 쉬운 사례다(출처 문장도 직접 썼다). 실제 검색 결과는 여러 출처가 섞이고 버전·조건이 다를 수 있다. 출제에 쓰기 전에 부분적으로 맞는 주장, 버전 차이, 출처끼리 다른 사례를 벤치마크에 더하고 다시 잰다.
+- **출처마다 따로 호출한다.** 상태는 출처 하나(`ClaimSourceJudge.SourceState`: `claim`, `source`)다. 대화 원문은 넣지 않는다. 출처 여러 개를 한 상태에 넣으면, 한 질문으로 묻든 출처 번호별 질문으로 나눠 묻든 관련 없는 출처나 서로 다른 출처에 판정이 흔들렸다(아래 2026-11-03 측정). 호출 수는 출처 수만큼 늘어난다.
+- 출처별 판정 중 신뢰도가 `review.question.fact-check.min-confidence`(0.6) 이상인 것만 모은다. 일치와 모순이 함께 있으면 확인 불가(출처끼리 다름), 모순만 있으면 모순, 일치만 있으면 일치다. 그 밖(출처 없음, 모두 낮은 신뢰도·다루지 않음, 호출·해석 실패)은 확인 불가다.
+
+측정(`./gradlew -q factCheckBenchmark -Pargs="<파일>"`, 출처 문장은 공식 문서를 요약해 직접 썼다):
+
+| 날짜 | 방식 | `fact-check.json` 12개 | `fact-check-hard.json` 12개 |
+|---|---|---|---|
+| 2026-11-02 | 출처를 한 상태에 넣고 질문 1개 | 12/12 | (없음) |
+| 2026-11-03 | 같은 방식 다시 실행 | 11/12 (`s1` 신뢰도가 0.92 → 0.6 미만) | 10/12: 관련 없는 출처가 섞이면 맞는 주장이 확인 불가(`hs2`), **블로그 하나 때문에 맞는 주장을 모순으로 판정**(`hn1`) |
+| 2026-11-03 | 출처별 따로 호출(지금 방식), 2회 실행 | 11/12, 11/12 | 11/12, 11/12 |
+
+- 지금 방식 2회 모두 일부러 틀린 주장 8/8 검출, 맞는 주장을 모순으로 판정 0/8, 출처가 다루지 않거나 출처끼리 다른 주장에 판정을 낸 것 0/8이다. 두 실행의 판정은 같았다.
+- 놓친 2개(`s4-etag-304`, `hs2-one-relevant-of-two`)는 같은 RFC 9110 출처다. 출처는 "304로 응답해야 한다", 주장은 "304로 답할 수 있다"라서 신뢰도가 기준 근처나 아래로 나온다(이전 0.64~0.72). 막지는 않고 확인 불가로 남는다.
+- **한계**: 사례가 24개로 적고 출처 문장을 직접 썼다. 실제 검색 결과의 긴 본문, 광고·잡음, 번역 차이는 아직 재지 않았다. 출제에 연결하기 전에 실제 검색 결과로 만든 사례를 더한다.
 
 ## 힌트·개념 설명 생성 (스펙 §7 5단계)
 
@@ -139,7 +149,7 @@ Jev가 아니라 LLM이 만든다. 포트는 `practice/application/port/out/Feed
 | 어댑터 | `TypeSafeJevAdapterTest` (MockRestServiceServer) | 불필요 |
 | 실제 API | `./gradlew -q jevCheck -Pargs="<사용자 답변>"` | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 복습 단위 검수 실제 API | `./gradlew -q unitReviewCheck` (예시 단위 3개: 통과·복습 가치 없음·근거 연결 부족) | `backend/.env`의 `TYPESAFE_API_KEY` |
-| 출처 대조 벤치마크 | `./gradlew -q factCheckBenchmark -Pargs="--out build/fact-check.json"` (사례 12개, Jev 12회) | `backend/.env`의 `TYPESAFE_API_KEY` |
+| 출처 대조 벤치마크 | `./gradlew -q factCheckBenchmark -Pargs="<fixtures/benchmarks/fact-check.json 또는 fact-check-hard.json> --out build/fact-check.json"` (사례 12개씩, 출처 수만큼 Jev 호출) | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 답변 판정 질문 실제 API | `./gradlew -q answerJudgeCheck` (표본 13개: 표현이 다른 정답, 누락, 번복, 모호한 답, 질문 오독, 대상 밖 오류, 믿음 반복) | `backend/.env`의 `TYPESAFE_API_KEY` |
 | 다음 행동 질문 실제 API | `./gradlew -q nextActionCheck` (표본 8개: 첫 학습·매일 학습, 처음 틀림·반복 어려움, 힌트·설명 뒤 정답) | `backend/.env`의 `TYPESAFE_API_KEY` |
 

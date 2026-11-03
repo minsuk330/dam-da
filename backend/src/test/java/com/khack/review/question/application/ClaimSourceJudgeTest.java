@@ -14,33 +14,50 @@ import org.junit.jupiter.api.Test;
 
 class ClaimSourceJudgeTest {
 
-    static final ClaimSourceState STATE = new ClaimSourceState("InnoDB의 일반 SELECT는 행 잠금을 걸지 않는다.",
-            List.of(new SourceExcerpt("https://example.com/innodb", "InnoDB 읽기", "일반 SELECT는 스냅샷을 읽고 잠금을 걸지 않는다.")));
+    static final SourceExcerpt DOC = new SourceExcerpt("https://example.com/innodb", "InnoDB 읽기", "일반 SELECT는 스냅샷을 읽고 잠금을 걸지 않는다.");
+    static final SourceExcerpt BLOG = new SourceExcerpt("https://blog.example.com", "메모", "일반 SELECT도 공유 잠금을 건다.");
+    static final ClaimSourceState ONE = new ClaimSourceState("InnoDB의 일반 SELECT는 행 잠금을 걸지 않는다.", List.of(DOC));
+    static final ClaimSourceState TWO = new ClaimSourceState("InnoDB의 일반 SELECT는 행 잠금을 걸지 않는다.", List.of(DOC, BLOG));
 
     final FakeJevPort jev = new FakeJevPort();
     final ClaimSourceJudge judge = new ClaimSourceJudge(jev, 0.6);
 
     static JevResult answer(String choice, double confidence) {
-        return new JevResult("fake", Map.of(ClaimSourceQuestions.SUPPORT,
-                new JevAnswer.Choice(choice, Map.of(choice, confidence), confidence)));
+        return new JevResult("fake", Map.of(ClaimSourceQuestions.SUPPORT, new JevAnswer.Choice(choice, Map.of(choice, confidence), confidence)));
     }
 
     @Test
     void confidentAnswersBecomeSupportedOrContradicted() {
         jev.willReturn(answer(ClaimSourceQuestions.SUPPORTED, 0.9));
-        assertThat(judge.judge(STATE).verdict()).isEqualTo(Verdict.SUPPORTED);
+        assertThat(judge.judge(ONE).verdict()).isEqualTo(Verdict.SUPPORTED);
 
         jev.willReturn(answer(ClaimSourceQuestions.CONTRADICTED, 0.8));
-        assertThat(judge.judge(STATE).verdict()).isEqualTo(Verdict.CONTRADICTED);
+        assertThat(judge.judge(ONE).verdict()).isEqualTo(Verdict.CONTRADICTED);
+    }
+
+    @Test
+    void judgesEachSourceInItsOwnCall() {
+        jev.willRespond(answer(ClaimSourceQuestions.SUPPORTED, 0.9), answer(ClaimSourceQuestions.NOT_ADDRESSED, 0.9));
+
+        assertThat(judge.judge(TWO).verdict()).as("관련 없는 출처가 섞여도 일치").isEqualTo(Verdict.SUPPORTED);
+        assertThat(jev.calls()).extracting(call -> ((ClaimSourceJudge.SourceState) call.state()).source())
+                .containsExactly(DOC, BLOG);
+    }
+
+    @Test
+    void sourcesThatDisagreeAreUnverifiable() {
+        jev.willRespond(answer(ClaimSourceQuestions.SUPPORTED, 0.95), answer(ClaimSourceQuestions.CONTRADICTED, 0.8));
+
+        assertThat(judge.judge(TWO).verdict()).isEqualTo(Verdict.UNVERIFIABLE);
     }
 
     @Test
     void lowConfidenceOrUnaddressedClaimsAreUnverifiable() {
         jev.willReturn(answer(ClaimSourceQuestions.CONTRADICTED, 0.4));
-        assertThat(judge.judge(STATE).verdict()).isEqualTo(Verdict.UNVERIFIABLE);
+        assertThat(judge.judge(ONE).verdict()).isEqualTo(Verdict.UNVERIFIABLE);
 
         jev.willReturn(answer(ClaimSourceQuestions.NOT_ADDRESSED, 0.95));
-        assertThat(judge.judge(STATE).verdict()).isEqualTo(Verdict.UNVERIFIABLE);
+        assertThat(judge.judge(ONE).verdict()).isEqualTo(Verdict.UNVERIFIABLE);
     }
 
     @Test
@@ -49,6 +66,6 @@ class ClaimSourceJudgeTest {
         assertThat(jev.calls()).isEmpty();
 
         jev.willFail(new JevCallException(529, "overloaded", null));
-        assertThat(judge.judge(STATE).verdict()).isEqualTo(Verdict.UNVERIFIABLE);
+        assertThat(judge.judge(ONE).verdict()).isEqualTo(Verdict.UNVERIFIABLE);
     }
 }
