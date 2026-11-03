@@ -12,4 +12,6 @@ public interface DailyRecordRepository extends JpaRepository<DailyRecord, Long> 
     List<DailyRecord> findByUserIdOrderByDateAsc(Long userId);
 
     void deleteByUserId(Long userId);
+
+    long countByStatusAndDateGreaterThanEqual(DailyStatus status, LocalDate from);
 }

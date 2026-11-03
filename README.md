@@ -48,6 +48,7 @@ AI 대화를 매일의 맞춤형 학습으로 연결하는 개인 지식 유지 
 - 개발 도구 `/dev/**`는 `.env`의 `DEV_TOOLS_ENABLED=true`일 때만 열린다. 이 기기에서 직접 온 요청은 그대로 허용하고, 원격(배포 서버·터널 경유)은 `X-Dev-Token` 헤더가 `DEV_TOOLS_TOKEN`과 같을 때만 허용한다. 그 외는 404.
   - 배포 서버 예: `curl -X POST -H "X-Dev-Token: $DEV_TOOLS_TOKEN" https://<서버>/dev/clock/travel?days=7`
   - 세션 뷰어: `http://localhost:8080/dev/sessions`
+  - 사용 지표(첫 풀이 도달률, 재방문율, 1·7일 복귀율): `GET /dev/metrics` (#182, 대화 내용 없이 기존 기록으로 계산)
   - 시간 이동 데모: `GET /dev/clock`(현재 시각·오프셋), `POST /dev/clock/travel?days=7&hours=0`(앞으로만), `POST /dev/clock/reset`
 - 로그인은 구글·카카오 소셜 로그인이다(스펙 §7.9). 앱은 `/api/auth/options`의 `loginUrl`로 로그인하고, 돌아온 `/auth/callback?code=`를 `POST /api/auth/token`으로 Bearer 토큰으로 바꾼다. `/api/**`는 토큰이 필요하다(`/api/auth/**` 제외). 키는 `.env`(`GOOGLE_*`, `KAKAO_*`, 배포는 `AUTH_SIGNING_KEY` 필수).
 - Claude 커넥터(`/mcp`)는 MCP OAuth 2.1로 연결한다. 서버가 인가 서버를 겸하며(DCR, PKCE), 연결할 때 `/login`에서 같은 소셜 계정으로 로그인하고 `/connect/consent`에서 승인한다.
